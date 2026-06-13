@@ -1,0 +1,13 @@
+{
+  "group": "behavioral",
+  "cases": [
+    {
+      "name": "prolog-grandparent",
+      "mode": "script",
+      "program": "prolog.shen",
+      "expect": "output",
+      "golden": "bart",
+      "doc": "Shen Prolog: defprolog parent/grandparent, then (prolog? (grandparent abe Who) (return Who)) returns the first solution 'bart' on every impl"
+    }
+  ]
+}

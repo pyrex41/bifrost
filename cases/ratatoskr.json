@@ -1,0 +1,13 @@
+{
+  "group": "ratatoskr-stage1",
+  "cases": [
+    {
+      "name": "ratatoskr-shake-parity",
+      "mode": "ratatoskr-shake",
+      "expect": "ratatoskr-parity",
+      "heavy": true,
+      "shake_files": "[\"tests/fib.shen\"]",
+      "doc": "HEAVY (gate behind --heavy): run (ratatoskr.shake [\"tests/fib.shen\"] OUT) on each host from the ratatoskr repo and assert the produced kernel.kl + ratatoskr.manifest are BYTE-IDENTICAL across all available hosts. The user KL (fib.kl) differs only by gensym counter, so it is NOT asserted. Hosts are driven WITHOUT -q (shen-lua/shen-rust would otherwise silence pr -> zero-byte artefacts). Set $BIFROST_RATATOSKR_DIR to relocate the repo; if absent, the case is SKIPPED, not failed."
+    }
+  ]
+}

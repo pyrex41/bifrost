@@ -1,0 +1,102 @@
+{
+  "_comment": [
+    "Per-implementation adapter config for the Bifrost meta test harness.",
+    "Each adapter declares how to drive one Shen port. Bifrost substitutes:",
+    "  {bin}  -> the resolved launcher binary (after env-var / default resolution)",
+    "  {expr} -> a Shen expression string (for eval mode)",
+    "  {file} -> an absolute path to a .shen program (for script mode)",
+    "Templates are argv lists (NOT shell strings): no quoting/word-splitting games.",
+    "",
+    "Path resolution order for each impl's binary:",
+    "  1. the env var named in 'env'",
+    "  2. the first existing path in 'default_paths'",
+    "If none resolve, the impl is SKIPPED and reported (never a hard error).",
+    "",
+    "'eval'  : argv template that evaluates {expr} and prints its value to stdout.",
+    "'script': argv template that runs the .shen program at {file} to stdout.",
+    "'version': argv template that prints the kernel version banner to stdout.",
+    "          If absent, Bifrost falls back to eval of (version).",
+    "'repl'  : argv template that starts the interactive REPL (fed EOF on stdin).",
+    "'hush_writes_file': KNOWN cross-impl divergence. true  = `pr` to a file",
+    "          stream still writes even under -q/*hush*; false = -q silences it",
+    "          (zero-byte file). Documented, NOT asserted as agreement.",
+    "Note: shen-cl REQUIRES -q for clean eval/repl output; shen-rust/shen-lua",
+    "MUST omit -q for normal cases or `pr` output is silenced."
+  ],
+
+  "shen-cl": {
+    "env": "BIFROST_SHEN_CL",
+    "default_paths": [
+      "/Users/reuben/projects/shen/shen-cl/bin/sbcl/shen",
+      "/Users/reuben/projects/shen/shen-cl/bin/clisp/shen",
+      "/Users/reuben/projects/shen/shen-cl/bin/ecl/shen"
+    ],
+    "eval":    ["{bin}", "eval", "-q", "-e", "{expr}"],
+    "script":  ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "--version"],
+    "repl":    ["{bin}", "-q"],
+    "hush_writes_file": true
+  },
+
+  "shen-go": {
+    "env": "BIFROST_SHEN_GO",
+    "default_paths": [
+      ".bin/shen-go",
+      "/Users/reuben/projects/shen/shen-go/.bin/shen",
+      "/Users/reuben/projects/shen/shen-go/shen"
+    ],
+    "build": {
+      "cwd": "/Users/reuben/projects/shen/shen-go",
+      "argv": ["go", "build", "-o", "{out}", "./cmd/shen"],
+      "out": ".bin/shen-go"
+    },
+    "eval":    ["{bin}", "eval", "-e", "{expr}"],
+    "script":  ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "--version"],
+    "repl":    ["{bin}"],
+    "hush_writes_file": true
+  },
+
+  "shen-rust": {
+    "env": "BIFROST_SHEN_RUST",
+    "default_paths": [
+      "/Users/reuben/projects/shen/shen-rust/target/release/shen-rust"
+    ],
+    "build": {
+      "cwd": "/Users/reuben/projects/shen/shen-rust",
+      "argv": ["cargo", "build", "--release", "--bin", "shen-rust"],
+      "out": "/Users/reuben/projects/shen/shen-rust/target/release/shen-rust"
+    },
+    "eval":    ["{bin}", "eval", "-e", "{expr}"],
+    "script":  ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "--version"],
+    "repl":    ["{bin}"],
+    "hush_writes_file": false
+  },
+
+  "shen-lua": {
+    "env": "BIFROST_SHEN_LUA",
+    "default_paths": [
+      "/Users/reuben/projects/shen/shen-lua/bin/shen"
+    ],
+    "eval":    ["{bin}", "-e", "{expr}"],
+    "script":  ["{bin}", "{file}"],
+    "version": null,
+    "repl":    ["{bin}", "-q"],
+    "hush_writes_file": false,
+    "_version_note": "shen-lua has no --version flag; Bifrost falls back to eval of (version)."
+  },
+
+  "ShenScript": {
+    "env": "BIFROST_SHENSCRIPT",
+    "default_paths": [
+      "/Users/reuben/projects/shen/ShenScript/bin/shen.js"
+    ],
+    "launcher": ["node"],
+    "eval":    ["node", "{bin}", "eval", "-e", "{expr}"],
+    "script":  ["node", "{bin}", "script", "{file}"],
+    "version": ["node", "{bin}", "--version"],
+    "repl":    ["node", "{bin}"],
+    "hush_writes_file": true
+  }
+}

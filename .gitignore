@@ -1,0 +1,19 @@
+# Built / vendored launcher binaries (auto-built or detected).
+.bin/
+
+# Scratch output from runs (hush-write temp files, shake artefacts).
+/scratch/
+*.out
+bifrost_*/
+
+# Kernel cache an impl may drop in cwd (e.g. shen-rust).
+.shen-kernel-cache.bin
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# OS
+.DS_Store

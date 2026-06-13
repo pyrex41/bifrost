@@ -1,0 +1,59 @@
+{
+  "group": "behavioral",
+  "cases": [
+    {
+      "name": "int-mul",
+      "mode": "eval",
+      "expr": "(* 6 7)",
+      "expect": "output",
+      "golden": "42",
+      "doc": "integer multiplication"
+    },
+    {
+      "name": "int-div-exact",
+      "mode": "eval",
+      "expr": "(/ 10 5)",
+      "expect": "output",
+      "golden": "2",
+      "doc": "exact integer division collapses to integer"
+    },
+    {
+      "name": "int-div-to-float",
+      "mode": "eval",
+      "expr": "(/ 10 4)",
+      "expect": "agreement",
+      "known_divergence": "float-formatting",
+      "doc": "10/4 = 2.5: shen-go prints 2.500000, shen-cl/rust/SS print 2.5, lua prints 2.5 -> documented float-formatting divergence, not an agreement failure"
+    },
+    {
+      "name": "float-add-clean",
+      "mode": "eval",
+      "expr": "(+ 3.5 1.25)",
+      "expect": "agreement",
+      "known_divergence": "float-formatting",
+      "doc": "4.75 exactly representable; shen-go still prints 4.750000 -> divergence table"
+    },
+    {
+      "name": "float-add-imprecise",
+      "mode": "eval",
+      "expr": "(+ 0.1 0.2)",
+      "expect": "agreement",
+      "known_divergence": "float-formatting",
+      "doc": "classic 0.1+0.2: cl/rust/SS=0.30000000000000004, go=0.300000, lua=0.3 -> three-way float-formatting divergence"
+    },
+    {
+      "name": "subtraction",
+      "mode": "eval",
+      "expr": "(- 100 58)",
+      "expect": "output",
+      "golden": "42"
+    },
+    {
+      "name": "comparison",
+      "mode": "eval",
+      "expr": "(> 5 3)",
+      "expect": "output",
+      "golden": "true"
+    }
+  ]
+}

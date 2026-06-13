@@ -1,0 +1,62 @@
+{
+  "group": "behavioral",
+  "cases": [
+    {
+      "name": "append",
+      "mode": "eval",
+      "expr": "(append [1 2] [3 4])",
+      "expect": "output",
+      "golden": "[1 2 3 4]"
+    },
+    {
+      "name": "reverse",
+      "mode": "eval",
+      "expr": "(reverse [1 2 3 4 5])",
+      "expect": "output",
+      "golden": "[5 4 3 2 1]"
+    },
+    {
+      "name": "map-square",
+      "mode": "eval",
+      "expr": "(map (lambda X (* X X)) [1 2 3 4])",
+      "expect": "output",
+      "golden": "[1 4 9 16]",
+      "doc": "higher-order map with lambda"
+    },
+    {
+      "name": "length",
+      "mode": "eval",
+      "expr": "(length [a b c d e])",
+      "expect": "output",
+      "golden": "5"
+    },
+    {
+      "name": "string-concat",
+      "mode": "eval",
+      "expr": "(@s \"foo\" \"bar\")",
+      "expect": "output",
+      "golden": "foobar"
+    },
+    {
+      "name": "tlstr",
+      "mode": "eval",
+      "expr": "(tlstr \"hello\")",
+      "expect": "output",
+      "golden": "ello"
+    },
+    {
+      "name": "string-to-n",
+      "mode": "eval",
+      "expr": "(string->n \"A\")",
+      "expect": "output",
+      "golden": "65"
+    },
+    {
+      "name": "n-to-string",
+      "mode": "eval",
+      "expr": "(n->string 65)",
+      "expect": "output",
+      "golden": "A"
+    }
+  ]
+}

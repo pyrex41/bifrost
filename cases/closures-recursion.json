@@ -1,0 +1,45 @@
+{
+  "group": "behavioral",
+  "cases": [
+    {
+      "name": "closure-simple",
+      "mode": "eval",
+      "expr": "(let F (/. X (* X 2)) (F 21))",
+      "expect": "output",
+      "golden": "42",
+      "doc": "single-arg closure applied"
+    },
+    {
+      "name": "closure-curried",
+      "mode": "eval",
+      "expr": "(let Add (/. X (/. Y (+ X Y))) ((Add 3) 4))",
+      "expect": "output",
+      "golden": "7",
+      "doc": "curried closure: captured environment across two applications"
+    },
+    {
+      "name": "fix-point",
+      "mode": "eval",
+      "expr": "(fix (lambda X (if (> X 100) X (* X 2))) 1)",
+      "expect": "output",
+      "golden": "128",
+      "doc": "fixpoint iteration"
+    },
+    {
+      "name": "recursion-fib-file",
+      "mode": "script",
+      "program": "fib.shen",
+      "expect": "output",
+      "golden": "6765",
+      "doc": "deep-ish recursion (fib 20) defined in a file, run via script mode"
+    },
+    {
+      "name": "tail-call-countdown",
+      "mode": "script",
+      "program": "countdown.shen",
+      "expect": "output",
+      "golden": "done",
+      "doc": "tail-recursive countdown of 100000 must not blow the stack on any impl"
+    }
+  ]
+}

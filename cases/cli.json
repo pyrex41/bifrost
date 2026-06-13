@@ -1,0 +1,34 @@
+{
+  "group": "cli",
+  "cases": [
+    {
+      "name": "eval-prints-value",
+      "mode": "eval",
+      "expr": "(+ 40 2)",
+      "expect": "output",
+      "golden": "42",
+      "doc": "CLI parity: 'eval -e EXPR' prints the value of EXPR to stdout"
+    },
+    {
+      "name": "version-expr-41-2",
+      "mode": "eval",
+      "expr": "(version)",
+      "expect": "output",
+      "golden": "41.2",
+      "doc": "CLI parity: (version) returns the kernel version 41.2 uniformly (works on every impl, incl. shen-lua which has no --version flag)"
+    },
+    {
+      "name": "version-banner-contains",
+      "mode": "version",
+      "expect": "version",
+      "contains": "41.2",
+      "doc": "CLI parity: the --version banner contains the kernel version 41.2. shen-lua has no --version flag, so Bifrost falls back to eval of (version)."
+    },
+    {
+      "name": "stdin-eof-clean-exit",
+      "mode": "repl-eof",
+      "expect": "clean-exit",
+      "doc": "CLI parity: starting the REPL and immediately closing stdin (EOF) causes a clean exit (no hang) on every impl"
+    }
+  ]
+}

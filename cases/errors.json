@@ -1,0 +1,36 @@
+{
+  "group": "behavioral",
+  "cases": [
+    {
+      "name": "trap-error-catches",
+      "mode": "eval",
+      "expr": "(trap-error (head []) (lambda E CAUGHT))",
+      "expect": "output",
+      "golden": "CAUGHT",
+      "doc": "a failing primitive (head of empty list) must produce a CATCHABLE error on every impl; the handler returns CAUGHT"
+    },
+    {
+      "name": "trap-error-message",
+      "mode": "eval",
+      "expr": "(trap-error (simple-error \"boom\") (lambda E (error-to-string E)))",
+      "expect": "output",
+      "golden": "boom",
+      "doc": "user (simple-error ...) is catchable and error-to-string recovers the message identically everywhere"
+    },
+    {
+      "name": "error-message-head",
+      "mode": "eval",
+      "expr": "(trap-error (head []) (lambda E (error-to-string E)))",
+      "expect": "agreement",
+      "doc": "the kernel error MESSAGE for (head []) should agree across impls (it does: 'head expects a non-empty list')"
+    },
+    {
+      "name": "int-div-zero",
+      "mode": "eval",
+      "expr": "(trap-error (/ 1 0) (lambda E divide-by-zero))",
+      "expect": "agreement",
+      "known_divergence": "int-div-zero",
+      "doc": "KNOWN DIVERGENCE: cl/rust/lua/SS raise a catchable error -> handler yields 'divide-by-zero'; shen-go does NOT raise: (/ 1 0) yields maxint (9223372036854775807). Documented, not a hard failure."
+    }
+  ]
+}
