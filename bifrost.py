@@ -164,9 +164,13 @@ def _sub_tokens(tok, subs):
 def run_invocation(argv, timeout, stdin_eof=False):
     """Run argv, capture combined stdout (+stderr). Returns dict."""
     try:
+        # For the EOF probe, feed an empty pipe that then closes — the faithful
+        # `echo -n | shen` scenario (a closed PIPE delivers EOF on first read).
+        # Otherwise give the child no stdin at all.
         proc = subprocess.run(
             argv,
-            stdin=subprocess.DEVNULL if stdin_eof else subprocess.DEVNULL,
+            input=b"" if stdin_eof else None,
+            stdin=None if stdin_eof else subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             timeout=timeout,
