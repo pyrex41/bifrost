@@ -4,15 +4,8 @@
     {
       "name": "hush-file-write",
       "mode": "special-hush",
-      "expect": "divergence-table",
-      "table": {
-        "shen-cl": "written",
-        "shen-go": "written",
-        "ShenScript": "written",
-        "shen-lua": "empty",
-        "shen-rust": "empty"
-      },
-      "doc": "KNOWN DIVERGENCE: under -q (*hush* = true), `pr` to a FILE stream still writes on shen-cl/shen-go/ShenScript, but is SILENCED (zero-byte file) on shen-lua/shen-rust. This is a real, documented behavioural difference in how *hush* gates file-stream output. Encoded as an xfail-style expectation table: each impl must land in its documented bucket; the run reports DIVERGE, never a hard agreement FAILURE. Practical consequence: omit -q when driving shen-lua/shen-rust if you need `pr` to reach a file (this is why Bifrost's normal eval/script templates for those two do NOT pass -q)."
+      "expect": "agreement",
+      "doc": "RESOLVED (was a known divergence): under -q (*hush* = true), `pr` to a FILE stream now WRITES on every impl. *hush* only gates the standard output stream, never an explicit file stream. Previously shen-lua/shen-rust SILENCED the write (zero-byte file) under -q while shen-cl/shen-go/ShenScript wrote; the shen-lua (fix/hush-pr-file-22) and shen-rust (fix/hush-pr-file-2) fixes converged this. Now asserted as a HARD agreement: every available impl must land in the same bucket (all 'written'); any impl that silences the write is a real FAIL."
     }
   ]
 }

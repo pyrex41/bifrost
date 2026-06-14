@@ -40,12 +40,24 @@ The corpus (`cases/*.json`, driven by `programs/*.shen`) includes:
   every impl.
 - **Known divergences** (documented, *not* hard failures — see below):
   - `float-formatting` — `(+ 0.1 0.2)` prints `0.30000000000000004` on
-    shen-cl/shen-rust/ShenScript, `0.300000` on shen-go, `0.3` on shen-lua.
-  - `int-div-zero` — `(/ 1 0)` raises a catchable error on
-    cl/rust/lua/ShenScript, but shen-go returns `maxint`.
-  - `hush-file-write` — under `-q` (`*hush* = true`), `pr` to a **file** stream
-    still writes on shen-cl/shen-go/ShenScript but is **silenced** (zero-byte
-    file) on shen-lua/shen-rust.
+    shen-cl/shen-go/shen-rust/ShenScript but `0.3` on shen-lua. (shen-go was
+    *resolved* — it now prints the shortest round-trip form like the others —
+    so the only remaining outlier is shen-lua; the tag is kept until shen-lua
+    converges too. Exactly-representable floats such as `2.5` and `4.75` now
+    agree across all five.)
+- **Resolved divergences** (converged across all available impls; now asserted
+  as **hard agreements**, no longer tagged):
+  - ~~`int-div-zero`~~ — **RESOLVED.** `(/ 1 0)` now raises a *catchable* kernel
+    error on every impl, so `(trap-error (/ 1 0) …)` yields `divide-by-zero`
+    everywhere. shen-go previously returned `maxint`
+    (`9223372036854775807`); fixed on `fix-go-divzero-and-floatfmt`. Any impl
+    that fails to raise is now a real FAIL.
+  - ~~`hush-file-write`~~ — **RESOLVED.** Under `-q` (`*hush* = true`), `pr` to a
+    **file** stream now writes on *every* impl (`*hush*` gates only the standard
+    output stream). shen-lua (`fix/hush-pr-file-22`) and shen-rust
+    (`fix/hush-pr-file-2`) previously silenced the write (zero-byte file); both
+    fixed. Now asserted as a hard agreement — any impl that silences a
+    file-stream `pr` is a real FAIL.
 - **Heavy** (`--heavy`) — **Ratatoskr stage-1 parity**: run
   `(ratatoskr.shake ["tests/fib.shen"] OUT)` on every host and assert the
   produced `kernel.kl` + `ratatoskr.manifest` are **byte-identical** across

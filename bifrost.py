@@ -366,15 +366,25 @@ def evaluate_case(case, available, heavy_timeout):
 # --------------------------------------------------------------------------
 
 def run_hush_divergence(case, available):
-    """Drive the -q/*hush* file-write divergence and verify each impl lands in
-    its documented bucket. Returns the same shape as evaluate_case().
+    """Drive the -q/*hush* file-write behaviour for each impl and verify it.
 
-    Under -q (*hush* = true), `pr` to a FILE stream:
-      - shen-cl / shen-go / ShenScript: still WRITES the file (non-empty), but
-      - shen-lua / shen-rust: SILENCE the write (zero-byte file).
-    This is a real, documented cross-impl divergence, not a bug to fix here.
+    Two semantics, selected per case:
+
+    * Hardened agreement (default, when `known_divergence` is absent): assert
+      that EVERY available impl lands in the same bucket -- i.e. `pr` to a FILE
+      stream behaves identically under -q across all ports. A disagreement is a
+      hard FAIL. This is the locked-in form once the divergence has converged.
+
+    * Documented divergence (when `known_divergence` is present and a `table`
+      is supplied): each impl is checked against its declared expected bucket in
+      case['table'] (name -> "written"|"empty"); a mismatch is FAIL, otherwise
+      the run is reported as DIVERGE (never a hard agreement failure).
+
+    Historically (pre-fix) this was: shen-cl / shen-go / ShenScript WRITE the
+    file under -q, while shen-lua / shen-rust SILENCE the write (zero-byte file).
     """
-    table = case["table"]  # name -> "written" | "empty"
+    is_divergence = bool(case.get("known_divergence"))
+    table = case.get("table") or {}  # name -> "written" | "empty"
     results = {}
     tmpdir = tempfile.mkdtemp(prefix="bifrost_hush_")
     for name, impl in available.items():
@@ -393,25 +403,38 @@ def run_hush_divergence(case, available):
         size = os.path.getsize(outfile) if os.path.exists(outfile) else 0
         observed = "written" if size > 0 else "empty"
         expected = table.get(name)
-        match = (expected is None) or (observed == expected)
         results[name] = {
             "raw": "%d bytes (%s)" % (size, observed),
             "norm": observed,
-            "ok": match,
             "timeout": False,
             "rc": 0,
-            "status": "DIVERGE" if match else "FAIL",
             "size": size,
             "expected": expected,
         }
-    verdict = "DIVERGE"
-    if any(r["status"] == "FAIL" for r in results.values()):
-        verdict = "FAIL"
     buckets = {}
     for n, r in results.items():
         buckets.setdefault(r["norm"], []).append(n)
-    detail = "KNOWN DIVERGENCE [hush-file-write]: " + "; ".join(
-        "%s <- %s" % (b, ",".join(ns)) for b, ns in buckets.items())
+
+    if is_divergence:
+        # Documented-divergence mode: each impl must match its declared bucket.
+        for name, r in results.items():
+            match = (r["expected"] is None) or (r["norm"] == r["expected"])
+            r["ok"] = match
+            r["status"] = "DIVERGE" if match else "FAIL"
+        verdict = "FAIL" if any(r["status"] == "FAIL" for r in results.values()) else "DIVERGE"
+        detail = "KNOWN DIVERGENCE [%s]: " % case["known_divergence"] + "; ".join(
+            "%s <- %s" % (b, ",".join(ns)) for b, ns in buckets.items())
+        return {"per_impl": results, "verdict": verdict, "detail": detail}
+
+    # Hardened-agreement mode: all impls must land in the same bucket.
+    agree = len(buckets) <= 1
+    for r in results.values():
+        r["ok"] = agree
+        r["status"] = "PASS" if agree else "FAIL"
+    verdict = "PASS" if agree else "FAIL"
+    detail = "; ".join("%s <- %s" % (b, ",".join(ns)) for b, ns in buckets.items())
+    if not agree:
+        detail = "disagreement under -q/*hush* file write: " + detail
     return {"per_impl": results, "verdict": verdict, "detail": detail}
 
 
@@ -629,7 +652,7 @@ def main(argv=None):
         sys.stderr.write("running %-28s ... " % c["name"])
         sys.stderr.flush()
         t0 = time.time()
-        if c["expect"] == "divergence-table":
+        if c["mode"] == "special-hush":
             res = run_hush_divergence(c, available)
         elif c["expect"] == "ratatoskr-parity":
             res = run_ratatoskr_parity(c, available)

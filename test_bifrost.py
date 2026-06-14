@@ -24,7 +24,7 @@ _cases = bifrost.load_cases(include_heavy=_HEAVY)
 
 
 def _run(case):
-    if case["expect"] == "divergence-table":
+    if case["mode"] == "special-hush":
         return bifrost.run_hush_divergence(case, _available)
     if case["expect"] == "ratatoskr-parity":
         return bifrost.run_ratatoskr_parity(case, _available)

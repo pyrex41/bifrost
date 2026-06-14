@@ -29,8 +29,7 @@
       "mode": "eval",
       "expr": "(trap-error (/ 1 0) (lambda E divide-by-zero))",
       "expect": "agreement",
-      "known_divergence": "int-div-zero",
-      "doc": "KNOWN DIVERGENCE: cl/rust/lua/SS raise a catchable error -> handler yields 'divide-by-zero'; shen-go does NOT raise: (/ 1 0) yields maxint (9223372036854775807). Documented, not a hard failure."
+      "doc": "RESOLVED (was a known divergence): (/ 1 0) now raises a CATCHABLE kernel error on every impl, so the handler yields 'divide-by-zero' everywhere. Previously shen-go did NOT raise -- (/ 1 0) returned maxint (9223372036854775807); the shen-go fix (fix-go-divzero-and-floatfmt) converged this. Now asserted as a HARD agreement: any impl that fails to raise (e.g. returns maxint) is a real FAIL."
     }
   ]
 }
