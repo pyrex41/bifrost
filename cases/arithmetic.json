@@ -22,24 +22,21 @@
       "mode": "eval",
       "expr": "(/ 10 4)",
       "expect": "agreement",
-      "known_divergence": "float-formatting",
-      "doc": "10/4 = 2.5: shen-go prints 2.500000, shen-cl/rust/SS print 2.5, lua prints 2.5 -> documented float-formatting divergence, not an agreement failure"
+      "doc": "10/4 = 2.5: all five impls print 2.5 (shortest round-trip) -> hard agreement since pyrex41/shen-go#11"
     },
     {
       "name": "float-add-clean",
       "mode": "eval",
       "expr": "(+ 3.5 1.25)",
       "expect": "agreement",
-      "known_divergence": "float-formatting",
-      "doc": "4.75 exactly representable; shen-go still prints 4.750000 -> divergence table"
+      "doc": "4.75 exactly representable; all five impls now print 4.75 -> hard agreement since pyrex41/shen-go#11"
     },
     {
       "name": "float-add-imprecise",
       "mode": "eval",
       "expr": "(+ 0.1 0.2)",
       "expect": "agreement",
-      "known_divergence": "float-formatting",
-      "doc": "classic 0.1+0.2: cl/rust/SS=0.30000000000000004, go=0.300000, lua=0.3 -> three-way float-formatting divergence"
+      "doc": "classic 0.1+0.2 = 0.30000000000000004 (shortest round-trip) on all five impls -> hard agreement since shen-go#11 + shen-lua#24"
     },
     {
       "name": "subtraction",
