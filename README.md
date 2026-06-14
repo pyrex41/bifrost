@@ -38,15 +38,17 @@ The corpus (`cases/*.json`, driven by `programs/*.shen`) includes:
 - **CLI parity** — `eval -e` prints the value; `(version)` / `--version` carry
   the kernel version **41.2**; **stdin-EOF causes a clean exit** (no hang) on
   every impl.
-- **Known divergences** (documented, *not* hard failures — see below):
-  - `float-formatting` — `(+ 0.1 0.2)` prints `0.30000000000000004` on
-    shen-cl/shen-go/shen-rust/ShenScript but `0.3` on shen-lua. (shen-go was
-    *resolved* — it now prints the shortest round-trip form like the others —
-    so the only remaining outlier is shen-lua; the tag is kept until shen-lua
-    converges too. Exactly-representable floats such as `2.5` and `4.75` now
-    agree across all five.)
+- **Known divergences** (documented, *not* hard failures): **none currently** —
+  all previously-tracked divergences have converged (see below).
 - **Resolved divergences** (converged across all available impls; now asserted
   as **hard agreements**, no longer tagged):
+  - ~~`float-formatting`~~ — **RESOLVED.** `(+ 0.1 0.2)` now prints the shortest
+    round-trippable form `0.30000000000000004` on *every* impl. shen-go
+    previously printed `0.300000` (`%f`, fixed in pyrex41/shen-go#11) and
+    shen-lua printed `0.3` (`%.14g` via `tostring`, fixed in
+    pyrex41/shen-lua#24). Exactly-representable floats such as `2.5` and `4.75`
+    also agree. Now asserted as a hard agreement — any impl that prints a
+    non-shortest-round-trip float is a real FAIL.
   - ~~`int-div-zero`~~ — **RESOLVED.** `(/ 1 0)` now raises a *catchable* kernel
     error on every impl, so `(trap-error (/ 1 0) …)` yields `divide-by-zero`
     everywhere. shen-go previously returned `maxint`
