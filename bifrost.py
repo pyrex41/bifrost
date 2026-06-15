@@ -43,7 +43,7 @@ CASES_DIR = os.path.join(HERE, "cases")
 PROGRAMS_DIR = os.path.join(HERE, "programs")
 
 # Order in which impls appear in the matrix.
-IMPL_ORDER = ["shen-cl", "shen-go", "shen-rust", "shen-lua", "ShenScript"]
+IMPL_ORDER = ["shen-cl", "shen-go", "shen-rust", "shen-lua", "ShenScript", "shen-scheme"]
 
 TIMEOUT_DEFAULT = 60      # seconds, per invocation
 TIMEOUT_HEAVY = 300       # seconds, for heavy (ratatoskr) cases

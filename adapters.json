@@ -98,5 +98,23 @@
     "version": ["node", "{bin}", "--version"],
     "repl":    ["node", "{bin}"],
     "hush_writes_file": true
+  },
+
+  "shen-scheme": {
+    "env": "BIFROST_SHEN_SCHEME",
+    "default_paths": [
+      "/Users/reuben/projects/shen/shen-scheme/_build/bin/shen-scheme"
+    ],
+    "build": {
+      "cwd": "/Users/reuben/projects/shen/shen-scheme",
+      "argv": ["make", "all"],
+      "out": "/Users/reuben/projects/shen/shen-scheme/_build/bin/shen-scheme"
+    },
+    "eval":    ["{bin}", "eval", "-e", "{expr}"],
+    "script":  ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "--version"],
+    "repl":    ["{bin}"],
+    "hush_writes_file": false,
+    "_note": "Chez Scheme port by tizoc (Bruno Deferrari). Binary finds its boot file (lib/shen-scheme/shen.boot) relative to the executable, so cwd-independent. -q maps to --quiet -> (set *hush* true); it silences stdout AND file-stream pr (the hush-file-write divergence, false), so it is NOT passed for normal eval/script cases. Three real divergences vs the 41.2 reference ports: (1) ships kernel 41.1; (2) REPL hangs on stdin-EOF (loops 'error: empty stream'); (3) *hush* over-gates file-stream pr (silenced)."
   }
 }
