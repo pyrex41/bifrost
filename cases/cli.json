@@ -28,7 +28,7 @@
       "name": "stdin-eof-clean-exit",
       "mode": "repl-eof",
       "expect": "clean-exit",
-      "doc": "CLI parity: starting the REPL and immediately closing stdin (EOF) causes a clean exit (no hang) on every impl"
+      "doc": "DELIBERATE IMPROVEMENT OVER CANONICAL (not a spec conformance): starting the REPL and closing stdin (EOF) exits cleanly on every maintained impl. Canonical Shen LOOPS FOREVER here — the kernel shen.loop catches the reader's EOF error, prints it, and recurses (e.g. official shen-cl emits ~26MB of 'NIL is not of type CHARACTER' in 8s). All ports here detect EOF at the input layer and exit 0; this case guards that they keep doing so. (Earlier this passed spuriously for shen-cl because its repl adapter used a bare -q, which shen-cl rejects as an invalid arg and exits before the REPL even starts — now fixed to bare {bin}.)"
     }
   ]
 }

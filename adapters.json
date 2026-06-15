@@ -34,8 +34,9 @@
     "eval":    ["{bin}", "eval", "-q", "-e", "{expr}"],
     "script":  ["{bin}", "script", "{file}"],
     "version": ["{bin}", "--version"],
-    "repl":    ["{bin}", "-q"],
-    "hush_writes_file": true
+    "repl":    ["{bin}"],
+    "hush_writes_file": true,
+    "_repl_note": "Bare {bin} (no args) enters the REPL. Do NOT pass -q here: -q is only valid after the eval/script subcommand; as a bare first arg shen-cl rejects it ('Invalid argument: -q') and exits before the REPL starts — which made the stdin-eof case pass spuriously without ever testing EOF."
   },
 
   "shen-go": {
@@ -98,5 +99,23 @@
     "version": ["node", "{bin}", "--version"],
     "repl":    ["node", "{bin}"],
     "hush_writes_file": true
+  },
+
+  "shen-scheme": {
+    "env": "BIFROST_SHEN_SCHEME",
+    "default_paths": [
+      "/Users/reuben/projects/shen/shen-scheme/_build/bin/shen-scheme"
+    ],
+    "build": {
+      "cwd": "/Users/reuben/projects/shen/shen-scheme",
+      "argv": ["make", "all"],
+      "out": "/Users/reuben/projects/shen/shen-scheme/_build/bin/shen-scheme"
+    },
+    "eval":    ["{bin}", "eval", "-e", "{expr}"],
+    "script":  ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "--version"],
+    "repl":    ["{bin}"],
+    "hush_writes_file": true,
+    "_note": "Chez Scheme port by tizoc (Bruno Deferrari). Binary finds its boot file (lib/shen-scheme/shen.boot) relative to the executable, so cwd-independent. -q maps to --quiet -> (set *hush* true), which silences stdout (so it is NOT passed for normal eval/script cases); file-stream pr still writes under -q. Converged with the 41.2 reference ports on all bifrost cases (kernel 41.2; clean stdin-EOF exit; hush gates stdout only)."
   }
 }
