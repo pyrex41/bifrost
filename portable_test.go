@@ -124,6 +124,22 @@ func TestNormalizeStripsChatter(t *testing.T) {
 	}
 }
 
+func TestReorderArgs(t *testing.T) {
+	// Flags placed after positionals must be pulled ahead (Go's flag package
+	// stops at the first non-flag token), with value-flag values kept attached.
+	got := reorderArgs([]string{"prog.shen", "--impl", "shen-go", "--raw"}, "impl", "e", "expr")
+	want := []string{"--impl", "shen-go", "--raw", "prog.shen"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("reorderArgs = %v, want %v", got, want)
+	}
+	// `--` ends flag processing; the rest are positional.
+	got2 := reorderArgs([]string{"--impl", "x", "--", "--not-a-flag"}, "impl")
+	want2 := []string{"--impl", "x", "--not-a-flag"}
+	if !reflect.DeepEqual(got2, want2) {
+		t.Errorf("reorderArgs(--) = %v, want %v", got2, want2)
+	}
+}
+
 func TestRouterRecognisesSubcommands(t *testing.T) {
 	for _, v := range []string{"run", "eval", "repl", "impls", "use", "install", "build"} {
 		if !subcommands[v] {
