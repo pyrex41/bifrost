@@ -37,7 +37,8 @@ jobs:
       - name: Import + CLI smoke (no ports needed)
         shell: python
         run: |
-          import subprocess, sys
+          import os, sys
+          sys.path.insert(0, os.getcwd())  # `shell: python` runs from a temp file
           import bifrost  # must import cleanly on every OS
           # `impls` and `--list` run with zero ports present (all SKIPPED).
           for argv in (["impls"], ["--list"]):
@@ -46,16 +47,3 @@ jobs:
           # The router must not intercept the test-matrix flags.
           assert bifrost.dispatch_subcommand(["--suite", "x.json"]) is None
           print("smoke OK on", sys.platform)
-
-      - name: Ratatoskr CLI import + targets (sibling checkout optional)
-        shell: python
-        run: |
-          import os, sys, subprocess
-          rat = os.path.join("..", "ratatoskr")
-          if not os.path.isfile(os.path.join(rat, "ratatoskr_cli.py")):
-              print("ratatoskr not checked out alongside; skipping")
-              sys.exit(0)
-          sys.path.insert(0, rat)
-          import ratatoskr_cli as r
-          assert r.wrap_executable(["x/build.sh"], is_windows=True)[0] == "sh"
-          print("ratatoskr import OK on", sys.platform)
