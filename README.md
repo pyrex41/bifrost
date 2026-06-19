@@ -107,22 +107,34 @@ BIFROST_HEAVY=1 pytest -k ratatoskr
 `DIVERGE` rows are reported in their own section and **do not** fail the run.
 Only real `FAIL` rows set a non-zero exit code.
 
-### Zero-install (uvx)
+### Install
 
-Bifrost is a single stdlib file packaged as a [uv](https://docs.astral.sh/uv/)
-tool, so it runs with **no install**:
+Bifrost is a single static **Go binary** (no runtime deps), distributed three
+ways — pick whichever suits you:
 
 ```bash
-uvx --from git+https://…/bifrost bifrost --list      # run straight from git
-uvx --from . bifrost                                  # or from a local checkout
-uv run bifrost.py                                     # or just run the file
+# 1. Go toolchain — installs to $GOBIN:
+go install github.com/pyrex41/bifrost@latest
+
+# 2. Prebuilt release binary (no toolchain) — download for your OS/arch from
+#    the GitHub Releases page (produced by GoReleaser on each v* tag), unpack,
+#    put `bifrost` on your PATH.
+
+# 3. uvx — builds the Go binary on your machine and runs it (needs Go installed):
+uvx --from git+https://github.com/pyrex41/bifrost bifrost --list
+uvx --from . bifrost impls                            # from a local checkout
 ```
 
-The wheel bundles `adapters.json` + the corpus, so the tool is self-contained —
-but the Shen *ports* it drives are still resolved on your machine. Point it at
-your ports with the per-impl env vars (below) or a project-local
-`adapters.json`; resolution order is `$BIFROST_ADAPTERS` → `./adapters.json` →
-the packaged default.
+The binary embeds `adapters.json` + the corpus, so it is self-contained — but
+the Shen *ports* it drives are resolved on your machine. Point it at your ports
+with the per-impl env vars (below) or a project-local `adapters.json`;
+resolution order is `$BIFROST_ADAPTERS` → `./adapters.json` → the embedded
+default.
+
+> The Python implementation (`bifrost.py`) remains in the repo as the reference
+> oracle the Go binary is tested against (`bifrost --json` is byte-identical to
+> `python bifrost.py --json` across the corpus); `go test ./...` plus a
+> Windows/Linux/macOS CI matrix guard the binary.
 
 ### Shake-then-run (deploy-path parity)
 

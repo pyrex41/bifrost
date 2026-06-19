@@ -2,9 +2,10 @@
 .bin/
 
 # Scratch output from runs (hush-write temp files, shake artefacts).
+# Anchored to repo root so it never matches the pybin/bifrost_cli package.
 /scratch/
 *.out
-bifrost_*/
+/bifrost_*/
 
 # Kernel cache an impl may drop in cwd (e.g. shen-rust).
 .shen-kernel-cache.bin
@@ -23,3 +24,6 @@ __pycache__/
 
 # OS
 .DS_Store
+
+# Compiled Go binary bundled into the uvx wheel at build time.
+pybin/*/_bin/

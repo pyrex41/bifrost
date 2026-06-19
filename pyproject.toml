@@ -4,26 +4,28 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bifrost-shen"
-version = "0.1.0"
-description = "Bifrost — a cross-implementation meta test harness for the Shen language ports"
+version = "0.2.0"
+description = "Bifrost — cross-implementation Shen meta test harness + Roswell-style front door (Go binary)"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
-keywords = ["shen", "testing", "differential-testing", "conformance"]
-dependencies = []
+keywords = ["shen", "testing", "differential-testing", "conformance", "launcher"]
 
+# uvx path: the wheel build compiles the Go binary on the target machine (needs
+# the Go toolchain) and the console script execs it. So `uvx --from git+URL
+# bifrost` runs the native Go binary with no manual install. The no-Go paths are
+# `go install github.com/pyrex41/bifrost@latest` and the release binaries.
 [project.scripts]
-bifrost = "bifrost:main"
+bifrost = "bifrost_cli:main"
 
-# Single-module project: ship bifrost.py plus its data (adapters/corpus) so
-# `uvx --from git+URL bifrost` works with zero install. The data files land
-# next to the module in site-packages, so HERE-relative resolution still finds
-# them; $BIFROST_ADAPTERS / ./adapters.json override the machine-specific paths.
 [tool.hatch.build.targets.wheel]
-only-include = ["bifrost.py", "adapters.json", "cases", "programs", "examples"]
+packages = ["pybin/bifrost_cli"]
 
-[tool.hatch.build.targets.wheel.sources]
-"bifrost.py" = "bifrost.py"
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "pybin/hatch_build.py"
 
 [tool.hatch.build.targets.sdist]
-include = ["bifrost.py", "adapters.json", "cases", "programs", "examples", "test_bifrost.py", "README.md"]
+# Ship the Go sources so the wheel can be built from an sdist / git checkout.
+include = [
+  "pybin", "go.mod", "*.go", "adapters.json", "cases", "programs", "examples", "README.md",
+]
