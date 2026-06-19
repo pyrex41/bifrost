@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bifrost-shen"
+version = "0.1.0"
+description = "Bifrost — a cross-implementation meta test harness for the Shen language ports"
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "MIT" }
+keywords = ["shen", "testing", "differential-testing", "conformance"]
+dependencies = []
+
+[project.scripts]
+bifrost = "bifrost:main"
+
+# Single-module project: ship bifrost.py plus its data (adapters/corpus) so
+# `uvx --from git+URL bifrost` works with zero install. The data files land
+# next to the module in site-packages, so HERE-relative resolution still finds
+# them; $BIFROST_ADAPTERS / ./adapters.json override the machine-specific paths.
+[tool.hatch.build.targets.wheel]
+only-include = ["bifrost.py", "adapters.json", "cases", "programs", "examples"]
+
+[tool.hatch.build.targets.wheel.sources]
+"bifrost.py" = "bifrost.py"
+
+[tool.hatch.build.targets.sdist]
+include = ["bifrost.py", "adapters.json", "cases", "programs", "examples", "test_bifrost.py", "README.md"]

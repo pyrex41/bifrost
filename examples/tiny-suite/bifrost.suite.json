@@ -1,0 +1,15 @@
+{
+  "name": "tiny-suite",
+  "_doc": "Minimal worked example of a third-party Bifrost suite. Run with: python3 ../../bifrost.py --suite ./bifrost.suite.json",
+  "root": ".",
+  "cases": [
+    {
+      "name": "tiny-self-suite",
+      "mode": "script",
+      "program": "run-tests.shen",
+      "expect": "agreement",
+      "marker": "ALL PASS",
+      "doc": "all ports run the same self-test, produce identical output, and report ALL PASS"
+    }
+  ]
+}
