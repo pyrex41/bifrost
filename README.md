@@ -151,7 +151,8 @@ python3 bifrost.py --shake --impls shen-lua,ShenScript # just the fast ones
 
 Artifacts map onto their impl column (lisp→`shen-cl`, lua→`shen-lua`,
 go→`shen-go`, rust→`shen-rust`, js→`ShenScript`, julia→`shen-julia`);
-`shen-scheme` has no Ratatoskr builder yet and shows `----`. Needs the
+`shen-scheme` and `shen-swift` have no Ratatoskr builder yet and show `----`.
+Needs the
 per-target toolchains (`sbcl`/`luajit`/`go`/`cargo`/`node`/`julia`) and
 `$BIFROST_RATATOSKR_DIR` (default `../ratatoskr`); missing toolchains are
 skipped, not failed. This mode is minutes, not seconds: go/rust compile from
@@ -182,6 +183,12 @@ Defaults (see [`adapters.json`](adapters.json)):
 | `shen-rust` | `BIFROST_SHEN_RUST` | `…/shen-rust/target/release/shen-rust` |
 | `shen-lua` | `BIFROST_SHEN_LUA` | `…/shen-lua/bin/shen` (needs `luajit`) |
 | `ShenScript` | `BIFROST_SHENSCRIPT` | `node …/ShenScript/bin/shen.js` |
+| `shen-scheme` | `BIFROST_SHEN_SCHEME` | `…/shen-scheme/_build/bin/shen-scheme` (Chez) |
+| `shen-julia` | `BIFROST_SHEN_JULIA` | `…/shen-julia/bin/shen` (needs `julia`) |
+| `shen-swift` | `BIFROST_SHEN_SWIFT` | `…/shen-swift/.build/release/shen-swift` (needs `swift`) |
+
+All eight target ShenOSKernel **41.2**. Run `bifrost impls --versions` to see the
+live per-port kernel version, install state, and which is active.
 
 To build shen-go locally into the gitignored `.bin/`:
 
@@ -243,7 +250,7 @@ Each port declares an **install backend** in `adapters.json` (asdf/mise style):
 | `brew` | shen-scheme (and shen-cl via `--method brew`) | `brew install <formula>` |
 | `npm` | ShenScript | `npm install -g shen-script` |
 | `luarocks` | shen-lua | `luarocks install shen` |
-| `git-build` | shen-cl, shen-go, shen-rust, shen-julia | clone (if absent) + the port's `build` recipe |
+| `git-build` | shen-cl, shen-go, shen-rust, shen-julia, shen-swift | clone (if absent) + the port's `build` recipe |
 
 `install` prechecks the required toolchain (and names the exact missing tool
 rather than failing opaquely), refuses `experimental` ports unless `--force`,
