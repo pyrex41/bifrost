@@ -31,15 +31,22 @@ func pathext() []string {
 	return out
 }
 
+func isWindows() bool { return runtime.GOOS == "windows" }
+
 // findExecutablePath returns an existing executable for path, or "".
 // The path itself if it exists; otherwise, on Windows, path + each PATHEXT ext
 // (default_paths are written POSIX-style; the real launcher is shen.exe/.cmd).
 func findExecutablePath(path string) string {
+	return findExecutableFor(path, isWindows(), pathext())
+}
+
+// findExecutableFor is the OS-parameterised core (tested on any OS).
+func findExecutableFor(path string, windows bool, exts []string) string {
 	if _, err := os.Stat(path); err == nil {
 		return path
 	}
-	if runtime.GOOS == "windows" {
-		for _, ext := range pathext() {
+	if windows {
+		for _, ext := range exts {
 			cand := path + ext
 			if _, err := os.Stat(cand); err == nil {
 				return cand
@@ -52,8 +59,11 @@ func findExecutablePath(path string) string {
 // wrapExecutable makes argv[0] runnable on this platform: on Windows a .bat/.cmd
 // is wrapped in `cmd /c` and a .sh in `sh` (CreateProcess can't launch them
 // directly). No-op elsewhere and for native/.exe launchers.
-func wrapExecutable(argv []string) []string {
-	if runtime.GOOS == "windows" && len(argv) > 0 {
+func wrapExecutable(argv []string) []string { return wrapExecutableFor(argv, isWindows()) }
+
+// wrapExecutableFor is the OS-parameterised core (tested on any OS).
+func wrapExecutableFor(argv []string, windows bool) []string {
+	if windows && len(argv) > 0 {
 		low := strings.ToLower(argv[0])
 		switch {
 		case strings.HasSuffix(low, ".bat"), strings.HasSuffix(low, ".cmd"):

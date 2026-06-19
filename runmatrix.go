@@ -222,7 +222,7 @@ func sortedSkip(m map[string]string) []string {
 func runMatrix(args []string) int {
 	fs := newFlagSet("bifrost")
 	heavy := fs.Bool("heavy", false, "include heavy (ratatoskr) cases")
-	only := fs.String("only", "", "run only the named case (plus any trailing positional names)")
+	only := fs.String("only", "", "run only these cases (comma-separated)")
 	implsFlag := fs.String("impls", "", "comma-separated subset of impls to drive")
 	list := fs.Bool("list", false, "list impls + cases and exit")
 	jsonOut := fs.Bool("json", false, "emit machine-readable JSON")
@@ -266,9 +266,9 @@ func runMatrix(args []string) int {
 		return 2
 	}
 	if *only != "" {
-		want := map[string]bool{*only: true}
-		for _, n := range fs.Args() {
-			want[n] = true
+		want := map[string]bool{}
+		for _, n := range strings.Split(*only, ",") {
+			want[strings.TrimSpace(n)] = true
 		}
 		var filtered []aCase
 		for _, c := range cases {

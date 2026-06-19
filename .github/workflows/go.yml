@@ -1,0 +1,36 @@
+name: go
+
+# Builds and tests the Go bifrost binary on Linux, macOS and Windows. The unit
+# tests exercise the cross-platform helpers (launcher resolution, cmd /c / sh
+# wrapping, config dir, OS overrides, normalisation) on every OS, so the Windows
+# behaviour is proven on a real Windows runner. No Shen ports are required.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.x"
+      - name: Build
+        run: go build -o bifrost_bin ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test ./...
+      - name: CLI smoke (no ports needed)
+        shell: bash
+        run: |
+          # impls/--list run with zero ports present (all SKIPPED) and exit 0.
+          ./bifrost_bin impls
+          ./bifrost_bin --list

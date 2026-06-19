@@ -15,17 +15,21 @@ const projectPin = ".bifrost-impl"
 // userConfigDir mirrors bifrost.py: %APPDATA%\bifrost on Windows, else
 // $XDG_CONFIG_HOME/bifrost or ~/.config/bifrost.
 func userConfigDir() string {
-	if runtime.GOOS == "windows" {
-		base := os.Getenv("APPDATA")
+	home, _ := os.UserHomeDir()
+	return userConfigDirFor(runtime.GOOS, os.Getenv, home)
+}
+
+// userConfigDirFor is the parameterised core (tested on any OS).
+func userConfigDirFor(goos string, getenv func(string) string, home string) string {
+	if goos == "windows" {
+		base := getenv("APPDATA")
 		if base == "" {
-			home, _ := os.UserHomeDir()
 			base = filepath.Join(home, "AppData", "Roaming")
 		}
 		return filepath.Join(base, "bifrost")
 	}
-	base := os.Getenv("XDG_CONFIG_HOME")
+	base := getenv("XDG_CONFIG_HOME")
 	if base == "" {
-		home, _ := os.UserHomeDir()
 		base = filepath.Join(home, ".config")
 	}
 	return filepath.Join(base, "bifrost")

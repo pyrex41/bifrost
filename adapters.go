@@ -111,11 +111,16 @@ func (a *Adapters) names() []string {
 // effective parses an adapter and shallow-merges its os_overrides for the
 // current platform (runtime.GOOS mapped to Python's sys.platform names).
 func (a *Adapters) effective(name string) (Adapter, error) {
+	return a.effectiveForPlatform(name, platformKey())
+}
+
+// effectiveForPlatform is the platform-parameterised core (tested on any OS).
+func (a *Adapters) effectiveForPlatform(name, platform string) (Adapter, error) {
 	var ad Adapter
 	if err := json.Unmarshal(a.raw[name], &ad); err != nil {
 		return ad, err
 	}
-	if ov, ok := ad.OSOverrides[platformKey()]; ok {
+	if ov, ok := ad.OSOverrides[platform]; ok {
 		// Unmarshaling the override into the same struct overwrites exactly the
 		// fields the override sets (shallow merge), matching the Python dict.update.
 		if err := json.Unmarshal(ov, &ad); err != nil {
