@@ -15,17 +15,19 @@ import (
 )
 
 // Each Ratatoskr build target maps onto the impl column it runs on, so shake
-// results line up with the normal matrix. shen-scheme has no Ratatoskr builder
+// results line up with the normal matrix. shen-swift has no Ratatoskr builder
 // yet, so it is absent and shows SKIP.
 //
 // The `julia` target is special: shen-julia's stand-alone artifact AOT-compiles
 // the shaken kernel+user KL into baked Julia methods and (per builders.json)
 // bakes a per-program sysimage via PackageCompiler — the Julia analogue of the
 // Lisp saved image / Go-Rust native binary. That bake costs minutes, so the
-// shake timeout below is generous.
+// shake timeout below is generous. The `scheme` target compiles the shaken slice
+// with shen-scheme's own kl->scheme into a self-contained Chez artifact.
 var targetToImpl = map[string]string{
 	"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
 	"rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
+	"scheme": "shen-scheme",
 }
 
 const shakeTargetTimeout = 20 * time.Minute // accommodates the julia sysimage bake

@@ -150,15 +150,17 @@ python3 bifrost.py --shake --impls shen-lua,ShenScript # just the fast ones
 ```
 
 Artifacts map onto their impl column (lisp→`shen-cl`, lua→`shen-lua`,
-go→`shen-go`, rust→`shen-rust`, js→`ShenScript`, julia→`shen-julia`);
-`shen-scheme` and `shen-swift` have no Ratatoskr builder yet and show `----`.
-Needs the
-per-target toolchains (`sbcl`/`luajit`/`go`/`cargo`/`node`/`julia`) and
+go→`shen-go`, rust→`shen-rust`, js→`ShenScript`, julia→`shen-julia`,
+scheme→`shen-scheme`); `shen-swift` has no Ratatoskr builder yet and shows
+`----`. Needs the per-target toolchains
+(`sbcl`/`luajit`/`go`/`cargo`/`node`/`julia`/`chez`) and
 `$BIFROST_RATATOSKR_DIR` (default `../ratatoskr`); missing toolchains are
 skipped, not failed. This mode is minutes, not seconds: go/rust compile from
 scratch, and the **julia** target AOT-bakes a per-program sysimage
 (PackageCompiler, ~250MB, several minutes) — the deploy artifact for
-Shen-on-Julia, analogous to the Lisp saved image.
+Shen-on-Julia, analogous to the Lisp saved image. The **scheme** target
+compiles the shaken slice with shen-scheme's own `kl->scheme` into a
+self-contained Chez program.
 
 `--shake` drives the **Go `ratatoskr` binary** (resolved on `$PATH`, else
 `$RATATOSKR_BIN`, else `$BIFROST_RATATOSKR_DIR` / a sibling `../ratatoskr`); no

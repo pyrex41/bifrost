@@ -857,7 +857,7 @@ def run_ratatoskr_parity(case, available):
 # --------------------------------------------------------------------------
 
 # Each Ratatoskr build target maps onto the impl column it runs on, so shake
-# results line up with the normal matrix. shen-scheme has no Ratatoskr builder
+# results line up with the normal matrix. shen-swift has no Ratatoskr builder
 # yet, so it stays absent and shows SKIP in its column.
 #
 # The `julia` target is special: shen-julia's stand-alone artifact is produced
@@ -865,8 +865,11 @@ def run_ratatoskr_parity(case, available):
 # builders.json) BAKING A PER-PROGRAM SYSIMAGE via PackageCompiler -- the Julia
 # analogue of the Lisp saved image / Go-Rust native binary. That bake costs
 # minutes and ~250MB, so it only runs under --shake (already opt-in/heavy).
+# The `scheme` target compiles the shaken slice with shen-scheme's own
+# kl->scheme into a self-contained Chez artifact (run via `chez --script`).
 TARGET_TO_IMPL = {"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
-                  "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia"}
+                  "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
+                  "scheme": "shen-scheme"}
 
 
 def _import_ratatoskr_cli():
