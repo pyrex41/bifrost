@@ -12,6 +12,19 @@ lineage — Ratatoskr is the squirrel that runs *up and down* the world-tree (th
 two-stage shaker); Bifrost is the bridge that verifies the worlds at the ends of
 the tree agree.
 
+Differential testing is its origin, but Bifrost is now three things:
+
+1. **a differential test harness** (this README's first half) — does every port
+   agree on the same input?
+2. **a reusable test framework** — any Shen project drops a
+   [`bifrost.suite.json`](#using-bifrost-from-another-shen-program-suite-manifests)
+   and runs *its own* suite across every port;
+3. **a Roswell-style front door** — [`run`/`eval`/`repl`/`impls`/`use`/`install`/`build`](#bifrost-as-a-shen-front-door-roswell-style)
+   give Shen one CLI across all ports, on Linux, macOS **and Windows**.
+
+It is packaged as a [uv](https://docs.astral.sh/uv/) tool, so it runs with no
+install: `uvx --from git+https://…/bifrost bifrost …`.
+
 ## The three-way distinction (read this first)
 
 There are **three** different kinds of Shen test suite. Bifrost is the third one
