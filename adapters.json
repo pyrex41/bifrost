@@ -36,6 +36,19 @@
     "version": ["{bin}", "--version"],
     "repl":    ["{bin}"],
     "hush_writes_file": true,
+    "status": "production",
+    "build": {
+      "cwd": "/Users/reuben/projects/shen/shen-cl",
+      "argv": ["make", "build-sbcl"],
+      "out": "bin/sbcl/shen"
+    },
+    "install": {
+      "method": "git-build",
+      "package": "shen-cl",
+      "git": "https://github.com/pyrex41/shen-cl",
+      "needs": ["git", "make", "sbcl"]
+    },
+    "_install_note": "Default method git-build (so a fork can be built). git remote / ref overridable via --git/--ref or $BIFROST_SHEN_CL_GIT / _REF; default is the pyrex41 fork. `--method brew` uses the 'shen-cl' Homebrew formula instead. The launcher itself can point at any prebuilt fork binary via $BIFROST_SHEN_CL.",
     "_repl_note": "Bare {bin} (no args) enters the REPL. Do NOT pass -q here: -q is only valid after the eval/script subcommand; as a bare first arg shen-cl rejects it ('Invalid argument: -q') and exits before the REPL starts — which made the stdin-eof case pass spuriously without ever testing EOF."
   },
 
@@ -55,7 +68,13 @@
     "script":  ["{bin}", "script", "{file}"],
     "version": ["{bin}", "--version"],
     "repl":    ["{bin}"],
-    "hush_writes_file": true
+    "hush_writes_file": true,
+    "status": "production",
+    "install": {
+      "method": "git-build",
+      "git": "https://github.com/tiancaiamao/shen-go",
+      "needs": ["git", "go"]
+    }
   },
 
   "shen-rust": {
@@ -72,7 +91,13 @@
     "script":  ["{bin}", "script", "{file}"],
     "version": ["{bin}", "--version"],
     "repl":    ["{bin}"],
-    "hush_writes_file": false
+    "hush_writes_file": false,
+    "status": "production",
+    "install": {
+      "method": "git-build",
+      "git": "https://github.com/pyrex41/shen-rust",
+      "needs": ["git", "cargo"]
+    }
   },
 
   "shen-lua": {
@@ -85,6 +110,13 @@
     "version": null,
     "repl":    ["{bin}", "-q"],
     "hush_writes_file": false,
+    "status": "production",
+    "install": {
+      "method": "luarocks",
+      "package": "shen",
+      "needs": ["luarocks"]
+    },
+    "_install_note": "luarocks installs the 'shen' rock; a self-contained shen-bundle.lua is also published on releases. Needs luajit at runtime. git-build alternative: --method git-build --git https://github.com/pyrex41/shen-lua.",
     "_version_note": "shen-lua has no --version flag; Bifrost falls back to eval of (version)."
   },
 
@@ -98,7 +130,14 @@
     "script":  ["node", "{bin}", "script", "{file}"],
     "version": ["node", "{bin}", "--version"],
     "repl":    ["node", "{bin}"],
-    "hush_writes_file": true
+    "hush_writes_file": true,
+    "status": "production",
+    "install": {
+      "method": "npm",
+      "package": "shen-script",
+      "needs": ["npm"]
+    },
+    "_install_note": "npm installs the 'shen-script' package globally. The launcher is bin/shen.js run under node; point $BIFROST_SHENSCRIPT at it (or at a fork's bin/shen.js)."
   },
 
   "shen-scheme": {
@@ -116,6 +155,39 @@
     "version": ["{bin}", "--version"],
     "repl":    ["{bin}"],
     "hush_writes_file": true,
+    "status": "production",
+    "install": {
+      "method": "brew",
+      "package": "shen-scheme",
+      "git": "https://github.com/pyrex41/shen-scheme",
+      "needs": ["brew"]
+    },
+    "_install_note": "Homebrew formula 'shen-scheme' (also GitHub release binaries). git-build alternative: --method git-build (needs make + a C compiler; auto-fetches Chez 10.3).",
     "_note": "Chez Scheme port by tizoc (Bruno Deferrari). Binary finds its boot file (lib/shen-scheme/shen.boot) relative to the executable, so cwd-independent. -q maps to --quiet -> (set *hush* true), which silences stdout (so it is NOT passed for normal eval/script cases); file-stream pr still writes under -q. Converged with the 41.2 reference ports on all bifrost cases (kernel 41.2; clean stdin-EOF exit; hush gates stdout only)."
+  },
+
+  "shen-julia": {
+    "env": "BIFROST_SHEN_JULIA",
+    "default_paths": [
+      "/Users/reuben/projects/shen/shen-julia/bin/shen"
+    ],
+    "eval":    ["{bin}", "eval", "-e", "{expr}"],
+    "script":  ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "--version"],
+    "repl":    ["{bin}"],
+    "hush_writes_file": true,
+    "status": "production",
+    "build": {
+      "cwd": "/Users/reuben/projects/shen/shen-julia",
+      "argv": ["julia", "--project=.", "-e", "using Pkg; Pkg.instantiate()"],
+      "out": "bin/shen"
+    },
+    "install": {
+      "method": "git-build",
+      "git": "https://github.com/pyrex41/shen-julia",
+      "needs": ["git", "julia"]
+    },
+    "_install_note": "git-build: clone + Pkg.instantiate (deps). No sysimage by default (~12s boot); build one with `julia --project=. bin/build_sysimage.jl` and point $SHEN_JULIA_SYSIMAGE at it to cut startup.",
+    "_note": "Julia port (shen-julia), 41.2 kernel. The bin/shen wrapper drives the kernel's standard launcher (shen.x.launcher.main from extension-launcher.kl) -- same CLI surface as shen-go/shen-rust/ShenScript. Boots ~12s per invocation (no sysimage yet; set $SHEN_JULIA_SYSIMAGE to a prebuilt ShenJulia.sys to cut that); well within the 60s timeout. Do NOT pass -q for normal eval/script cases: -q sets *hush* which silences stdout (the value would not print). A host-side pr override makes *hush* gate ONLY stdout, never an explicit file stream, so it converges with the hardened hush-file-write case (writes). REPL exits cleanly on stdin EOF via a host-side readline loop."
   }
 }
