@@ -27,3 +27,7 @@ __pycache__/
 
 # Compiled Go binary bundled into the uvx wheel at build time.
 pybin/*/_bin/
+
+# Default `go build` output (binary name == module name).
+/bifrost
+/bifrost_bin
