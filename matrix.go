@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -448,5 +447,3 @@ func bucketJoin(buckets map[string][]string) string {
 	}
 	return strings.Join(parts, "; ")
 }
-
-var _ = md5.Sum // reserved for the ratatoskr-parity port (heavy)

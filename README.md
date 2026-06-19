@@ -140,8 +140,9 @@ default.
 
 `--shake` runs each **script-mode** program through
 [Ratatoskr](../ratatoskr): it tree-shakes the program once, builds a *standalone
-artifact* for every target (Lisp/Lua/Go/Rust/JS), runs each artifact, and diffs
-them. This checks the real stand-alone deploy path, not just load-from-source.
+artifact* for every target (Lisp/Lua/Go/Rust/JS/Julia), runs each artifact, and
+diffs them. This checks the real stand-alone deploy path, not just
+load-from-source.
 
 ```bash
 python3 bifrost.py --shake --only recursion-fib-file   # all buildable targets
@@ -149,11 +150,19 @@ python3 bifrost.py --shake --impls shen-lua,ShenScript # just the fast ones
 ```
 
 Artifacts map onto their impl column (lisp→`shen-cl`, lua→`shen-lua`,
-go→`shen-go`, rust→`shen-rust`, js→`ShenScript`); targets with no Ratatoskr
-builder yet (`shen-scheme`, `shen-julia`) show `----`. Needs the per-target
-toolchains (`sbcl`/`luajit`/`go`/`cargo`/`node`) and `$BIFROST_RATATOSKR_DIR`
-(default `../ratatoskr`); missing toolchains are skipped, not failed. The
-go/rust artifacts compile from scratch, so this mode is minutes, not seconds.
+go→`shen-go`, rust→`shen-rust`, js→`ShenScript`, julia→`shen-julia`);
+`shen-scheme` has no Ratatoskr builder yet and shows `----`. Needs the
+per-target toolchains (`sbcl`/`luajit`/`go`/`cargo`/`node`/`julia`) and
+`$BIFROST_RATATOSKR_DIR` (default `../ratatoskr`); missing toolchains are
+skipped, not failed. This mode is minutes, not seconds: go/rust compile from
+scratch, and the **julia** target AOT-bakes a per-program sysimage
+(PackageCompiler, ~250MB, several minutes) — the deploy artifact for
+Shen-on-Julia, analogous to the Lisp saved image.
+
+`--shake` drives the **Go `ratatoskr` binary** (resolved on `$PATH`, else
+`$RATATOSKR_BIN`, else `$BIFROST_RATATOSKR_DIR` / a sibling `../ratatoskr`); no
+Python is involved. The heavy `ratatoskr-shake-parity` case (`--heavy`) likewise
+shakes on each host via the Go ratatoskr and diffs the kernel.kl/manifest md5s.
 
 ## How implementations are located
 
@@ -391,15 +400,24 @@ print(blob["cases"]["self-suite"]["verdict"])   # PASS / FAIL / DIVERGE
 ## Layout
 
 ```
-bifrost.py          test matrix + front-door verbs (run/eval/repl/impls/use/install/build)
-test_bifrost.py     optional pytest wrapper over the same corpus
-adapters.json       per-impl launcher paths + arg templates + hush flags + install backends
-pyproject.toml      packaging as a uv/uvx tool (console script `bifrost`)
+*.go                the bifrost Go binary (primary):
+  main.go             subcommand router + flag helpers
+  adapters.go         port registry: load / discover / resolve / os_overrides
+  run.go              launch path: build_argv, run, normalize, exec wrapping
+  front.go            verbs: run/eval/repl/impls/use
+  install.go          install backends + build (delegates to ratatoskr)
+  matrix.go,runmatrix.go  differential test matrix, --suite, reporting
+  shake.go            --shake + ratatoskr-parity (drive the Go ratatoskr)
+  *_test.go           cross-platform unit tests (go test ./...)
+bifrost.py          the original Python — kept as the reference oracle
+test_bifrost.py     pytest wrapper over the same corpus (oracle checks)
+pybin/              hatchling wheel that builds+bundles the Go binary for uvx
+adapters.json       per-impl launchers + arg templates + hush flags + install backends
 cases/*.json        data-driven case corpus (Bifrost's own suite)
 programs/*.shen     .shen programs referenced by script-mode cases
 examples/           worked third-party suite manifests (--suite)
-.bin/               (gitignored) auto-built / detected launcher binaries
-.github/workflows/  best-effort CI matrix
+.goreleaser.yaml    release-binary build (on v* tags)
+.github/workflows/  go (build/test, win/linux/mac), portability, matrix, release
 ```
 
 Run `python3 bifrost.py --suite PATH/bifrost.suite.json` to drive an external

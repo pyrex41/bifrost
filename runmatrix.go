@@ -98,9 +98,9 @@ func executeCases(cases []aCase, available map[string]Impl, s suite, programsDir
 		case c.Mode == "special-hush":
 			res = runHushDivergence(c, available)
 		case c.Expect == "ratatoskr-parity":
-			res = skipNote(available, "heavy ratatoskr parity not yet ported to Go; run `python bifrost.py --heavy`")
+			res = runRatatoskrParity(c, available)
 		case shake && c.Mode == "script":
-			res = skipNote(available, "shake-then-run not yet ported to Go; run `python bifrost.py --shake`")
+			res = runShakeCase(c, available, s, programsDir)
 		default:
 			res = evaluateCase(c, available, s, programsDir, timeoutHeavy)
 		}
