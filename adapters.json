@@ -215,5 +215,29 @@
     },
     "_install_note": "git-build: clone + Pkg.instantiate (deps). No sysimage by default (~12s boot); build one with `julia --project=. bin/build_sysimage.jl` and point $SHEN_JULIA_SYSIMAGE at it to cut startup.",
     "_note": "Julia port (shen-julia), 41.2 kernel. The bin/shen wrapper drives the kernel's standard launcher (shen.x.launcher.main from extension-launcher.kl) -- same CLI surface as shen-go/shen-rust/ShenScript. Boots ~12s per invocation (no sysimage yet; set $SHEN_JULIA_SYSIMAGE to a prebuilt ShenJulia.sys to cut that); well within the 60s timeout. Do NOT pass -q for normal eval/script cases: -q sets *hush* which silences stdout (the value would not print). A host-side pr override makes *hush* gate ONLY stdout, never an explicit file stream, so it converges with the hardened hush-file-write case (writes). REPL exits cleanly on stdin EOF via a host-side readline loop."
+  },
+  "shen-swift": {
+    "env": "BIFROST_SHEN_SWIFT",
+    "default_paths": [
+      "/Users/reuben/projects/shen/shen-swift/.build/release/shen-swift"
+    ],
+    "eval": ["{bin}", "eval", "-e", "{expr}"],
+    "script": ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "--version"],
+    "repl": ["{bin}"],
+    "hush_writes_file": true,
+    "status": "production",
+    "build": {
+      "cwd": "/Users/reuben/projects/shen/shen-swift",
+      "argv": ["swift", "build", "-c", "release"],
+      "out": "/Users/reuben/projects/shen/shen-swift/.build/release/shen-swift"
+    },
+    "install": {
+      "method": "git-build",
+      "git": "https://github.com/pyrex41/shen-swift",
+      "needs": ["swift"]
+    },
+    "_install_note": "git-build: clone + `swift build -c release` (Swift 6+ toolchain; macOS or Linux with the open-source toolchain). Self-contained -- the 41.2 .kl kernel ships inside the SwiftPM resource bundle, no separate kernel checkout needed.",
+    "_note": "Swift port (shen-swift), 41.2 kernel, built from scratch as a tree-walking KLambda interpreter targeting iOS as well as macOS (no JIT/codegen -- runs inside the iOS sandbox). Drives the kernel's standard launcher (shen.x.launcher.main from extension-launcher.kl) -- same CLI surface as shen-go/shen-rust/shen-julia/ShenScript. Boots the kernel (~1-2.7s release) on every invocation; passes the 41.2 kernel test suite 35/35 groups. A host-side pr override makes *hush* gate ONLY stdout, never an explicit file stream, so -q silences the printed value but file writes still happen (hush_writes_file=true) -- this also lets shen-swift host ratatoskr shakes, which run under -q. -q is NOT passed for normal eval/script cases (it would suppress the value). REPL exits cleanly on stdin EOF (getchar -> exit)."
   }
 }
