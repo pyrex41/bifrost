@@ -98,7 +98,7 @@ func cmdLaunch(verb string, rest []string, a *Adapters) int {
 		fs.StringVar(&expr, "e", "", "expression to evaluate")
 		fs.StringVar(&expr, "expr", "", "expression to evaluate")
 	}
-	if err := fs.Parse(rest); err != nil {
+	if err := fs.Parse(reorderArgs(rest, "impl", "e", "expr")); err != nil {
 		return 2
 	}
 	if verb == "run" {
@@ -177,7 +177,7 @@ func cmdLaunch(verb string, rest []string, a *Adapters) int {
 func cmdImpls(rest []string, a *Adapters) int {
 	fs := newFlagSet("bifrost impls")
 	versions := fs.Bool("versions", false, "probe each available port's kernel version live")
-	if err := fs.Parse(rest); err != nil {
+	if err := fs.Parse(reorderArgs(rest)); err != nil {
 		return 2
 	}
 	available, skipped := a.discover(nil)
@@ -220,7 +220,7 @@ func cmdImpls(rest []string, a *Adapters) int {
 func cmdUse(rest []string, a *Adapters) int {
 	fs := newFlagSet("bifrost use")
 	project := fs.Bool("project", false, "pin in ./"+projectPin+" instead of the global default")
-	if err := fs.Parse(rest); err != nil {
+	if err := fs.Parse(reorderArgs(rest)); err != nil {
 		return 2
 	}
 	if fs.NArg() < 1 {

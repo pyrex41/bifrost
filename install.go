@@ -41,7 +41,7 @@ func cmdInstall(rest []string, a *Adapters) int {
 	git := fs.String("git", "", "git remote to build from (git-build; for forks)")
 	ref := fs.String("ref", "", "git branch/tag to build (git-build)")
 	force := fs.Bool("force", false, "reinstall even if present; allow experimental")
-	if err := fs.Parse(rest); err != nil {
+	if err := fs.Parse(reorderArgs(rest, "method", "git", "ref")); err != nil {
 		return 2
 	}
 	if fs.NArg() < 1 {
@@ -172,7 +172,7 @@ func cmdBuild(rest []string, a *Adapters) int {
 	fs := newFlagSet("bifrost build")
 	target := fs.String("target", "", "ratatoskr target (lisp/lua/go/rust/js/julia)")
 	run := fs.Bool("run", false, "run the artifact after building")
-	if err := fs.Parse(rest); err != nil {
+	if err := fs.Parse(reorderArgs(rest, "target")); err != nil {
 		return 2
 	}
 	if fs.NArg() < 2 || *target == "" {
