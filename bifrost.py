@@ -60,6 +60,87 @@ CASES_DIR = os.path.join(HERE, "cases")
 PROGRAMS_DIR = os.path.join(HERE, "programs")
 
 
+# --------------------------------------------------------------------------
+# Cross-platform helpers
+# --------------------------------------------------------------------------
+# Bifrost runs on Linux, macOS and Windows. The launchers it drives differ by
+# OS: native ports compile to `shen.exe` on Windows, and some ports ship a
+# `.bat`/`.cmd` wrapper that CreateProcess cannot launch directly. These helpers
+# are parameterised (platform/env args) so the Windows code paths are unit-tested
+# on every OS, not just on a Windows box. `sys.platform` is "win32" on Windows.
+
+IS_WINDOWS = (os.name == "nt")
+
+
+def user_config_dir(app="bifrost", platform_name=None, env=None):
+    """Per-user config directory for `app`, OS-appropriate.
+
+    Windows -> %APPDATA%\\<app>;  else -> $XDG_CONFIG_HOME/<app> or ~/.config/<app>.
+    """
+    env = os.environ if env is None else env
+    platform_name = platform_name or sys.platform
+    if platform_name == "win32":
+        base = env.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming")
+    else:
+        base = env.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+    return os.path.join(base, app)
+
+
+def _pathext(env=None):
+    env = os.environ if env is None else env
+    return [e.lower() for e in env.get("PATHEXT", ".COM;.EXE;.BAT;.CMD").split(";") if e.strip()]
+
+
+def find_executable_path(path, is_windows=None, env=None):
+    """Return an existing executable for `path`, or None.
+
+    The path itself if it exists; otherwise, on Windows, `path` + each PATHEXT
+    extension (default_paths are written POSIX-style/extensionless, but the real
+    launcher on Windows is `shen.exe` / `shen.cmd`).
+    """
+    is_windows = IS_WINDOWS if is_windows is None else is_windows
+    if os.path.exists(path):
+        return path
+    if is_windows:
+        for ext in _pathext(env):
+            if os.path.exists(path + ext):
+                return path + ext
+    return None
+
+
+def wrap_executable(argv, is_windows=None):
+    """Make argv[0] runnable on this platform.
+
+    On Windows a `.bat`/`.cmd` cannot be launched directly via the default
+    (shell-less) subprocess path, so wrap it in `cmd /c`; a `.sh` launcher is
+    wrapped in `sh` (needs git-bash/WSL/MSYS `sh` on PATH). A no-op everywhere
+    else and for `.exe`/native launchers.
+    """
+    is_windows = IS_WINDOWS if is_windows is None else is_windows
+    if is_windows and argv:
+        low = argv[0].lower()
+        if low.endswith((".bat", ".cmd")):
+            return ["cmd", "/c"] + list(argv)
+        if low.endswith(".sh"):
+            return ["sh"] + list(argv)
+    return list(argv)
+
+
+def apply_os_overrides(cfg, platform_name=None):
+    """Overlay `cfg['os_overrides'][<platform>]` onto `cfg` (shallow merge).
+
+    Lets adapters.json carry OS-specific `default_paths` / `launcher` / templates
+    (keys "win32" / "darwin" / "linux") without forking the whole adapter.
+    """
+    platform_name = platform_name or sys.platform
+    ov = (cfg.get("os_overrides") or {}).get(platform_name)
+    if not ov:
+        return cfg
+    merged = dict(cfg)
+    merged.update(ov)
+    return merged
+
+
 def find_adapters_path():
     """Locate adapters.json. Resolution order (first existing wins):
 
@@ -241,29 +322,37 @@ def resolve_bin(name, cfg):
     """Resolve an impl's launcher path. Returns absolute path or None.
 
     Order: env var override, then first existing default_path. Relative
-    default paths are resolved against the bifrost repo root (HERE).
+    default paths are resolved against the bifrost repo root (HERE). On Windows,
+    extensionless candidates also match `shen.exe` / `shen.cmd` (PATHEXT), and
+    any `os_overrides` for the platform are applied first.
     """
+    cfg = apply_os_overrides(cfg)
     env = cfg.get("env")
     if env and os.environ.get(env):
-        cand = os.environ[env]
-        if os.path.exists(cand):
-            return os.path.abspath(cand)
+        hit = find_executable_path(os.environ[env])
+        if hit:
+            return os.path.abspath(hit)
     for p in cfg.get("default_paths", []):
         cand = p if os.path.isabs(p) else os.path.join(HERE, p)
-        if os.path.exists(cand):
-            return os.path.abspath(cand)
+        hit = find_executable_path(cand)
+        if hit:
+            return os.path.abspath(hit)
     return None
 
 
 def discover(adapters, restrict=None):
-    """Return (available, skipped). available: name->{cfg,bin}."""
+    """Return (available, skipped). available: name->{cfg,bin}.
+
+    The stored cfg has OS overrides applied, so launch templates reflect the
+    current platform (e.g. a Windows-specific `launcher`/`eval` template).
+    """
     available, skipped = {}, {}
     for name in IMPL_ORDER:
         if name not in adapters:
             continue
         if restrict and name not in restrict:
             continue
-        cfg = adapters[name]
+        cfg = apply_os_overrides(adapters[name])
         binpath = resolve_bin(name, cfg)
         if binpath is None:
             skipped[name] = "launcher not found (set $%s or build it)" % cfg.get("env", "?")
@@ -291,6 +380,7 @@ def run_invocation(argv, timeout, stdin_eof=False, cwd=None):
     "src/...")` — Shen's `load` resolves paths against the process cwd, so the
     suite must run from its own project root.
     """
+    argv = wrap_executable(argv)
     try:
         # For the EOF probe, feed an empty pipe that then closes — the faithful
         # `echo -n | shen` scenario (a closed PIPE delivers EOF on first read).
@@ -707,6 +797,7 @@ def run_ratatoskr_parity(case, available):
             argv = cfg.get("launcher", []) + [binpath, "eval", "-l", drv]
         else:
             argv = [binpath, "eval", "-l", drv]
+        argv = wrap_executable(argv)
         try:
             subprocess.run(argv, cwd=rtk_dir, stdin=subprocess.DEVNULL,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
@@ -845,7 +936,7 @@ def run_shake_case(case, available, suite=None):
             r.update(status="SKIP", raw="builder tool not on PATH", norm="no-tool")
             continue
         try:
-            proc = subprocess.run(run_argv, stdin=subprocess.DEVNULL,
+            proc = subprocess.run(wrap_executable(run_argv), stdin=subprocess.DEVNULL,
                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                   timeout=timeout)
             raw = proc.stdout.decode("utf-8", "replace")
@@ -1018,9 +1109,7 @@ SUBCOMMANDS = ("run", "eval", "repl", "impls", "use", "install", "build")
 # Active-impl selection (rustup-style): a per-command override beats a project
 # pin beats a global default beats "first available (shen-cl preferred)".
 PROJECT_PIN = ".bifrost-impl"
-GLOBAL_PIN = os.path.join(
-    os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
-    "bifrost", "impl")
+GLOBAL_PIN = os.path.join(user_config_dir("bifrost"), "impl")
 
 
 def read_pin(path):
@@ -1064,7 +1153,7 @@ def _resolve_one(adapters, name):
         sys.stderr.write("bifrost: %s is not installed/built. Try: bifrost "
                          "install %s\n" % (name, name))
         return None
-    return {"cfg": adapters[name], "bin": binpath}
+    return {"cfg": apply_os_overrides(adapters[name]), "bin": binpath}
 
 
 def probe_kernel_version(impl):
@@ -1110,7 +1199,7 @@ def cmd_launch(verb, rest, adapters):
     if verb == "repl":
         # Interactive: inherit the terminal, don't capture.
         tmpl = impl["cfg"].get("repl") or impl["cfg"]["eval"]
-        argv = [_sub_tokens(t, {"{bin}": impl["bin"]}) for t in tmpl]
+        argv = wrap_executable([_sub_tokens(t, {"{bin}": impl["bin"]}) for t in tmpl])
         sys.stderr.write("# bifrost repl on %s (%s)\n" % (name, source))
         try:
             return subprocess.call(argv)
@@ -1201,7 +1290,7 @@ def cmd_build(rest, adapters):
         sys.stderr.write("bifrost: target %r needs a toolchain not on PATH\n" % args.target)
         return 3
     if args.run:
-        return subprocess.call(run_argv)
+        return subprocess.call(wrap_executable(run_argv))
     print("built %s artifact; run with:\n  %s" % (args.target, " ".join(run_argv)))
     return 0
 
@@ -1211,9 +1300,17 @@ def _run_step(argv, cwd=None, env_extra=None):
     env = dict(os.environ)
     if env_extra:
         env.update(env_extra)
+    argv = list(argv)
+    # Resolve a bare command (no path separator) via PATH: on Windows this turns
+    # `npm`/`luarocks` into their real `npm.cmd`/`.bat`, which wrap_executable
+    # then runs through `cmd /c` (CreateProcess can't launch a bare .cmd).
+    if argv and (os.sep not in argv[0] and "/" not in argv[0]):
+        resolved = shutil.which(argv[0])
+        if resolved:
+            argv[0] = resolved
     sys.stderr.write("  $ %s%s\n" % (" ".join(argv), "  (cwd=%s)" % cwd if cwd else ""))
     try:
-        return subprocess.call(argv, cwd=cwd, env=env) == 0
+        return subprocess.call(wrap_executable(argv), cwd=cwd, env=env) == 0
     except FileNotFoundError as e:
         sys.stderr.write("  ! %s\n" % e)
         return False

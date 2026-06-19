@@ -4,7 +4,7 @@
 
 > In Norse myth, *Bifrost* is the burning rainbow bridge between worlds. Here it
 > is the bridge that checks the worlds **agree**: it runs the *same* programs and
-> behaviours across **all five** Shen implementations and asserts they produce
+> behaviours across **all** the Shen implementations and asserts they produce
 > the same observable result (differential / conformance testing).
 
 Bifrost sits alongside [Ratatoskr / Yggdrasil](../ratatoskr) in the same Norse
@@ -21,7 +21,7 @@ and is deliberately distinct from the other two:
 |-------|---------------|----------|---------|
 | **(a) Canonical kernel suite** | Does *this* port implement the Shen *spec* correctly? | The Shen kernel (`tests/`) | `(run "README.shen")` style kernel conformance |
 | **(b) Per-port unit tests** | Does *this* port's internals (reader, writer, GC, FFI…) behave? | Each port repo | `shen-go/cmd/shen/main_test.go` |
-| **(c) Bifrost (this repo)** | Do **all ports agree with each other** on the same input? | This repo | `(+ 0.1 0.2)` → are the five answers the same string? |
+| **(c) Bifrost (this repo)** | Do **all ports agree with each other** on the same input? | This repo | `(+ 0.1 0.2)` → are the answers the same string across ports? |
 
 Bifrost never re-implements (a) or (b). It drives each port's *launcher* exactly
 the way a user would from the shell, captures stdout, normalises launcher
@@ -94,6 +94,42 @@ BIFROST_HEAVY=1 pytest -k ratatoskr
 `DIVERGE` rows are reported in their own section and **do not** fail the run.
 Only real `FAIL` rows set a non-zero exit code.
 
+### Zero-install (uvx)
+
+Bifrost is a single stdlib file packaged as a [uv](https://docs.astral.sh/uv/)
+tool, so it runs with **no install**:
+
+```bash
+uvx --from git+https://…/bifrost bifrost --list      # run straight from git
+uvx --from . bifrost                                  # or from a local checkout
+uv run bifrost.py                                     # or just run the file
+```
+
+The wheel bundles `adapters.json` + the corpus, so the tool is self-contained —
+but the Shen *ports* it drives are still resolved on your machine. Point it at
+your ports with the per-impl env vars (below) or a project-local
+`adapters.json`; resolution order is `$BIFROST_ADAPTERS` → `./adapters.json` →
+the packaged default.
+
+### Shake-then-run (deploy-path parity)
+
+`--shake` runs each **script-mode** program through
+[Ratatoskr](../ratatoskr): it tree-shakes the program once, builds a *standalone
+artifact* for every target (Lisp/Lua/Go/Rust/JS), runs each artifact, and diffs
+them. This checks the real stand-alone deploy path, not just load-from-source.
+
+```bash
+python3 bifrost.py --shake --only recursion-fib-file   # all buildable targets
+python3 bifrost.py --shake --impls shen-lua,ShenScript # just the fast ones
+```
+
+Artifacts map onto their impl column (lisp→`shen-cl`, lua→`shen-lua`,
+go→`shen-go`, rust→`shen-rust`, js→`ShenScript`); targets with no Ratatoskr
+builder yet (`shen-scheme`, `shen-julia`) show `----`. Needs the per-target
+toolchains (`sbcl`/`luajit`/`go`/`cargo`/`node`) and `$BIFROST_RATATOSKR_DIR`
+(default `../ratatoskr`); missing toolchains are skipped, not failed. The
+go/rust artifacts compile from scratch, so this mode is minutes, not seconds.
+
 ## How implementations are located
 
 Bifrost **auto-detects** each port. For every impl it resolves a launcher path
@@ -131,11 +167,185 @@ go build -o .bin/shen-go -C /Users/reuben/projects/shen/shen-go ./cmd/shen
   `hush-file-write` divergence). This is exactly why Bifrost's eval/script
   templates for those two do **not** pass `-q`.
 
+## Bifrost as a Shen front door (Roswell-style)
+
+Beyond differential testing, Bifrost is the single **front door** for Shen
+across every port — the way [Roswell](https://roswell.github.io/) (`ros`) is for
+Common Lisp. The differential test matrix is still the default (bare `bifrost`);
+these are added as verbs. They reuse the same `adapters.json` port registry, so
+"run my program on shen-go", "which ports do I have", and "install shen-rust"
+all share one source of truth.
+
+```bash
+bifrost run prog.shen [--impl X]   # run a .shen program on the active/chosen port
+bifrost eval -e '(+ 2 3)' [--impl X]
+bifrost repl [--impl X]            # interactive REPL (inherits your terminal)
+bifrost impls [--versions]         # list ports: state, kernel (live probe), status, active(*)
+bifrost use IMPL [--project]       # set the active port (global, or ./.bifrost-impl pin)
+bifrost install IMPL [--method M] [--git URL] [--ref R] [--force]
+bifrost build prog.shen OUT --target T [--run]   # standalone artifact (delegates to Ratatoskr)
+```
+
+### Choosing the implementation
+
+`run`/`eval`/`repl` resolve which port to use in this order (rustup-style — a
+per-command override beats a pin beats the global default):
+
+1. `--impl X` on the command line,
+2. a project pin file `./.bifrost-impl` (written by `bifrost use X --project`),
+3. the global default `~/.config/bifrost/impl` (written by `bifrost use X`),
+4. otherwise `shen-cl` if present, else the first available port.
+
+`bifrost impls --versions` probes each port's kernel version **live** (the port
+READMEs' badges drift — e.g. shen-cl's says 41.1 but it reports 41.2), so the
+matrix of who-is-on-what is always accurate.
+
+### Installing a port
+
+Each port declares an **install backend** in `adapters.json` (asdf/mise style):
+
+| method | ports | what runs |
+|---|---|---|
+| `brew` | shen-scheme (and shen-cl via `--method brew`) | `brew install <formula>` |
+| `npm` | ShenScript | `npm install -g shen-script` |
+| `luarocks` | shen-lua | `luarocks install shen` |
+| `git-build` | shen-cl, shen-go, shen-rust, shen-julia | clone (if absent) + the port's `build` recipe |
+
+`install` prechecks the required toolchain (and names the exact missing tool
+rather than failing opaquely), refuses `experimental` ports unless `--force`,
+is idempotent (skips an already-resolved launcher), and verifies the launcher
+resolves afterward.
+
+**Forks** (e.g. `pyrex41/shen-cl`) are first-class:
+- to *run* a fork, point the port's env var at your built binary
+  (`$BIFROST_SHEN_CL=/path/to/fork/bin/sbcl/shen`) — no install needed;
+- to *build* a fork, override the git-build source:
+  `bifrost install shen-cl --git https://github.com/me/shen-cl --ref my-branch`
+  (or `$BIFROST_SHEN_CL_GIT` / `$BIFROST_SHEN_CL_REF`). The git-build defaults
+  point at the `pyrex41` forks this workspace tracks.
+
+### Windows / Linux / macOS
+
+The `bifrost` tool itself is pure-stdlib Python and runs on all three. The
+plumbing is OS-aware:
+
+- **Launcher resolution** — extensionless `default_paths` also match
+  `shen.exe` / `shen.cmd` / `shen.bat` on Windows (via `PATHEXT`); a
+  `.bat`/`.cmd`/`.sh` launcher is auto-wrapped (`cmd /c` / `sh`) so it runs
+  through Python's shell-less `subprocess`.
+- **Config** — the global active-impl pin lives in `%APPDATA%\bifrost\impl` on
+  Windows, `$XDG_CONFIG_HOME`/`~/.config/bifrost/impl` elsewhere.
+- **Per-OS adapter tweaks** — an adapter may carry an `os_overrides` block
+  keyed by `win32`/`darwin`/`linux` (shallow-merged over the adapter) to give a
+  port a platform-specific `default_paths`/`launcher`/template. See the
+  `_os_overrides_example` in [`adapters.json`](adapters.json) — e.g. driving
+  shen-lua on Windows by invoking `luajit` explicitly.
+
+What's *not* in Bifrost's hands is whether a given **port** runs on Windows —
+that's each port's own story. Natively-compiled ports (shen-go, shen-rust,
+shen-cl, shen-scheme) produce a Windows `.exe`; interpreter ports work when
+their runtime is present (`node` for ShenScript, `luajit`, `julia`). As
+everywhere, point `$BIFROST_<IMPL>` at your launcher if auto-detection misses
+it. The `portability` CI job runs the cross-platform plumbing tests on
+`windows-latest` (and Linux/macOS) on every push.
+
+## Using Bifrost from another Shen program (suite manifests)
+
+Bifrost is not only its own corpus — it is a **reusable framework** any Shen
+project can point at its *own* test suite to run it across every supported
+port and assert the ports agree. A project written in Shen (e.g.
+[`../shen-cas`](../shen-cas)) gets cross-implementation conformance for free:
+"does my suite produce the *same* result, and pass, on every supported port?"
+
+A project plugs in by dropping a **`bifrost.suite.json`** manifest in its repo
+and running:
+
+```bash
+python3 /path/to/bifrost/bifrost.py --suite /path/to/project/bifrost.suite.json --heavy
+# or, checked out side-by-side:
+python3 ../bifrost/bifrost.py --suite ./bifrost.suite.json --heavy
+```
+
+Ports are resolved from Bifrost's own [`adapters.json`](adapters.json) (launcher
+locations are machine-global, not project-specific), so the project supplies
+**only** what is project-specific: where its sources live and how its suite
+reports success.
+
+### Manifest schema
+
+```jsonc
+{
+  "name": "my-project",
+  "root": ".",                       // project root; paths below resolve here.
+                                     //   default = the manifest's own directory
+  "programs_dir": ".",               // where script-mode {file} programs live
+                                     //   (default = root)
+  "default_cwd": ".",                // cwd the launcher runs in, so the suite's
+                                     //   relative (load "src/...") resolves
+                                     //   (default = root)
+  "strip_line_prefixes": ["my loader banner"],  // extra normaliser prefixes:
+                                     //   drop project-specific chatter lines
+  "cases": [                         // inline cases (preferred). Alternatively
+    {                                //   "cases_dir": "bifrost/cases" points at
+      "name": "self-suite",          //   a dir of *.json corpus files.
+      "mode": "script",              // "script" runs a .shen entrypoint
+      "program": "load.shen",        // your loader, which ends by running tests
+      "expect": "agreement",         // all ports must produce identical output
+      "marker": "ALL PASS",          // ...AND each must print this success token
+      "heavy": true,                 // big suite -> use the long timeout
+      "doc": "all ports agree and report ALL PASS"
+    }
+  ]
+}
+```
+
+### How a project's entrypoint should behave
+
+The `"script"` entrypoint (your `load.shen` or equivalent) should:
+
+1. load your sources,
+2. run your checks, printing **deterministic** output (identical across ports —
+   beware gensym counters, hash ordering, and float formatting, which Bifrost
+   will surface as a divergence),
+3. end by printing a **marker** line (e.g. `ALL PASS`) *iff* everything passed.
+
+Bifrost runs it on every available port with the cwd set to your project root,
+normalises launcher chatter (run-time banners, `(fn …)` load echoes, and
+shen-lua's trailing value echo — so your entrypoint may safely return a
+boolean), then asserts:
+
+| `expect` | `marker` | assertion |
+|----------|----------|-----------|
+| `agreement` | set | normalised stdout **byte-identical across all ports** AND the (shared) output contains the marker — *the strongest mode* |
+| `agreement` | — | byte-identical across all ports (pure differential) |
+| `marker` | set | each port prints the marker and exits cleanly; ports need **not** agree (the project's own harness is the sole judge) |
+| `output` | optional | normalised stdout equals `golden` (+ marker if set) |
+
+A worked, runnable example lives in
+[`examples/tiny-suite/`](examples/tiny-suite/) — a tiny self-test that passes
+on every available port. shen-cas ships a real manifest at
+[`../shen-cas/bifrost.suite.json`](../shen-cas/bifrost.suite.json).
+
+Add `--shake` to run a suite's script-mode entrypoint through the
+[deploy-path parity](#shake-then-run-deploy-path-parity) pipeline: each port's
+*standalone artifact* is built and diffed, not just the load-from-source run.
+
+### Scripting it (importable API)
+
+`bifrost.py` is importable; the manifest path is just sugar over it:
+
+```python
+import bifrost
+suite = bifrost.build_suite_from_manifest("path/to/bifrost.suite.json")
+blob, results, available, skipped, cases = bifrost.run_suite(suite, include_heavy=True)
+print(blob["cases"]["self-suite"]["verdict"])   # PASS / FAIL / DIVERGE
+```
+
 ## Adding a case
 
 1. If the case needs a `.shen` program, drop it in `programs/`. End it with a
    single `(do (print EXPR) (nl))` top-level form so the output normalises
-   cleanly across all five impls (shen-lua's `load` echoes values otherwise).
+   cleanly across all impls (shen-lua's `load` echoes values otherwise).
 2. Add an entry to a file under `cases/` (or make a new `*.json`):
 
    ```json
@@ -156,14 +366,19 @@ go build -o .bin/shen-go -C /Users/reuben/projects/shen/shen-go ./cmd/shen
 ## Layout
 
 ```
-bifrost.py          standalone runner (source of truth)
+bifrost.py          test matrix + front-door verbs (run/eval/repl/impls/use/install/build)
 test_bifrost.py     optional pytest wrapper over the same corpus
-adapters.json       per-impl launcher paths + arg templates + hush flags
-cases/*.json        data-driven case corpus
+adapters.json       per-impl launcher paths + arg templates + hush flags + install backends
+pyproject.toml      packaging as a uv/uvx tool (console script `bifrost`)
+cases/*.json        data-driven case corpus (Bifrost's own suite)
 programs/*.shen     .shen programs referenced by script-mode cases
+examples/           worked third-party suite manifests (--suite)
 .bin/               (gitignored) auto-built / detected launcher binaries
 .github/workflows/  best-effort CI matrix
 ```
+
+Run `python3 bifrost.py --suite PATH/bifrost.suite.json` to drive an external
+project's suite (see *Using Bifrost from another Shen program* above).
 
 ## CI
 

@@ -21,8 +21,34 @@
     "          stream still writes even under -q/*hush*; false = -q silences it",
     "          (zero-byte file). Documented, NOT asserted as agreement.",
     "Note: shen-cl REQUIRES -q for clean eval/repl output; shen-rust/shen-lua",
-    "MUST omit -q for normal cases or `pr` output is silenced."
+    "MUST omit -q for normal cases or `pr` output is silenced.",
+    "",
+    "CROSS-PLATFORM: launcher paths/templates are POSIX-shaped by default.",
+    "On Windows, extensionless default_paths also match shen.exe/.cmd/.bat",
+    "(PATHEXT), and a .bat/.cmd/.sh launcher is auto-wrapped (cmd /c, sh).",
+    "Per-OS specifics go in an optional 'os_overrides' block per adapter,",
+    "keyed by sys.platform ('win32'/'darwin'/'linux'); the matching block is",
+    "shallow-merged over the adapter. See _os_overrides_example below. As",
+    "always, $BIFROST_<IMPL> overrides the launcher path on any OS."
   ],
+
+  "_os_overrides_example": {
+    "_doc": [
+      "Illustrative ONLY (key starts with _ so it is ignored at load). Copy the",
+      "'os_overrides' block into a real adapter and adjust. Example: on Windows,",
+      "drive shen-lua by invoking luajit explicitly instead of the POSIX shell",
+      "wrapper, and point default_paths at the repo's Lua entrypoint."
+    ],
+    "os_overrides": {
+      "win32": {
+        "default_paths": ["C:\\\\shen-lua\\\\bin\\\\shen.lua"],
+        "launcher": ["luajit"],
+        "eval":   ["luajit", "{bin}", "-e", "{expr}"],
+        "script": ["luajit", "{bin}", "{file}"],
+        "repl":   ["luajit", "{bin}", "-q"]
+      }
+    }
+  },
 
   "shen-cl": {
     "env": "BIFROST_SHEN_CL",
