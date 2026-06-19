@@ -197,6 +197,15 @@ func runRatatoskrParity(c aCase, available map[string]Impl) caseResult {
 	type dig struct{ kernel, manifest string }
 	digs := map[string]dig{}
 	for _, name := range sortedImpls(available) {
+		// shen-julia hosts the shake correctly but, with no sysimage, loading
+		// ratatoskr + walking the callgraph in the interpreter takes minutes —
+		// impractical for this gate. Skip it as a parity HOST (it remains a
+		// first-class shake TARGET). Set BIFROST_PARITY_JULIA=1 to include it.
+		if name == "shen-julia" && os.Getenv("BIFROST_PARITY_JULIA") == "" {
+			results[name].Status = "SKIP"
+			results[name].Norm = "host too slow (no sysimage); target only"
+			continue
+		}
 		im := available[name]
 		out := filepath.Join(tmp, name)
 		launcher := append(append([]string{}, im.Cfg.Launcher...), im.Bin)
