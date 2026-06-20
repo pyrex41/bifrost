@@ -857,8 +857,8 @@ def run_ratatoskr_parity(case, available):
 # --------------------------------------------------------------------------
 
 # Each Ratatoskr build target maps onto the impl column it runs on, so shake
-# results line up with the normal matrix. shen-swift has no Ratatoskr builder
-# yet, so it stays absent and shows SKIP in its column.
+# results line up with the normal matrix. All eight bifrost ports now have a
+# Ratatoskr builder.
 #
 # The `julia` target is special: shen-julia's stand-alone artifact is produced
 # by AOT-compiling the shaken kernel+user KL into baked Julia methods and (per
@@ -867,9 +867,11 @@ def run_ratatoskr_parity(case, available):
 # minutes and ~250MB, so it only runs under --shake (already opt-in/heavy).
 # The `scheme` target compiles the shaken slice with shen-scheme's own
 # kl->scheme into a self-contained Chez artifact (run via `chez --script`).
+# The `swift` target drives the shen-swift tree-walking interpreter on the
+# shaken slice (boot a ~200-line kernel instead of the full ~2500-line kernel).
 TARGET_TO_IMPL = {"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
                   "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
-                  "scheme": "shen-scheme"}
+                  "scheme": "shen-scheme", "swift": "shen-swift"}
 
 
 def _import_ratatoskr_cli():
