@@ -92,14 +92,19 @@ def _pathext(env=None):
 
 
 def find_executable_path(path, is_windows=None, env=None):
-    """Return an existing executable for `path`, or None.
+    """Return an existing *executable* for `path`, or None.
 
-    The path itself if it exists; otherwise, on Windows, `path` + each PATHEXT
-    extension (default_paths are written POSIX-style/extensionless, but the real
-    launcher on Windows is `shen.exe` / `shen.cmd`).
+    The path itself if it exists and is runnable; otherwise, on Windows, `path` +
+    each PATHEXT extension (default_paths are written POSIX-style/extensionless,
+    but the real launcher on Windows is `shen.exe` / `shen.cmd`).
+
+    On POSIX we require the exec bit: a file that exists but is not executable
+    (e.g. a committed binary with no +x, or a wrong-arch port) is treated as
+    *not found* so it lands in the `[skipped]` list rather than tracebacking at
+    exec time. Windows has no exec bit, so existence is enough there.
     """
     is_windows = IS_WINDOWS if is_windows is None else is_windows
-    if os.path.exists(path):
+    if os.path.exists(path) and (is_windows or os.access(path, os.X_OK)):
         return path
     if is_windows:
         for ext in _pathext(env):
@@ -402,6 +407,15 @@ def run_invocation(argv, timeout, stdin_eof=False, cwd=None):
         return {"rc": None, "out": partial, "timeout": True}
     except FileNotFoundError as e:
         return {"rc": None, "out": "launcher missing: %s" % e, "timeout": False}
+    except OSError as e:
+        # A launcher that exists but can't be exec'd on this host — wrong
+        # arch ("Exec format error"), missing exec bit ("Permission denied"),
+        # etc. Treat it like a missing launcher (skip this impl) rather than
+        # letting it abort the whole matrix. FileNotFoundError is a subclass of
+        # OSError, so it must be caught above this.
+        return {"rc": None,
+                "out": "launcher not runnable on this platform: %s" % e,
+                "timeout": False}
 
 
 def build_argv(impl, case, programs_dir=PROGRAMS_DIR):
