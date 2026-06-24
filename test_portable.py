@@ -10,6 +10,8 @@ Run:  pytest test_portable.py
 
 import os
 
+import pytest
+
 import bifrost
 
 
@@ -64,15 +66,29 @@ def test_find_exact_path(tmp_path):
     assert bifrost.find_executable_path(str(f), is_windows=False) == str(f)
 
 
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="POSIX exec-bit semantics can't be simulated on a Windows host: "
+    "os.access(X_OK) ignores the mode bits and reports any existing file "
+    "as executable, so is_windows=False can't be exercised here.",
+)
 def test_find_non_executable_is_skipped_on_posix(tmp_path):
     # A file that exists but lacks the exec bit (e.g. a committed wrong-arch
     # binary) must NOT be reported as available on POSIX — it would only crash
-    # at exec time with "Exec format error". Windows has no exec bit, so there
-    # existence alone is enough.
+    # at exec time with "Exec format error".
     f = tmp_path / "shen-go"
     f.write_text("not actually runnable")
     f.chmod(0o644)
     assert bifrost.find_executable_path(str(f), is_windows=False) is None
+
+
+def test_find_non_executable_is_available_on_windows(tmp_path):
+    # Windows has no exec bit, so existence alone is enough there. This branch
+    # is host-independent (is_windows=True never consults os.access), so it
+    # runs on every OS.
+    f = tmp_path / "shen-go"
+    f.write_text("not actually runnable")
+    f.chmod(0o644)
     assert bifrost.find_executable_path(str(f), is_windows=True) == str(f)
 
 
