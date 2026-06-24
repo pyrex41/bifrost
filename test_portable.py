@@ -10,6 +10,8 @@ Run:  pytest test_portable.py
 
 import os
 
+import pytest
+
 import bifrost
 
 
@@ -60,7 +62,34 @@ def test_wrap_noop_on_posix():
 def test_find_exact_path(tmp_path):
     f = tmp_path / "shen"
     f.write_text("#!/bin/sh\n")
+    f.chmod(0o755)
     assert bifrost.find_executable_path(str(f), is_windows=False) == str(f)
+
+
+@pytest.mark.skipif(
+    os.name == "nt",
+    reason="POSIX exec-bit semantics can't be simulated on a Windows host: "
+    "os.access(X_OK) ignores the mode bits and reports any existing file "
+    "as executable, so is_windows=False can't be exercised here.",
+)
+def test_find_non_executable_is_skipped_on_posix(tmp_path):
+    # A file that exists but lacks the exec bit (e.g. a committed wrong-arch
+    # binary) must NOT be reported as available on POSIX — it would only crash
+    # at exec time with "Exec format error".
+    f = tmp_path / "shen-go"
+    f.write_text("not actually runnable")
+    f.chmod(0o644)
+    assert bifrost.find_executable_path(str(f), is_windows=False) is None
+
+
+def test_find_non_executable_is_available_on_windows(tmp_path):
+    # Windows has no exec bit, so existence alone is enough there. This branch
+    # is host-independent (is_windows=True never consults os.access), so it
+    # runs on every OS.
+    f = tmp_path / "shen-go"
+    f.write_text("not actually runnable")
+    f.chmod(0o644)
+    assert bifrost.find_executable_path(str(f), is_windows=True) == str(f)
 
 
 def test_find_windows_extension_probe(tmp_path):
@@ -74,6 +103,30 @@ def test_find_windows_extension_probe(tmp_path):
 
 def test_find_missing_returns_none(tmp_path):
     assert bifrost.find_executable_path(str(tmp_path / "nope"), is_windows=True) is None
+
+
+# ---- run_invocation resilience -------------------------------------------
+
+def test_run_invocation_handles_exec_format_error(tmp_path):
+    # A launcher that exists and is +x but is not a valid executable for this
+    # host (e.g. a macOS Mach-O binary on Linux) raises OSError "Exec format
+    # error" from the exec path. One unrunnable port must never abort the whole
+    # matrix — it should be reported as not runnable, not raised.
+    bogus = tmp_path / "wrong-arch"
+    # Random bytes that are not a valid script/ELF for the current host.
+    bogus.write_bytes(b"\xca\xfe\xba\xbe\x00\x00\x00\x00")
+    bogus.chmod(0o755)
+    res = bifrost.run_invocation([str(bogus)], timeout=10)
+    assert res["rc"] is None
+    assert res["timeout"] is False
+    assert "not runnable" in res["out"]
+
+
+def test_run_invocation_missing_launcher(tmp_path):
+    res = bifrost.run_invocation([str(tmp_path / "does-not-exist")], timeout=10)
+    assert res["rc"] is None
+    assert res["timeout"] is False
+    assert "launcher missing" in res["out"]
 
 
 # ---- apply_os_overrides ---------------------------------------------------
