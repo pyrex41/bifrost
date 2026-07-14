@@ -29,7 +29,7 @@ import (
 var targetToImpl = map[string]string{
 	"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
 	"rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
-	"scheme": "shen-scheme", "swift": "shen-swift",
+	"scheme": "shen-scheme", "swift": "shen-swift", "hvm": "shen-inets",
 }
 
 const shakeTargetTimeout = 20 * time.Minute // accommodates the julia sysimage bake
