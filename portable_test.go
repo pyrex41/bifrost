@@ -54,6 +54,14 @@ func TestFindExecutableExactAndMissing(t *testing.T) {
 	}
 }
 
+func TestExitThreeIsCapabilitySkip(t *testing.T) {
+	got := resultFromInvocation(
+		runResult{Rc: 3, Out: "SKIP: cannot-reach=eval\n"}, nil)
+	if got.Status != "SKIP" || got.Rc != 3 {
+		t.Fatalf("exit 3 result = %#v, want capability SKIP", got)
+	}
+}
+
 func TestUserConfigDir(t *testing.T) {
 	win := userConfigDirFor("windows", func(k string) string {
 		if k == "APPDATA" {

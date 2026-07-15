@@ -176,8 +176,19 @@ func runCaseOnImpl(im Impl, c aCase, s suite, programsDir string, heavyTimeout t
 		return &implResult{Raw: r.Out, Norm: normalize(r.Out, s.ExtraPrefixes), Ok: !r.Timeout, Timeout: r.Timeout, Rc: r.Rc}
 	default: // eval / script
 		r := runInvocation(buildArgv(im, c, programsDir), to, false, cwd)
-		return &implResult{Raw: r.Out, Norm: normalize(r.Out, s.ExtraPrefixes), Timeout: r.Timeout, Rc: r.Rc}
+		return resultFromInvocation(r, s.ExtraPrefixes)
 	}
+}
+
+func resultFromInvocation(r runResult, extraPrefixes []string) *implResult {
+	result := &implResult{
+		Raw: r.Out, Norm: normalize(r.Out, extraPrefixes),
+		Timeout: r.Timeout, Rc: r.Rc,
+	}
+	if r.Rc == 3 {
+		result.Status = "SKIP"
+	}
+	return result
 }
 
 // evaluateCase runs a case across impls and decides the verdict.
@@ -187,10 +198,20 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 		results[name] = runCaseOnImpl(im, c, s, programsDir, heavyTimeout)
 	}
 	res := caseResult{PerImpl: results, Verdict: "PASS"}
+	active := map[string]*implResult{}
+	for name, result := range results {
+		if result.Status != "SKIP" {
+			active[name] = result
+		}
+	}
+	if len(active) == 0 {
+		res.Detail = "SKIPPED: every implementation reported an unavailable capability (exit 3)"
+		return res
+	}
 
 	markerCheck := func() (bool, []string) {
 		var missing []string
-		for n, r := range results {
+		for n, r := range active {
 			if r.Timeout || (c.Marker != "" && !strings.Contains(r.Norm, c.Marker)) {
 				missing = append(missing, n)
 			}
@@ -202,7 +223,7 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 	switch c.Expect {
 	case "marker":
 		ok, missing := markerCheck()
-		for n, r := range results {
+		for n, r := range active {
 			if contains(missing, n) {
 				r.Status = "FAIL"
 			} else {
@@ -214,7 +235,7 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 			res.Detail = fmt.Sprintf("marker %q missing on: %s", c.Marker, strings.Join(missing, ", "))
 		}
 	case "output":
-		for _, r := range results {
+		for _, r := range active {
 			if r.Timeout {
 				r.Status = "FAIL"
 				res.Verdict = "FAIL"
@@ -227,9 +248,9 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 		}
 		if res.Verdict == "FAIL" {
 			var parts []string
-			for _, n := range sortedKeys(results) {
-				if results[n].Status == "FAIL" {
-					parts = append(parts, fmt.Sprintf("%s=%q", n, results[n].Norm))
+			for _, n := range sortedKeys(active) {
+				if active[n].Status == "FAIL" {
+					parts = append(parts, fmt.Sprintf("%s=%q", n, active[n].Norm))
 				}
 			}
 			res.Detail = fmt.Sprintf("golden=%q; mismatches: %s", c.Golden, strings.Join(parts, ", "))
@@ -237,9 +258,9 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 	case "agreement":
 		var timed []string
 		norms := map[string]string{}
-		for _, n := range sortedKeys(results) {
-			norms[n] = results[n].Norm
-			if results[n].Timeout {
+		for _, n := range sortedKeys(active) {
+			norms[n] = active[n].Norm
+			if active[n].Timeout {
 				timed = append(timed, n)
 			}
 		}
@@ -248,7 +269,7 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 		switch {
 		case len(timed) > 0:
 			res.Verdict = "FAIL"
-			for _, r := range results {
+			for _, r := range active {
 				if r.Timeout {
 					r.Status = "FAIL"
 				} else {
@@ -260,22 +281,22 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 			if c.Marker != "" {
 				ok, _ := markerCheck()
 				if ok {
-					setAll(results, "PASS")
+					setAll(active, "PASS")
 				} else {
-					setAll(results, "FAIL")
+					setAll(active, "FAIL")
 					res.Verdict = "FAIL"
 					res.Detail = fmt.Sprintf("ports AGREE but marker %q absent (suite did not report success on any port)", c.Marker)
 				}
 			} else {
-				setAll(results, "PASS")
+				setAll(active, "PASS")
 			}
 		default:
 			if isDiv {
 				res.Verdict = "DIVERGE"
-				setAll(results, "DIVERGE")
+				setAll(active, "DIVERGE")
 			} else {
 				res.Verdict = "FAIL"
-				setAll(results, "FAIL")
+				setAll(active, "FAIL")
 			}
 			res.Detail = bucketDetail(norms)
 			if isDiv {
@@ -283,7 +304,7 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 			}
 		}
 	case "version":
-		for _, r := range results {
+		for _, r := range active {
 			if r.Ok {
 				r.Status = "PASS"
 			} else {
@@ -295,7 +316,7 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 			res.Detail = fmt.Sprintf("version must contain %q", c.Contains)
 		}
 	case "clean-exit":
-		for _, r := range results {
+		for _, r := range active {
 			if r.Ok {
 				r.Status = "PASS"
 			} else {
@@ -309,11 +330,11 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 	case "divergence-table":
 		res.Verdict = "DIVERGE"
 		res.Detail = c.Doc
-		setAll(results, "DIVERGE")
+		setAll(active, "DIVERGE")
 	default:
 		res.Verdict = "FAIL"
 		res.Detail = "unknown expect " + c.Expect
-		setAll(results, "FAIL")
+		setAll(active, "FAIL")
 	}
 	return res
 }
