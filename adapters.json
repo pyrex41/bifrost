@@ -243,9 +243,15 @@
   "shen-inets": {
     "env": "BIFROST_SHEN_INETS",
     "default_paths": [
+      "/Users/reuben/projects/shen-inets/shen-inets/bin/shen-inets",
       "/Users/reuben/projects/shen/inets/shen-inets/bin/shen-inets"
     ],
-    "status": "planned",
-    "_note": "shen-inets (HVM3 interaction-net port). Stub adapter for the ratatoskr shake-matrix ONLY (bifrost --shake): registered in implOrder + shake.go's targetToImpl so the ratatoskr 'hvm' target gets a matrix column, but NO eval/script/version/repl templates yet -- shen-inets has no general-purpose Shen launcher (its compiler only runs the needs-eval=false ratatoskr-shake path; see inets/shen-inets/docs/ratatoskr-hvm-target-plan.md and bifrost-integration-recon.md). default_paths intentionally points at a launcher that does not exist yet, so discover() reports this impl SKIPPED ('launcher not found') until a real CLI wrapper is built or $BIFROST_SHEN_INETS is set -- this is deliberate, not an oversight. The shake-then-run path (ratatoskr build/run --target hvm, via build_shake.py + `hvm run`) does NOT go through this adapter at all, so the shake-matrix hvm column can go PASS/FAIL independently while this entry stays SKIP for the full differential matrix. Filling in eval/script/version/repl (a real 41.2-compatible CLI: version banner, clean stdin-EOF REPL exit) is bifrost-integration-recon.md work-list item (c), a separate and larger effort gated on shen-inets shipping a Shen-compatible front end -- explicitly out of scope for this stub."
+    "eval": ["{bin}", "eval", "{expr}"],
+    "script": ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "version"],
+    "repl": ["{bin}", "repl"],
+    "hush_writes_file": true,
+    "status": "experimental",
+    "_note": "shen-inets (HVM3 interaction-net port). The launcher compiles each eval/script request as a tiny Shen source program, tree-shakes it with ratatoskr, and runs the cached compiled HVM artifact. It is intentionally not a runtime reader/eval implementation: a manifest with needs-eval=true exits 3, which bifrost records as a capability SKIP. version is a static 41.2 banner and repl provides the corpus-required clean stdin-EOF exit."
   }
 }
