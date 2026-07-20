@@ -16,9 +16,10 @@ var implOrder = []string{
 
 // BuildRecipe is a port's source-build step (git-build install + ratatoskr host).
 type BuildRecipe struct {
-	Cwd  string   `json:"cwd"`
-	Argv []string `json:"argv"`
-	Out  string   `json:"out"`
+	Cwd   string     `json:"cwd"`
+	Argv  []string   `json:"argv"`
+	Steps [][]string `json:"steps"` // multi-step alternative to argv (run in order)
+	Out   string     `json:"out"`
 }
 
 // InstallSpec is a port's install backend (asdf/mise style).

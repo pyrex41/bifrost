@@ -74,7 +74,7 @@
       "git": "https://github.com/pyrex41/shen-cl",
       "needs": ["git", "make", "sbcl"]
     },
-    "_install_note": "Default method git-build (so a fork can be built). git remote / ref overridable via --git/--ref or $BIFROST_SHEN_CL_GIT / _REF; default is the pyrex41 fork. `--method brew` uses the 'shen-cl' Homebrew formula instead. The launcher itself can point at any prebuilt fork binary via $BIFROST_SHEN_CL.",
+    "_install_note": "Default method git-build (so a fork can be built). git remote / ref overridable via --git/--ref or $BIFROST_SHEN_CL_GIT / _REF; default is the pyrex41 fork. `--method brew` uses the 'shen-cl' Homebrew formula instead. The launcher itself can point at any prebuilt fork binary via $BIFROST_SHEN_CL. BOOTSTRAP: a fresh clone has no kernel/ or compiled/ tree, so before `make build-sbcl` you must run `make fetch` (or scripts/assemble-tarver-kernel.sh) and then `make precompile SHEN=<path to any working Shen launcher, e.g. a built shen-go>` -- precompiling the kernel requires an already-working Shen. `bifrost install shen-cl` runs only the final build step, so on a first-ever install do the fetch+precompile once by hand (see the shen-cl README).",
     "_repl_note": "Bare {bin} (no args) enters the REPL. Do NOT pass -q here: -q is only valid after the eval/script subcommand; as a bare first arg shen-cl rejects it ('Invalid argument: -q') and exits before the REPL starts — which made the stdin-eof case pass spuriously without ever testing EOF."
   },
 
@@ -82,6 +82,7 @@
     "env": "BIFROST_SHEN_GO",
     "default_paths": [
       ".bin/shen-go",
+      "/Users/reuben/projects/shen/shen-go/.bin/shen-go",
       "/Users/reuben/projects/shen/shen-go/.bin/shen",
       "/Users/reuben/projects/shen/shen-go/shen"
     ],
@@ -98,9 +99,10 @@
     "status": "production",
     "install": {
       "method": "git-build",
-      "git": "https://github.com/tiancaiamao/shen-go",
+      "git": "https://github.com/pyrex41/shen-go",
       "needs": ["git", "go"]
-    }
+    },
+    "_install_note": "git-build clones the pyrex41 fork: it carries the standard launcher CLI (eval/script/--version, kernel 41.2) that Bifrost drives. Upstream tiancaiamao/shen-go lacks those subcommands (S41.1) and does not exit on stdin EOF, so it cannot be driven by Bifrost."
   },
 
   "shen-rust": {
@@ -129,7 +131,8 @@
   "shen-lua": {
     "env": "BIFROST_SHEN_LUA",
     "default_paths": [
-      "/Users/reuben/projects/shen/shen-lua/bin/shen"
+      "/Users/reuben/projects/shen/shen-lua/bin/shen",
+      "/usr/local/bin/shen"
     ],
     "eval":    ["{bin}", "-e", "{expr}"],
     "script":  ["{bin}", "{file}"],
@@ -137,12 +140,17 @@
     "repl":    ["{bin}", "-q"],
     "hush_writes_file": false,
     "status": "production",
-    "install": {
-      "method": "luarocks",
-      "package": "shen",
-      "needs": ["luarocks"]
+    "build": {
+      "cwd": "/Users/reuben/projects/shen/shen-lua",
+      "argv": ["bin/shen", "-e", "(version)"],
+      "out": "bin/shen"
     },
-    "_install_note": "luarocks installs the 'shen' rock; a self-contained shen-bundle.lua is also published on releases. Needs luajit at runtime. git-build alternative: --method git-build --git https://github.com/pyrex41/shen-lua.",
+    "install": {
+      "method": "git-build",
+      "git": "https://github.com/pyrex41/shen-lua",
+      "needs": ["git", "luajit"]
+    },
+    "_install_note": "git-build clones the repo; bin/shen runs straight from the checkout (KLambda is compiled on first boot and cached -- the build step just warms that cache). Needs luajit at runtime. Alternative: `--method luarocks` installs the published 'shen' rock to /usr/local/bin/shen, but the rock lags the repo (0.9.0 bundles kernel 41.1, not 41.2, so version-sensitive corpus cases fail).",
     "_version_note": "shen-lua has no --version flag; Bifrost falls back to eval of (version)."
   },
 
@@ -158,12 +166,20 @@
     "repl":    ["node", "{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "install": {
-      "method": "npm",
-      "package": "shen-script",
-      "needs": ["npm"]
+    "build": {
+      "cwd": "/Users/reuben/projects/shen/ShenScript",
+      "steps": [
+        ["npm", "install", "--no-audit", "--no-fund"],
+        ["npm", "run", "build-kernel"]
+      ],
+      "out": "bin/shen.js"
     },
-    "_install_note": "npm installs the 'shen-script' package globally. The launcher is bin/shen.js run under node; point $BIFROST_SHENSCRIPT at it (or at a fork's bin/shen.js)."
+    "install": {
+      "method": "git-build",
+      "git": "https://github.com/pyrex41/ShenScript",
+      "needs": ["git", "node", "npm"]
+    },
+    "_install_note": "git-build clones the pyrex41 fork and runs `npm install` + `npm run build-kernel` (renders lib/kernel.js). The launcher is bin/shen.js run under node; point $BIFROST_SHENSCRIPT at it (or at another fork's bin/shen.js). The published npm package 'shen-script' is a library only (no bin/shen.js launcher, no bin entry), so `npm install -g` cannot produce a launcher."
   },
 
   "shen-scheme": {
