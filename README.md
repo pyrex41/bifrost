@@ -252,7 +252,7 @@ Each port declares an **install backend** in `adapters.json` (asdf/mise style):
 | method | ports | what runs |
 |---|---|---|
 | `brew` | shen-scheme (and shen-cl via `--method brew`) | `brew install <formula>` |
-| `luarocks` | shen-lua via `--method luarocks` | `luarocks install shen` (note: the published rock lags the repo — 0.9.0 bundles kernel **41.1**) |
+| `luarocks` | shen-lua via `--method luarocks` | `luarocks install shen` (rock **0.10.0-1**+ bundles kernel **41.2**; only the old 0.9.0-1 was 41.1) |
 | `git-build` | shen-cl, shen-go, shen-rust, shen-lua, ShenScript, shen-julia, shen-swift | clone (if absent) + the port's `build` recipe (single `argv`, or a `steps` list run in order) |
 
 `install` prechecks the required toolchain (and names the exact missing tool
