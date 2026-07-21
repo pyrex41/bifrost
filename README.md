@@ -185,7 +185,7 @@ Defaults (see [`adapters.json`](adapters.json)):
 | `shen-cl` | `BIFROST_SHEN_CL` | `…/shen-cl/bin/sbcl/shen` (also `clisp`, `ecl`) |
 | `shen-go` | `BIFROST_SHEN_GO` | `.bin/shen-go` (build: `go build -o .bin/shen-go ./cmd/shen`) |
 | `shen-rust` | `BIFROST_SHEN_RUST` | `…/shen-rust/target/release/shen-rust` |
-| `shen-lua` | `BIFROST_SHEN_LUA` | `…/shen-lua/bin/shen` (needs `luajit`) |
+| `shen-lua` | `BIFROST_SHEN_LUA` | `…/shen-lua/bin/shen` (needs `luajit`; falls back to the luarocks-installed `/usr/local/bin/shen`) |
 | `ShenScript` | `BIFROST_SHENSCRIPT` | `node …/ShenScript/bin/shen.js` |
 | `shen-scheme` | `BIFROST_SHEN_SCHEME` | `…/shen-scheme/_build/bin/shen-scheme` (Chez) |
 | `shen-julia` | `BIFROST_SHEN_JULIA` | `…/shen-julia/bin/shen` (needs `julia`) |
@@ -197,7 +197,7 @@ live per-port kernel version, install state, and which is active.
 To build shen-go locally into the gitignored `.bin/`:
 
 ```bash
-go build -o .bin/shen-go -C /Users/reuben/projects/shen/shen-go ./cmd/shen
+go build -o .bin/shen-go -C /path/to/shen-go ./cmd/shen
 ```
 
 ### Launcher quirks Bifrost encodes (real cross-impl differences)
@@ -252,14 +252,57 @@ Each port declares an **install backend** in `adapters.json` (asdf/mise style):
 | method | ports | what runs |
 |---|---|---|
 | `brew` | shen-scheme (and shen-cl via `--method brew`) | `brew install <formula>` |
-| `npm` | ShenScript | `npm install -g shen-script` |
-| `luarocks` | shen-lua | `luarocks install shen` |
-| `git-build` | shen-cl, shen-go, shen-rust, shen-julia, shen-swift | clone (if absent) + the port's `build` recipe |
+| `luarocks` | shen-lua via `--method luarocks` | `luarocks install shen` (note: the published rock lags the repo — 0.9.0 bundles kernel **41.1**) |
+| `git-build` | shen-cl, shen-go, shen-rust, shen-lua, ShenScript, shen-julia, shen-swift | clone (if absent) + the port's `build` recipe (single `argv`, or a `steps` list run in order) |
 
 `install` prechecks the required toolchain (and names the exact missing tool
-rather than failing opaquely), refuses `experimental` ports unless `--force`,
-is idempotent (skips an already-resolved launcher), and verifies the launcher
-resolves afterward.
+rather than failing opaquely — when `--method` overrides the default, the
+precheck follows the *chosen* backend), refuses `experimental` ports unless
+`--force`, is idempotent (skips an already-resolved launcher), and verifies
+the launcher resolves afterward.
+
+Port-specific install notes (see each adapter's `_install_note`):
+
+- **shen-go / ShenScript** — git-build clones the **pyrex41 forks**: they carry
+  the standard launcher CLI (`eval -e` / `script` / `--version`, kernel 41.2)
+  that Bifrost drives. Upstream `tiancaiamao/shen-go` lacks those subcommands
+  (S41.1, no clean stdin-EOF exit), and the published npm `shen-script`
+  package is a library with no `bin/shen.js` launcher, so neither can serve as
+  a Bifrost port. ShenScript's recipe is two steps: `npm install` +
+  `npm run build-kernel` (renders `lib/kernel.js`).
+- **shen-lua** — runs straight from the checkout (`bin/shen`); KLambda is
+  compiled on first boot and cached, so the build step just warms that cache.
+  Needs `luajit` at runtime.
+- **shen-cl** — a fresh clone has no `kernel/` or `compiled/` tree.
+  **Bootstrap once by hand** before `bifrost install shen-cl`:
+  `make fetch` (or `scripts/assemble-tarver-kernel.sh`) and then
+  `make precompile SHEN=<any working Shen launcher, e.g. a built shen-go>` —
+  precompiling the kernel requires an already-working Shen. After that,
+  `bifrost install shen-cl` (which runs `make build-sbcl`) works as usual.
+
+#### Fresh-machine bootstrap (verified on a clean Linux container)
+
+On a machine with none of the ports present, this order works with the fewest
+prerequisites (each port lands at the clone/launcher locations in
+`adapters.json` — point a project-local `adapters.json` or `$BIFROST_ADAPTERS`
+copy at your own paths first, since the defaults encode one workspace's
+layout):
+
+1. `bifrost install shen-go` — needs only `git` + `go`; gives you a working
+   41.2 Shen for the shen-cl bootstrap below.
+2. `bifrost install shen-rust` (needs `cargo`), `bifrost install ShenScript`
+   (needs `node`/`npm`), `bifrost install shen-lua` (needs `luajit`).
+3. shen-cl: clone, `make fetch` (kernel sources), `make precompile
+   SHEN=<the shen-go binary from step 1>`, then `bifrost install shen-cl`
+   (needs `sbcl`, e.g. `apt install sbcl`).
+4. `bifrost install shen-scheme --method git-build` (needs `make` + a C
+   compiler + network access to fetch Chez), `bifrost install shen-julia`
+   (needs `julia`), `bifrost install shen-swift` (needs `swift`).
+
+Every failure names the exact missing tool, and missing ports are skipped —
+never a hard error — so a partial fleet (e.g. steps 1–3 on a container with
+no Julia/Swift toolchain) still runs the full matrix across whatever is
+installed.
 
 **Forks** (e.g. `pyrex41/shen-cl`) are first-class:
 - to *run* a fork, point the port's env var at your built binary

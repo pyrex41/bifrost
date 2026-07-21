@@ -82,7 +82,15 @@ func cmdInstall(rest []string, a *Adapters) int {
 		fmt.Fprintf(os.Stderr, "bifrost: no install method known for %s. Build it manually and point $%s at the launcher.\n", name, env)
 		return 2
 	}
-	for _, tool := range spec.Needs {
+	// The adapter's `needs` list describes its DEFAULT method; when --method
+	// overrides it, precheck the chosen backend's own tool instead.
+	needs := spec.Needs
+	if meth != spec.Method {
+		needs = map[string][]string{
+			"brew": {"brew"}, "npm": {"npm"}, "luarocks": {"luarocks"}, "git-build": {"git"},
+		}[meth]
+	}
+	for _, tool := range needs {
 		if _, err := exec.LookPath(tool); err != nil {
 			fmt.Fprintf(os.Stderr, "bifrost: %s needs %q on PATH to install via %s. Install %q first.\n", name, tool, meth, tool)
 			return 2
@@ -159,11 +167,20 @@ func installGitBuild(name string, cfg Adapter, spec *InstallSpec, git, ref strin
 			return false
 		}
 	}
-	argv := make([]string, len(cfg.Build.Argv))
-	for i, x := range cfg.Build.Argv {
-		argv[i] = subTokens(x, map[string]string{"{out}": cfg.Build.Out})
+	steps := cfg.Build.Steps
+	if len(steps) == 0 {
+		steps = [][]string{cfg.Build.Argv}
 	}
-	return runStep(argv, repoDir, nil)
+	for _, step := range steps {
+		argv := make([]string, len(step))
+		for i, x := range step {
+			argv[i] = subTokens(x, map[string]string{"{out}": cfg.Build.Out})
+		}
+		if !runStep(argv, repoDir, nil) {
+			return false
+		}
+	}
+	return true
 }
 
 // cmdBuild delegates to the ratatoskr CLI: `ratatoskr` on PATH, else the Python

@@ -1384,7 +1384,13 @@ def cmd_install(rest, adapters):
         return 2
 
     # Toolchain precheck — fail loud with the exact missing tool, no partial work.
-    for tool in spec.get("needs", []):
+    # The adapter's `needs` list describes its DEFAULT method; when --method
+    # overrides it, precheck the chosen backend's own tool instead.
+    needs = spec.get("needs", [])
+    if method != spec.get("method"):
+        needs = {"brew": ["brew"], "npm": ["npm"], "luarocks": ["luarocks"],
+                 "git-build": ["git"]}.get(method, [])
+    for tool in needs:
         if shutil.which(tool) is None:
             sys.stderr.write("bifrost: %s needs %r on PATH to install via %s. "
                              "Install %r first.\n" % (name, tool, method, tool))
@@ -1440,8 +1446,12 @@ def _install_git_build(name, cfg, spec, args):
     if ref and not _run_step(["git", "-C", repo_dir, "checkout", ref]):
         return False
     out = build.get("out", "")
-    argv = [_sub_tokens(a, {"{out}": out}) for a in build["argv"]]
-    return _run_step(argv, cwd=repo_dir)
+    steps = build.get("steps") or [build["argv"]]
+    for step in steps:
+        argv = [_sub_tokens(a, {"{out}": out}) for a in step]
+        if not _run_step(argv, cwd=repo_dir):
+            return False
+    return True
 
 
 def dispatch_subcommand(argv):
