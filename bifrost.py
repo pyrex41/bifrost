@@ -252,8 +252,12 @@ def build_suite_from_manifest(path):
 def normalize(text, extra_prefixes=()):
     """Normalise an impl's stdout for comparison.
 
-    - strip a trailing run-time banner line ("run time: ... secs") emitted by
-      the kernel `load`/timer on several ports,
+    - strip the run-time banner ("run time: ... secs") emitted by the kernel
+      `load`/timer on several ports, INCLUDING the blank line the banner's
+      leading newline produces (`(cn "\nrun time: " ...)` -> a blank line then
+      the text line). Stripping only the text left the blank as residue, which
+      diverged against a port that omits the whole banner (e.g. shen-lua on a
+      warm fasl-cache hit re-emits the value echo but not the cosmetic banner),
     - strip `(fn NAME)` declaration echoes that `load` prints (shen-lua's file
       path is `(load FILE)`, which echoes every define),
     - strip lone `0`/`nil`/`true` load-echo lines that `load` prints as the
@@ -271,6 +275,10 @@ def normalize(text, extra_prefixes=()):
         s = ln.rstrip()
         stripped = s.strip()
         if stripped.startswith("run time:"):
+            # also drop the blank line the banner's leading "\n" produced, so
+            # the WHOLE cosmetic banner is stripped, not just its text line.
+            if out and out[-1].strip() == "":
+                out.pop()
             continue
         if stripped.startswith("(fn ") and stripped.endswith(")"):
             continue
