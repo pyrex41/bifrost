@@ -896,20 +896,57 @@ TARGET_TO_IMPL = {"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
                   "scheme": "shen-scheme", "swift": "shen-swift"}
 
 
-def _import_ratatoskr_cli():
-    """Import the ratatoskr_cli module from the Ratatoskr repo. Returns the
-    module or None if the repo / wrapper is not present."""
+def _ratatoskr_cli():
+    """Locate the Ratatoskr CLI. Returns (argv_prefix, cwd) or None.
+
+    Ratatoskr removed its duplicate Python CLI (`ratatoskr_cli.py`) in favour
+    of a self-contained Go binary that embeds the shaker, the kernel slice and
+    the builders, so drive that binary rather than importing a module.
+
+    Resolution order:
+      1. $BIFROST_RATATOSKR_BIN            -- an explicit binary
+      2. `ratatoskr` on PATH
+      3. a built `ratatoskr` in $BIFROST_RATATOSKR_DIR
+      4. `go run .` against a checkout at $BIFROST_RATATOSKR_DIR
+    """
+    env_bin = os.environ.get("BIFROST_RATATOSKR_BIN", "")
+    if env_bin:
+        hit = find_executable_path(env_bin)
+        if hit:
+            return [hit], None
+    hit = find_executable_path("ratatoskr")
+    if hit:
+        return [hit], None
     rtk_dir = os.environ.get("BIFROST_RATATOSKR_DIR", RATATOSKR_DIR_DEFAULT)
-    mod_path = os.path.join(rtk_dir, "ratatoskr_cli.py")
-    if not os.path.isfile(mod_path):
-        return None
-    if rtk_dir not in sys.path:
-        sys.path.insert(0, rtk_dir)
+    for name in ("ratatoskr", "ratatoskr.exe"):
+        hit = find_executable_path(os.path.join(rtk_dir, name))
+        if hit:
+            return [hit], None
+    if os.path.isfile(os.path.join(rtk_dir, "main.go")) and find_executable_path("go"):
+        return ["go", "run", "."], rtk_dir
+    return None
+
+
+def _ratatoskr_targets(rtk, cwd):
+    """Stage-2 target names this machine can build, per `ratatoskr targets`.
+
+    Output is one target per line, name first:
+        go     runs on shen-go    needs go
+    """
     try:
-        import ratatoskr_cli
-        return ratatoskr_cli
-    except Exception:
-        return None
+        proc = subprocess.run(wrap_executable(rtk + ["targets"]), cwd=cwd,
+                              stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                              stderr=subprocess.DEVNULL, timeout=TIMEOUT_DEFAULT)
+    except (OSError, subprocess.TimeoutExpired):
+        return set()
+    if proc.returncode != 0:
+        return set()
+    names = set()
+    for line in proc.stdout.decode("utf-8", "replace").splitlines():
+        parts = line.split()
+        if parts:
+            names.add(parts[0])
+    return names
 
 
 def _launcher_argv(impl):
@@ -928,17 +965,23 @@ def run_shake_case(case, available, suite=None):
                    "rc": None, "status": "SKIP"} for n in available}
     extra = suite.get("extra_strip_prefixes", ())
 
-    rtk = _import_ratatoskr_cli()
-    if rtk is None:
-        return {"per_impl": results, "verdict": "PASS",
-                "detail": "SKIPPED: Ratatoskr wrapper not found (set "
-                          "$BIFROST_RATATOSKR_DIR to a checkout with ratatoskr_cli.py)"}
+    found = _ratatoskr_cli()
+    if found is None:
+        # Fail closed. A caller that asked for --shake and got no shaker has
+        # verified nothing; reporting PASS here made an unrun lane look green.
+        rtk_dir = os.environ.get("BIFROST_RATATOSKR_DIR", RATATOSKR_DIR_DEFAULT)
+        return {"per_impl": results, "verdict": "FAIL",
+                "detail": "shake requested but no Ratatoskr CLI found. Put "
+                          "`ratatoskr` on PATH, set $BIFROST_RATATOSKR_BIN to "
+                          "the binary, or point $BIFROST_RATATOSKR_DIR at a "
+                          "checkout with Go available (looked in %s)" % rtk_dir}
+    rtk, rtk_cwd = found
 
     prog = case["program"]
     prog = prog if os.path.isabs(prog) else os.path.join(suite["programs_dir"], prog)
     prog = os.path.abspath(prog)
 
-    # Shake once on a host (output is host-independent). Prefer shen-cl.
+    # Pick the stage-1 host (shake output is host-independent). Prefer shen-cl.
     host_impl = ("shen-cl" if "shen-cl" in available
                  else next((n for n in available if n != "shen-lua"), None)
                  or next(iter(available), None))
@@ -947,41 +990,58 @@ def run_shake_case(case, available, suite=None):
                 "detail": "no impl available to host the shake"}
     host = _launcher_argv(available[host_impl])
     style = "positional" if host_impl == "shen-lua" else "sub"
-    outdir = tempfile.mkdtemp(prefix="bifrost_shake_")
-    try:
-        rtk.shake(prog, outdir, host=host, eval_style=style, quiet=True)
-    except SystemExit as e:
-        return {"per_impl": results, "verdict": "FAIL",
-                "detail": "shake failed on host %s: %s" % (host_impl, e)}
 
-    builders = rtk.load_builders()
+    targets = _ratatoskr_targets(rtk, rtk_cwd)
+    if not targets:
+        return {"per_impl": results, "verdict": "FAIL",
+                "detail": "Ratatoskr CLI reported no stage-2 targets"}
+
     timeout = TIMEOUT_HEAVY
+    outroot = tempfile.mkdtemp(prefix="bifrost_shake_")
     for target, impl_name in TARGET_TO_IMPL.items():
-        if target not in builders or impl_name not in available:
+        if target not in targets or impl_name not in available:
             continue  # leaves the column as SKIP
         r = results[impl_name]
+        # `ratatoskr run` does stage 1 + stage 2 + execute. Each target gets
+        # its own outdir so concurrent builder outputs cannot collide. The
+        # artifact's stdout is passed through verbatim and the CLI keeps its
+        # own chatter on stderr, so capture the two separately: stdout is the
+        # thing being compared, stderr is only diagnostics.
+        outdir = os.path.join(outroot, target)
+        argv = wrap_executable(rtk + ["run", prog, outdir, "--target", target,
+                                      "--host", " ".join(host),
+                                      "--eval-style", style])
         try:
-            run_argv = rtk.build(target, outdir)
-        except SystemExit as e:
-            r.update(status="FAIL", raw="build failed: %s" % e, norm="build-failed")
-            continue
-        if run_argv is None:
-            r.update(status="SKIP", raw="builder tool not on PATH", norm="no-tool")
-            continue
-        try:
-            proc = subprocess.run(wrap_executable(run_argv), stdin=subprocess.DEVNULL,
-                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            proc = subprocess.run(argv, cwd=rtk_cwd, stdin=subprocess.DEVNULL,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                   timeout=timeout)
-            raw = proc.stdout.decode("utf-8", "replace")
-            r.update(raw=raw, norm=normalize(raw, extra), rc=proc.returncode, status="PASS")
         except subprocess.TimeoutExpired:
             r.update(status="FAIL", timeout=True, norm="timeout")
+            continue
+        except OSError as e:
+            r.update(status="FAIL", raw=str(e), norm="build-failed")
+            continue
+        raw = proc.stdout.decode("utf-8", "replace")
+        err = proc.stderr.decode("utf-8", "replace")
+        if proc.returncode == 3:
+            # Documented exit code: this target's toolchain is not on PATH.
+            r.update(status="SKIP", raw=err or "builder tool not on PATH",
+                     norm="no-tool")
+            continue
+        if proc.returncode != 0:
+            r.update(status="FAIL", raw=err or raw, norm="build-failed",
+                     rc=proc.returncode)
+            continue
+        r.update(raw=raw, norm=normalize(raw, extra), rc=proc.returncode,
+                 status="PASS")
 
     # Decide the verdict over the targets that actually ran.
     ran = {n: r for n, r in results.items() if r["status"] in ("PASS", "FAIL")}
     if not ran:
-        return {"per_impl": results, "verdict": "PASS",
-                "detail": "SKIPPED: no buildable targets available"}
+        # Also fail closed: every target skipped means nothing was verified.
+        return {"per_impl": results, "verdict": "FAIL",
+                "detail": "no buildable stage-2 target for any available impl "
+                          "(targets: %s)" % ", ".join(sorted(targets))}
     if any(r["status"] == "FAIL" for r in ran.values()):
         bad = ", ".join("%s(%s)" % (n, r["norm"]) for n, r in ran.items()
                         if r["status"] == "FAIL")
@@ -1313,19 +1373,19 @@ def cmd_build(rest, adapters):
                     help="ratatoskr target (lisp/lua/go/rust/js)")
     ap.add_argument("--run", action="store_true", help="run the artifact after building")
     args = ap.parse_args(rest)
-    rtk = _import_ratatoskr_cli()
-    if rtk is None:
-        sys.stderr.write("bifrost: Ratatoskr not found (set $BIFROST_RATATOSKR_DIR)\n")
+    found = _ratatoskr_cli()
+    if found is None:
+        sys.stderr.write("bifrost: Ratatoskr CLI not found. Put `ratatoskr` on "
+                         "PATH, set $BIFROST_RATATOSKR_BIN, or point "
+                         "$BIFROST_RATATOSKR_DIR at a checkout (needs Go).\n")
         return 2
-    rtk.shake(os.path.abspath(args.file), os.path.abspath(args.outdir), quiet=True)
-    run_argv = rtk.build(args.target, os.path.abspath(args.outdir))
-    if run_argv is None:
-        sys.stderr.write("bifrost: target %r needs a toolchain not on PATH\n" % args.target)
-        return 3
-    if args.run:
-        return subprocess.call(wrap_executable(run_argv))
-    print("built %s artifact; run with:\n  %s" % (args.target, " ".join(run_argv)))
-    return 0
+    rtk, rtk_cwd = found
+    # The Ratatoskr CLI's own build/run verbs do stage 1 + stage 2 in one shot.
+    verb = "run" if args.run else "build"
+    argv = wrap_executable(rtk + [verb, os.path.abspath(args.file),
+                                  os.path.abspath(args.outdir),
+                                  "--target", args.target])
+    return subprocess.call(argv, cwd=rtk_cwd)
 
 
 def _run_step(argv, cwd=None, env_extra=None):
