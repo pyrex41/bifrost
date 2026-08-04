@@ -471,3 +471,7 @@ project's suite (see *Using Bifrost from another Shen program* above).
 [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the matrix
 best-effort. It is fine for CI to build/run only a subset of impls; missing
 impls are **skipped and reported**, not failed.
+
+## License
+
+Apache-2.0.
