@@ -185,6 +185,7 @@
   "shen-scheme": {
     "env": "BIFROST_SHEN_SCHEME",
     "default_paths": [
+      "../shen-scheme/.release/bin/shen-scheme",
       "../shen-scheme/_build/bin/shen-scheme"
     ],
     "build": {
