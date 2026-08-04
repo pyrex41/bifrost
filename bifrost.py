@@ -775,7 +775,9 @@ def build_hush_argv(name, cfg, binpath, prog):
 # Heavy case: ratatoskr stage-1 parity (byte-identical kernel.kl + manifest)
 # --------------------------------------------------------------------------
 
-RATATOSKR_DIR_DEFAULT = "/Users/reuben/projects/shen/ratatoskr"
+# Keep the bundled default relocatable.  Users with a different checkout
+# layout can still override it with BIFROST_RATATOSKR_DIR.
+RATATOSKR_DIR_DEFAULT = os.path.abspath(os.path.join(HERE, "..", "ratatoskr"))
 
 
 def run_ratatoskr_parity(case, available):

@@ -273,9 +273,9 @@ Port-specific install notes (see each adapter's `_install_note`):
 
 On a machine with none of the ports present, this order works with the fewest
 prerequisites (each port lands at the clone/launcher locations in
-`adapters.json` — point a project-local `adapters.json` or `$BIFROST_ADAPTERS`
-copy at your own paths first, since the defaults encode one workspace's
-layout):
+`adapters.json` — the bundled defaults assume sibling checkouts (for example,
+`../shen-go` and `../ratatoskr`). If your ports live elsewhere, point a
+project-local `adapters.json` or `$BIFROST_ADAPTERS` at your own paths first:
 
 1. `bifrost install shen-go` — needs only `git` + `go`; gives you a working
    41.2 Shen for the shen-cl bootstrap below.

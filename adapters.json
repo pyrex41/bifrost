@@ -53,9 +53,9 @@
   "shen-cl": {
     "env": "BIFROST_SHEN_CL",
     "default_paths": [
-      "/Users/reuben/projects/shen/shen-cl/bin/sbcl/shen",
-      "/Users/reuben/projects/shen/shen-cl/bin/clisp/shen",
-      "/Users/reuben/projects/shen/shen-cl/bin/ecl/shen"
+      "../shen-cl/bin/sbcl/shen",
+      "../shen-cl/bin/clisp/shen",
+      "../shen-cl/bin/ecl/shen"
     ],
     "eval":    ["{bin}", "eval", "-q", "-e", "{expr}"],
     "script":  ["{bin}", "script", "{file}"],
@@ -64,7 +64,7 @@
     "hush_writes_file": true,
     "status": "production",
     "build": {
-      "cwd": "/Users/reuben/projects/shen/shen-cl",
+      "cwd": "../shen-cl",
       "argv": ["make", "build-sbcl"],
       "out": "bin/sbcl/shen"
     },
@@ -82,12 +82,12 @@
     "env": "BIFROST_SHEN_GO",
     "default_paths": [
       ".bin/shen-go",
-      "/Users/reuben/projects/shen/shen-go/.bin/shen-go",
-      "/Users/reuben/projects/shen/shen-go/.bin/shen",
-      "/Users/reuben/projects/shen/shen-go/shen"
+      "../shen-go/.bin/shen-go",
+      "../shen-go/.bin/shen",
+      "../shen-go/shen"
     ],
     "build": {
-      "cwd": "/Users/reuben/projects/shen/shen-go",
+      "cwd": "../shen-go",
       "argv": ["go", "build", "-o", "{out}", "./cmd/shen"],
       "out": ".bin/shen-go"
     },
@@ -108,12 +108,12 @@
   "shen-rust": {
     "env": "BIFROST_SHEN_RUST",
     "default_paths": [
-      "/Users/reuben/projects/shen/shen-rust/target/release/shen-rust"
+      "../shen-rust/target/release/shen-rust"
     ],
     "build": {
-      "cwd": "/Users/reuben/projects/shen/shen-rust",
+      "cwd": "../shen-rust",
       "argv": ["cargo", "build", "--release", "--bin", "shen-rust"],
-      "out": "/Users/reuben/projects/shen/shen-rust/target/release/shen-rust"
+      "out": "target/release/shen-rust"
     },
     "eval":    ["{bin}", "eval", "-e", "{expr}"],
     "script":  ["{bin}", "script", "{file}"],
@@ -131,7 +131,7 @@
   "shen-lua": {
     "env": "BIFROST_SHEN_LUA",
     "default_paths": [
-      "/Users/reuben/projects/shen/shen-lua/bin/shen",
+      "../shen-lua/bin/shen",
       "/usr/local/bin/shen"
     ],
     "eval":    ["{bin}", "-e", "{expr}"],
@@ -141,7 +141,7 @@
     "hush_writes_file": false,
     "status": "production",
     "build": {
-      "cwd": "/Users/reuben/projects/shen/shen-lua",
+      "cwd": "../shen-lua",
       "argv": ["bin/shen", "-e", "(version)"],
       "out": "bin/shen"
     },
@@ -157,7 +157,7 @@
   "ShenScript": {
     "env": "BIFROST_SHENSCRIPT",
     "default_paths": [
-      "/Users/reuben/projects/shen/ShenScript/bin/shen.js"
+      "../ShenScript/bin/shen.js"
     ],
     "launcher": ["node"],
     "eval":    ["node", "{bin}", "eval", "-e", "{expr}"],
@@ -167,7 +167,7 @@
     "hush_writes_file": true,
     "status": "production",
     "build": {
-      "cwd": "/Users/reuben/projects/shen/ShenScript",
+      "cwd": "../ShenScript",
       "steps": [
         ["npm", "install", "--no-audit", "--no-fund"],
         ["npm", "run", "build-kernel"]
@@ -185,12 +185,12 @@
   "shen-scheme": {
     "env": "BIFROST_SHEN_SCHEME",
     "default_paths": [
-      "/Users/reuben/projects/shen/shen-scheme/_build/bin/shen-scheme"
+      "../shen-scheme/_build/bin/shen-scheme"
     ],
     "build": {
-      "cwd": "/Users/reuben/projects/shen/shen-scheme",
+      "cwd": "../shen-scheme",
       "argv": ["make", "all"],
-      "out": "/Users/reuben/projects/shen/shen-scheme/_build/bin/shen-scheme"
+      "out": "_build/bin/shen-scheme"
     },
     "eval":    ["{bin}", "eval", "-e", "{expr}"],
     "script":  ["{bin}", "script", "{file}"],
@@ -211,7 +211,7 @@
   "shen-julia": {
     "env": "BIFROST_SHEN_JULIA",
     "default_paths": [
-      "/Users/reuben/projects/shen/shen-julia/bin/shen"
+      "../shen-julia/bin/shen"
     ],
     "eval":    ["{bin}", "eval", "-e", "{expr}"],
     "script":  ["{bin}", "script", "{file}"],
@@ -220,7 +220,7 @@
     "hush_writes_file": true,
     "status": "production",
     "build": {
-      "cwd": "/Users/reuben/projects/shen/shen-julia",
+      "cwd": "../shen-julia",
       "argv": ["julia", "--project=.", "-e", "using Pkg; Pkg.instantiate()"],
       "out": "bin/shen"
     },
@@ -235,7 +235,7 @@
   "shen-swift": {
     "env": "BIFROST_SHEN_SWIFT",
     "default_paths": [
-      "/Users/reuben/projects/shen/shen-swift/.build/release/shen-swift"
+      "../shen-swift/.build/release/shen-swift"
     ],
     "eval": ["{bin}", "eval", "-e", "{expr}"],
     "script": ["{bin}", "script", "{file}"],
@@ -244,9 +244,9 @@
     "hush_writes_file": true,
     "status": "production",
     "build": {
-      "cwd": "/Users/reuben/projects/shen/shen-swift",
+      "cwd": "../shen-swift",
       "argv": ["swift", "build", "-c", "release"],
-      "out": "/Users/reuben/projects/shen/shen-swift/.build/release/shen-swift"
+      "out": ".build/release/shen-swift"
     },
     "install": {
       "method": "git-build",
@@ -259,8 +259,8 @@
   "shen-inets": {
     "env": "BIFROST_SHEN_INETS",
     "default_paths": [
-      "/Users/reuben/projects/shen-inets/shen-inets/bin/shen-inets",
-      "/Users/reuben/projects/shen/inets/shen-inets/bin/shen-inets"
+      "../shen-inets/shen-inets/bin/shen-inets",
+      "../inets/shen-inets/bin/shen-inets"
     ],
     "eval": ["{bin}", "eval", "{expr}"],
     "script": ["{bin}", "script", "{file}"],
