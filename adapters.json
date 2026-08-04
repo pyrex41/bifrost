@@ -255,19 +255,5 @@
     },
     "_install_note": "git-build: clone + `swift build -c release` (Swift 6+ toolchain; macOS or Linux with the open-source toolchain). Self-contained -- the 41.2 .kl kernel ships inside the SwiftPM resource bundle, no separate kernel checkout needed.",
     "_note": "Swift port (shen-swift), 41.2 kernel, built from scratch as a tree-walking KLambda interpreter targeting iOS as well as macOS (no JIT/codegen -- runs inside the iOS sandbox). Drives the kernel's standard launcher (shen.x.launcher.main from extension-launcher.kl) -- same CLI surface as shen-go/shen-rust/shen-julia/ShenScript. Boots the kernel (~1-2.7s release) on every invocation; passes the 41.2 kernel test suite 35/35 groups. A host-side pr override makes *hush* gate ONLY stdout, never an explicit file stream, so -q silences the printed value but file writes still happen (hush_writes_file=true) -- this also lets shen-swift host ratatoskr shakes, which run under -q. -q is NOT passed for normal eval/script cases (it would suppress the value). REPL exits cleanly on stdin EOF (getchar -> exit)."
-  },
-  "shen-inets": {
-    "env": "BIFROST_SHEN_INETS",
-    "default_paths": [
-      "../shen-inets/shen-inets/bin/shen-inets",
-      "../inets/shen-inets/bin/shen-inets"
-    ],
-    "eval": ["{bin}", "eval", "{expr}"],
-    "script": ["{bin}", "script", "{file}"],
-    "version": ["{bin}", "version"],
-    "repl": ["{bin}", "repl"],
-    "hush_writes_file": true,
-    "status": "experimental",
-    "_note": "shen-inets (HVM3 interaction-net port). The launcher compiles each eval/script request as a tiny Shen source program, tree-shakes it with ratatoskr, and runs the cached compiled HVM artifact. It is intentionally not a runtime reader/eval implementation: a manifest with needs-eval=true exits 3, which bifrost records as a capability SKIP. version is a static 41.2 banner and repl provides the corpus-required clean stdin-EOF exit."
   }
 }
