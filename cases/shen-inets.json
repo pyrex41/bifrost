@@ -1,0 +1,12 @@
+{
+  "group": "shen-inets",
+  "cases": [
+    {
+      "name": "shen-inets-full-suite",
+      "mode": "shen-inets-suite",
+      "expect": "shen-suite",
+      "heavy": true,
+      "doc": "Run the guarded canonical suite through `shen-inets suite`; require its stable summary to report exactly 134 passed and 0 failed."
+    }
+  ]
+}
