@@ -7,8 +7,10 @@
 *.out
 /bifrost_*/
 
-# Kernel cache an impl may drop in cwd (e.g. shen-rust).
-.shen-kernel-cache.bin
+# Kernel cache an impl may drop in cwd (e.g. shen-rust; shen-lua writes
+# per-Lua-build files, .shen-kernel-cache.<hash>.bin, as of shen-lua#55).
+.shen-kernel-cache*.bin
+.shen-kernel-cache*.bin.tmp
 
 # Generated KLambda artefacts (e.g. a stray shake/build output in programs/).
 *.kl
