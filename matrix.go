@@ -453,10 +453,7 @@ func buildHushArgv(name string, im Impl, prog string) []string {
 	if name == "shen-lua" {
 		return []string{im.Bin, "-q", prog}
 	}
-	if name == "ShenScript" {
-		return append(append([]string{}, im.Cfg.Launcher...), im.Bin, "eval", "-q", "-l", prog)
-	}
-	return []string{im.Bin, "eval", "-q", "-l", prog}
+	return launcherArgv(im.Cfg, []string{im.Bin, "eval", "-q", "-l", prog})
 }
 
 func bucketJoin(buckets map[string][]string) string {

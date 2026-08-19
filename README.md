@@ -140,9 +140,9 @@ python3 bifrost.py --shake --impls shen-lua,ShenScript # just the fast ones
 
 Artifacts map onto their impl column (lisp→`shen-cl`, lua→`shen-lua`,
 go→`shen-go`, rust→`shen-rust`, js→`ShenScript`, julia→`shen-julia`,
-scheme→`shen-scheme`, swift→`shen-swift`) — all eight ports now have a
+scheme→`shen-scheme`, swift→`shen-swift`, truffle→`shen-truffle`) — all nine ports now have a
 Yggdrasil builder. Needs the per-target toolchains
-(`sbcl`/`luajit`/`go`/`cargo`/`node`/`julia`/`chez`/`swift`) and
+(`sbcl`/`luajit`/`go`/`cargo`/`node`/`julia`/`chez`/`swift`/`mvn` + Java) and
 `$BIFROST_YGGDRASIL_DIR` (default `../yggdrasil`); missing toolchains are
 skipped, not failed. This mode is minutes, not seconds: go/rust compile from
 scratch, and the **julia** target AOT-bakes a per-program sysimage
@@ -179,8 +179,9 @@ Defaults (see [`adapters.json`](adapters.json)):
 | `shen-scheme` | `BIFROST_SHEN_SCHEME` | `…/shen-scheme/_build/bin/shen-scheme` (Chez) |
 | `shen-julia` | `BIFROST_SHEN_JULIA` | `…/shen-julia/bin/shen` (needs `julia`) |
 | `shen-swift` | `BIFROST_SHEN_SWIFT` | `…/shen-swift/.build/release/shen-swift` (needs `swift`) |
+| `shen-truffle` | `BIFROST_SHEN_TRUFFLE` | `…/shen-truffle/target/shen-truffle/bin/shen-truffle` (build: `mvn package -DskipTests`) |
 
-All eight target ShenOSKernel **41.2**. Run `bifrost impls --versions` to see the
+All nine target ShenOSKernel **41.2**. Run `bifrost impls --versions` to see the
 live per-port kernel version, install state, and which is active.
 
 To build shen-go locally into the gitignored `.bin/`:
@@ -242,7 +243,7 @@ Each port declares an **install backend** in `adapters.json` (asdf/mise style):
 |---|---|---|
 | `brew` | shen-scheme (and shen-cl via `--method brew`) | `brew install <formula>` |
 | `luarocks` | shen-lua via `--method luarocks` | `luarocks install shen` (rock **0.10.0-1**+ bundles kernel **41.2**; only the old 0.9.0-1 was 41.1) |
-| `git-build` | shen-cl, shen-go, shen-rust, shen-lua, ShenScript, shen-julia, shen-swift | clone (if absent) + the port's `build` recipe (single `argv`, or a `steps` list run in order) |
+| `git-build` | shen-cl, shen-go, shen-rust, shen-lua, ShenScript, shen-julia, shen-swift, shen-truffle | clone (if absent) + the port's `build` recipe (single `argv`, or a `steps` list run in order) |
 
 `install` prechecks the required toolchain (and names the exact missing tool
 rather than failing opaquely — when `--method` overrides the default, the
@@ -286,7 +287,8 @@ project-local `adapters.json` or `$BIFROST_ADAPTERS` at your own paths first:
    (needs `sbcl`, e.g. `apt install sbcl`).
 4. `bifrost install shen-scheme --method git-build` (needs `make` + a C
    compiler + network access to fetch Chez), `bifrost install shen-julia`
-   (needs `julia`), `bifrost install shen-swift` (needs `swift`).
+   (needs `julia`), `bifrost install shen-swift` (needs `swift`), and
+   `bifrost install shen-truffle` (needs Maven and GraalVM Java).
 
 Every failure names the exact missing tool, and missing ports are skipped —
 never a hard error — so a partial fleet (e.g. steps 1–3 on a container with

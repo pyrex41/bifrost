@@ -82,6 +82,30 @@ func subTokens(tok string, subs map[string]string) string {
 	return tok
 }
 
+// launcherArgv applies an adapter's optional command prefix (for example
+// ["node"] for a JavaScript launcher). Templates may include the prefix for
+// backwards compatibility; in that case it is not duplicated.
+func launcherArgv(cfg Adapter, argv []string) []string {
+	if len(cfg.Launcher) == 0 {
+		return argv
+	}
+	if len(argv) >= len(cfg.Launcher) {
+		match := true
+		for i := range cfg.Launcher {
+			if argv[i] != cfg.Launcher[i] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return argv
+		}
+	}
+	out := make([]string, 0, len(cfg.Launcher)+len(argv))
+	out = append(out, cfg.Launcher...)
+	return append(out, argv...)
+}
+
 // normalize strips launcher chatter so behaviour is compared, not chrome. A
 // faithful port of bifrost.py's normalize (run-time banner, (fn ...) load
 // echoes, shen-lua's trailing value echo, suite-supplied prefixes, blank runs).
@@ -236,5 +260,5 @@ func buildArgv(impl Impl, c aCase, programsDir string) []string {
 	for i, t := range tmpl {
 		out[i] = subTokens(t, subs)
 	}
-	return out
+	return launcherArgv(impl.Cfg, out)
 }

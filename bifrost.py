@@ -169,7 +169,7 @@ def find_adapters_path():
 ADAPTERS_PATH = os.path.join(HERE, "adapters.json")  # packaged default
 
 # Order in which impls appear in the matrix.
-IMPL_ORDER = ["shen-cl", "shen-go", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift"]
+IMPL_ORDER = ["shen-cl", "shen-go", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle"]
 
 TIMEOUT_DEFAULT = 60      # seconds, per invocation
 TIMEOUT_HEAVY = 300       # seconds, for heavy (yggdrasil) cases
@@ -454,7 +454,20 @@ def build_argv(impl, case, programs_dir=PROGRAMS_DIR):
         tmpl = cfg.get("repl") or cfg["eval"]
     else:
         raise ValueError("unknown mode %r" % mode)
-    return [_sub_tokens(t, subs) for t in tmpl]
+    return _with_launcher(cfg, [_sub_tokens(t, subs) for t in tmpl])
+
+
+def _with_launcher(cfg, argv):
+    """Apply an optional launcher command prefix exactly once.
+
+    Older adapter templates (notably ShenScript) already include their
+    prefix, while newer templates keep it in ``launcher``. Supporting both
+    makes adapter overrides and OS-specific templates interoperable.
+    """
+    prefix = list(cfg.get("launcher", []))
+    if not prefix or argv[:len(prefix)] == prefix:
+        return argv
+    return prefix + list(argv)
 
 
 def run_case_on_impl(name, impl, case, heavy_timeout, suite=None):
@@ -765,10 +778,7 @@ def build_hush_argv(name, cfg, binpath, prog):
     """
     if name == "shen-lua":
         return [binpath, "-q", prog]
-    if name == "ShenScript":
-        launch = cfg.get("launcher", [])
-        return launch + [binpath, "eval", "-q", "-l", prog]
-    return [binpath, "eval", "-q", "-l", prog]
+    return _with_launcher(cfg, [binpath, "eval", "-q", "-l", prog])
 
 
 # --------------------------------------------------------------------------
@@ -881,7 +891,7 @@ def run_yggdrasil_parity(case, available):
 # --------------------------------------------------------------------------
 
 # Each Yggdrasil build target maps onto the impl column it runs on, so shake
-# results line up with the normal matrix. All eight bifrost ports now have a
+# results line up with the normal matrix. All nine bifrost ports now have a
 # Yggdrasil builder.
 #
 # The `julia` target is special: shen-julia's stand-alone artifact is produced
@@ -895,7 +905,7 @@ def run_yggdrasil_parity(case, available):
 # shaken slice (boot a ~200-line kernel instead of the full ~2500-line kernel).
 TARGET_TO_IMPL = {"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
                   "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
-                  "scheme": "shen-scheme", "swift": "shen-swift"}
+                  "scheme": "shen-scheme", "swift": "shen-swift", "truffle": "shen-truffle"}
 
 
 def _yggdrasil_cli():
@@ -1295,7 +1305,8 @@ def cmd_launch(verb, rest, adapters):
     if verb == "repl":
         # Interactive: inherit the terminal, don't capture.
         tmpl = impl["cfg"].get("repl") or impl["cfg"]["eval"]
-        argv = wrap_executable([_sub_tokens(t, {"{bin}": impl["bin"]}) for t in tmpl])
+        argv = _with_launcher(impl["cfg"], [_sub_tokens(t, {"{bin}": impl["bin"]}) for t in tmpl])
+        argv = wrap_executable(argv)
         sys.stderr.write("# bifrost repl on %s (%s)\n" % (name, source))
         try:
             return subprocess.call(argv)
