@@ -183,11 +183,10 @@ func installGitBuild(name string, cfg Adapter, spec *InstallSpec, git, ref strin
 	return true
 }
 
-// cmdBuild delegates to the ratatoskr CLI: `ratatoskr` on PATH, else the Python
-// wrapper at $BIFROST_RATATOSKR_DIR (transition), to shake+build an artifact.
+// cmdBuild delegates to the Yggdrasil CLI to shake and build an artifact.
 func cmdBuild(rest []string, a *Adapters) int {
 	fs := newFlagSet("bifrost build")
-	target := fs.String("target", "", "ratatoskr target (lisp/lua/go/rust/js/julia)")
+	target := fs.String("target", "", "yggdrasil target (lisp/lua/go/rust/js/julia)")
 	run := fs.Bool("run", false, "run the artifact after building")
 	if err := fs.Parse(reorderArgs(rest, "target")); err != nil {
 		return 2
@@ -203,16 +202,10 @@ func cmdBuild(rest []string, a *Adapters) int {
 	}
 	args := []string{sub, file, outdir, "--target", *target}
 
-	if bin, err := exec.LookPath("ratatoskr"); err == nil {
-		return runForeground(append([]string{bin}, args...), "")
+	if cli := resolveYggdrasil(); cli != nil {
+		return runForeground(append(cli, args...), "")
 	}
-	if dir := os.Getenv("BIFROST_RATATOSKR_DIR"); dir != "" {
-		py := filepath.Join(dir, "ratatoskr_cli.py")
-		if _, err := os.Stat(py); err == nil {
-			return runForeground(append([]string{"python3", py}, args...), "")
-		}
-	}
-	fmt.Fprintln(os.Stderr, "bifrost: ratatoskr CLI not found (install it on PATH or set $BIFROST_RATATOSKR_DIR)")
+	fmt.Fprintln(os.Stderr, "bifrost: Yggdrasil CLI not found (install it on PATH or set $YGGDRASIL_BIN / $BIFROST_YGGDRASIL_DIR)")
 	return 2
 }
 

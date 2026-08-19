@@ -14,9 +14,9 @@ import (
 	"time"
 )
 
-// Each Ratatoskr build target maps onto the impl column it runs on, so shake
+// Each Yggdrasil build target maps onto the impl column it runs on, so shake
 // results line up with the normal matrix. All eight bifrost ports now have a
-// Ratatoskr builder.
+// Yggdrasil builder.
 //
 // The `julia` target is special: shen-julia's stand-alone artifact AOT-compiles
 // the shaken kernel+user KL into baked Julia methods and (per builders.json)
@@ -34,25 +34,25 @@ var targetToImpl = map[string]string{
 
 const shakeTargetTimeout = 20 * time.Minute // accommodates the julia sysimage bake
 
-// resolveRatatoskr returns the argv prefix to invoke the Go ratatoskr CLI, or
-// nil. Order: `ratatoskr` on PATH (the installed Go binary) -> $RATATOSKR_BIN
-// -> a sibling dev build (./.bin or $BIFROST_RATATOSKR_DIR). The Python wrapper
-// is no longer used — bifrost and ratatoskr are both Go.
-func resolveRatatoskr() []string {
-	if p, err := exec.LookPath("ratatoskr"); err == nil {
+// resolveYggdrasil returns the argv prefix to invoke the Go yggdrasil CLI, or
+// nil. Order: `yggdrasil` on PATH (the installed Go binary) -> $YGGDRASIL_BIN
+// -> a sibling dev build (./.bin or $BIFROST_YGGDRASIL_DIR). The Python wrapper
+// is no longer used — bifrost and yggdrasil are both Go.
+func resolveYggdrasil() []string {
+	if p, err := exec.LookPath("yggdrasil"); err == nil {
 		return []string{p}
 	}
 	var cands []string
-	if v := os.Getenv("RATATOSKR_BIN"); v != "" {
+	if v := os.Getenv("YGGDRASIL_BIN"); v != "" {
 		cands = append(cands, v)
 	}
-	if d := os.Getenv("BIFROST_RATATOSKR_DIR"); d != "" {
-		cands = append(cands, filepath.Join(d, ".bin", "ratatoskr-go"), filepath.Join(d, "ratatoskr"))
+	if d := os.Getenv("BIFROST_YGGDRASIL_DIR"); d != "" {
+		cands = append(cands, filepath.Join(d, ".bin", "yggdrasil"), filepath.Join(d, "yggdrasil"))
 	}
 	cwd, _ := os.Getwd()
 	cands = append(cands,
-		filepath.Join(cwd, "..", "ratatoskr", ".bin", "ratatoskr-go"),
-		filepath.Join(cwd, "..", "ratatoskr", "ratatoskr"))
+		filepath.Join(cwd, "..", "yggdrasil", ".bin", "yggdrasil"),
+		filepath.Join(cwd, "..", "yggdrasil", "yggdrasil"))
 	for _, c := range cands {
 		if _, err := os.Stat(c); err == nil {
 			abs, _ := filepath.Abs(c)
@@ -62,7 +62,7 @@ func resolveRatatoskr() []string {
 	return nil
 }
 
-// runShakeCase builds a standalone artifact for each target via the Go ratatoskr
+// runShakeCase builds a standalone artifact for each target via the Go yggdrasil
 // CLI, runs it, and diffs the artifact outputs (the real stand-alone deploy
 // path). Mirrors evaluateCase's return shape so it drops into the matrix.
 func runShakeCase(c aCase, available map[string]Impl, s suite, programsDir string) caseResult {
@@ -70,10 +70,10 @@ func runShakeCase(c aCase, available map[string]Impl, s suite, programsDir strin
 	for n := range available {
 		results[n] = &implResult{Status: "SKIP"}
 	}
-	rat := resolveRatatoskr()
-	if rat == nil {
+	ygg := resolveYggdrasil()
+	if ygg == nil {
 		return caseResult{PerImpl: results, Verdict: "PASS",
-			Detail: "SKIPPED: ratatoskr CLI not found (go install github.com/pyrex41/ratatoskr@latest, or set $RATATOSKR_BIN / $BIFROST_RATATOSKR_DIR)"}
+			Detail: "SKIPPED: yggdrasil CLI not found (go install github.com/pyrex41/yggdrasil@latest, or set $YGGDRASIL_BIN / $BIFROST_YGGDRASIL_DIR)"}
 	}
 	prog := c.Program
 	if !filepath.IsAbs(prog) {
@@ -95,7 +95,7 @@ func runShakeCase(c aCase, available map[string]Impl, s suite, programsDir strin
 		}
 		r := results[impl]
 		out := filepath.Join(tmp, target)
-		argv := append(append([]string{}, rat...), "run", prog, out, "--target", target)
+		argv := append(append([]string{}, ygg...), "run", prog, out, "--target", target)
 		ctx, cancel := context.WithTimeout(context.Background(), shakeTargetTimeout)
 		var buf bytes.Buffer
 		cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
@@ -160,27 +160,27 @@ func runShakeCase(c aCase, available map[string]Impl, s suite, programsDir strin
 		Detail: fmt.Sprintf("shaken artifacts BYTE-IDENTICAL across %d targets (%s)", len(ran), strings.Join(sortedKeys(ran), ", "))}
 }
 
-// ratatoskrRepoDir resolves the Ratatoskr repo (for tests/fib.shen etc.):
-// $BIFROST_RATATOSKR_DIR, else a sibling ../ratatoskr.
-func ratatoskrRepoDir() string {
-	if d := os.Getenv("BIFROST_RATATOSKR_DIR"); d != "" {
+// yggdrasilRepoDir resolves the Yggdrasil repo (for tests/fib.shen etc.):
+// $BIFROST_YGGDRASIL_DIR, else a sibling ../yggdrasil.
+func yggdrasilRepoDir() string {
+	if d := os.Getenv("BIFROST_YGGDRASIL_DIR"); d != "" {
 		return d
 	}
 	cwd, _ := os.Getwd()
-	return filepath.Join(cwd, "..", "ratatoskr")
+	return filepath.Join(cwd, "..", "yggdrasil")
 }
 
-// runRatatoskrParity shakes the program on EACH available host (via the Go
-// ratatoskr CLI's --host) and asserts the produced kernel.kl + manifest are
+// runYggdrasilParity shakes the program on EACH available host (via the Go
+// yggdrasil CLI's --host) and asserts the produced kernel.kl + manifest are
 // byte-identical across hosts (the user KL differs only by gensym counter, so
 // it is not compared). The Go analogue of the Python parity runner.
-func runRatatoskrParity(c aCase, available map[string]Impl) caseResult {
+func runYggdrasilParity(c aCase, available map[string]Impl) caseResult {
 	results := map[string]*implResult{}
 	for n := range available {
 		results[n] = &implResult{Status: "SKIP"}
 	}
-	rat := resolveRatatoskr()
-	repo := ratatoskrRepoDir()
+	ygg := resolveYggdrasil()
+	repo := yggdrasilRepoDir()
 	// shake_files is a JSON array literal like ["tests/fib.shen"]; take the first.
 	rel := "tests/fib.shen"
 	if c.ShakeFiles != "" {
@@ -193,16 +193,16 @@ func runRatatoskrParity(c aCase, available map[string]Impl) caseResult {
 		}
 	}
 	prog := filepath.Join(repo, rel)
-	if rat == nil || !fileExists(filepath.Join(repo, "ratatoskr.shen")) || !fileExists(prog) {
+	if ygg == nil || !fileExists(filepath.Join(repo, "yggdrasil.shen")) || !fileExists(prog) {
 		return caseResult{PerImpl: results, Verdict: "PASS",
-			Detail: "SKIPPED: ratatoskr CLI or repo not found (set $BIFROST_RATATOSKR_DIR / $RATATOSKR_BIN)"}
+			Detail: "SKIPPED: yggdrasil CLI or repo not found (set $BIFROST_YGGDRASIL_DIR / $YGGDRASIL_BIN)"}
 	}
 	tmp, _ := os.MkdirTemp("", "bifrost_goparity_")
 	type dig struct{ kernel, manifest string }
 	digs := map[string]dig{}
 	for _, name := range sortedImpls(available) {
 		// shen-julia hosts the shake correctly but, with no sysimage, loading
-		// ratatoskr + walking the callgraph in the interpreter takes minutes —
+		// yggdrasil + walking the callgraph in the interpreter takes minutes —
 		// impractical for this gate. Skip it as a parity HOST (it remains a
 		// first-class shake TARGET). Set BIFROST_PARITY_JULIA=1 to include it.
 		if name == "shen-julia" && os.Getenv("BIFROST_PARITY_JULIA") == "" {
@@ -213,7 +213,7 @@ func runRatatoskrParity(c aCase, available map[string]Impl) caseResult {
 		im := available[name]
 		out := filepath.Join(tmp, name)
 		launcher := append(append([]string{}, im.Cfg.Launcher...), im.Bin)
-		argv := append(append([]string{}, rat...),
+		argv := append(append([]string{}, ygg...),
 			"shake", prog, out, "--host", strings.Join(launcher, " "))
 		if name == "shen-lua" {
 			argv = append(argv, "--eval-style", "positional")
@@ -224,7 +224,7 @@ func runRatatoskrParity(c aCase, available map[string]Impl) caseResult {
 		err := cmd.Run()
 		cancel()
 		r := results[name]
-		kpath, mpath := filepath.Join(out, "kernel.kl"), filepath.Join(out, "ratatoskr.manifest")
+		kpath, mpath := filepath.Join(out, "kernel.kl"), filepath.Join(out, "yggdrasil.manifest")
 		if err != nil || !fileNonEmpty(kpath) || !fileNonEmpty(mpath) {
 			r.Status, r.Norm = "FAIL", "no/empty artefacts"
 			continue
@@ -260,7 +260,7 @@ func runRatatoskrParity(c aCase, available map[string]Impl) caseResult {
 		break
 	}
 	return caseResult{PerImpl: results, Verdict: "PASS",
-		Detail: fmt.Sprintf("kernel.kl + ratatoskr.manifest BYTE-IDENTICAL across %d hosts (kernel md5 %s, manifest md5 %s)", len(digs), sample.kernel[:8], sample.manifest[:8])}
+		Detail: fmt.Sprintf("kernel.kl + yggdrasil.manifest BYTE-IDENTICAL across %d hosts (kernel md5 %s, manifest md5 %s)", len(digs), sample.kernel[:8], sample.manifest[:8])}
 }
 
 func fileExists(p string) bool { _, err := os.Stat(p); return err == nil }

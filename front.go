@@ -133,6 +133,7 @@ func cmdLaunch(verb string, rest []string, a *Adapters) int {
 		for i, t := range tmpl {
 			argv[i] = subTokens(t, map[string]string{"{bin}": im.Bin})
 		}
+		argv = launcherArgv(im.Cfg, argv)
 		argv = wrapExecutable(argv)
 		fmt.Fprintf(os.Stderr, "# bifrost repl on %s (%s)\n", name, source)
 		cmd := exec.Command(argv[0], argv[1:]...)

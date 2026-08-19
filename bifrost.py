@@ -19,7 +19,7 @@ source of truth and works with just `python3 bifrost.py`.
 
 Usage:
     python3 bifrost.py                  # run all non-heavy cases, print matrix
-    python3 bifrost.py --heavy          # also run heavy (ratatoskr) cases
+    python3 bifrost.py --heavy          # also run heavy (yggdrasil) cases
     python3 bifrost.py --only NAME ...  # run only the named cases
     python3 bifrost.py --impls a,b      # restrict to a subset of impls
     python3 bifrost.py --list           # list discovered impls + cases
@@ -40,7 +40,7 @@ via subcommands that reuse the same adapters.json port registry:
     bifrost impls [--versions]      # list ports (state, live kernel, status)
     bifrost use IMPL [--project]    # select the active port (global or ./.bifrost-impl)
     bifrost install IMPL            # install a port via its backend (brew/npm/luarocks/git-build)
-    bifrost build FILE OUT --target T   # standalone artifact (delegates to Ratatoskr)
+    bifrost build FILE OUT --target T   # standalone artifact (delegates to Yggdrasil)
 
 Exit code is non-zero on a real FAILURE. KNOWN DIVERGENCES are reported in
 their own section and do NOT, by themselves, fail the run.
@@ -169,10 +169,10 @@ def find_adapters_path():
 ADAPTERS_PATH = os.path.join(HERE, "adapters.json")  # packaged default
 
 # Order in which impls appear in the matrix.
-IMPL_ORDER = ["shen-cl", "shen-go", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift"]
+IMPL_ORDER = ["shen-cl", "shen-go", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle"]
 
 TIMEOUT_DEFAULT = 60      # seconds, per invocation
-TIMEOUT_HEAVY = 300       # seconds, for heavy (ratatoskr) cases
+TIMEOUT_HEAVY = 300       # seconds, for heavy (yggdrasil) cases
 
 
 # --------------------------------------------------------------------------
@@ -454,7 +454,20 @@ def build_argv(impl, case, programs_dir=PROGRAMS_DIR):
         tmpl = cfg.get("repl") or cfg["eval"]
     else:
         raise ValueError("unknown mode %r" % mode)
-    return [_sub_tokens(t, subs) for t in tmpl]
+    return _with_launcher(cfg, [_sub_tokens(t, subs) for t in tmpl])
+
+
+def _with_launcher(cfg, argv):
+    """Apply an optional launcher command prefix exactly once.
+
+    Older adapter templates (notably ShenScript) already include their
+    prefix, while newer templates keep it in ``launcher``. Supporting both
+    makes adapter overrides and OS-specific templates interoperable.
+    """
+    prefix = list(cfg.get("launcher", []))
+    if not prefix or argv[:len(prefix)] == prefix:
+        return argv
+    return prefix + list(argv)
 
 
 def run_case_on_impl(name, impl, case, heavy_timeout, suite=None):
@@ -765,46 +778,43 @@ def build_hush_argv(name, cfg, binpath, prog):
     """
     if name == "shen-lua":
         return [binpath, "-q", prog]
-    if name == "ShenScript":
-        launch = cfg.get("launcher", [])
-        return launch + [binpath, "eval", "-q", "-l", prog]
-    return [binpath, "eval", "-q", "-l", prog]
+    return _with_launcher(cfg, [binpath, "eval", "-q", "-l", prog])
 
 
 # --------------------------------------------------------------------------
-# Heavy case: ratatoskr stage-1 parity (byte-identical kernel.kl + manifest)
+# Heavy case: yggdrasil stage-1 parity (byte-identical kernel.kl + manifest)
 # --------------------------------------------------------------------------
 
 # Keep the bundled default relocatable.  Users with a different checkout
-# layout can still override it with BIFROST_RATATOSKR_DIR.
-RATATOSKR_DIR_DEFAULT = os.path.abspath(os.path.join(HERE, "..", "ratatoskr"))
+# layout can still override it with BIFROST_YGGDRASIL_DIR.
+YGGDRASIL_DIR_DEFAULT = os.path.abspath(os.path.join(HERE, "..", "yggdrasil"))
 
 
-def run_ratatoskr_parity(case, available):
-    """Run ratatoskr.shake on each host and assert kernel.kl + manifest are
+def run_yggdrasil_parity(case, available):
+    """Run yggdrasil.shake on each host and assert kernel.kl + manifest are
     BYTE-IDENTICAL across all available hosts.
 
     The user KL (e.g. fib.kl) differs only by gensym counter, so we DO NOT
-    assert on it -- only on kernel.kl and ratatoskr.manifest, which are the
+    assert on it -- only on kernel.kl and yggdrasil.manifest, which are the
     deterministic stage-1 artefacts.
 
     Critical gotcha: drive shen-lua / shen-rust WITHOUT -q, or `pr` writes
     zero-byte files (see the hush-file-write divergence).
     """
-    rtk_dir = os.environ.get("BIFROST_RATATOSKR_DIR", RATATOSKR_DIR_DEFAULT)
+    ygg_dir = os.environ.get("BIFROST_YGGDRASIL_DIR", YGGDRASIL_DIR_DEFAULT)
     results = {}
-    if not os.path.isfile(os.path.join(rtk_dir, "ratatoskr.shen")):
+    if not os.path.isfile(os.path.join(ygg_dir, "yggdrasil.shen")):
         for name in available:
-            results[name] = {"raw": "ratatoskr.shen not found in %s" % rtk_dir,
-                             "norm": "no-ratatoskr", "ok": None, "timeout": False,
+            results[name] = {"raw": "yggdrasil.shen not found in %s" % ygg_dir,
+                             "norm": "no-yggdrasil", "ok": None, "timeout": False,
                              "rc": None, "status": "SKIP"}
         return {"per_impl": results, "verdict": "PASS",
-                "detail": "SKIPPED: ratatoskr repo not found at %s "
-                          "(set $BIFROST_RATATOSKR_DIR)" % rtk_dir}
+                "detail": "SKIPPED: yggdrasil repo not found at %s "
+                          "(set $BIFROST_YGGDRASIL_DIR)" % ygg_dir}
 
     files_arg = case.get("shake_files", '["tests/fib.shen"]')
     digests = {}  # name -> (kernel_md5, manifest_md5) or None
-    tmproot = tempfile.mkdtemp(prefix="bifrost_rtk_")
+    tmproot = tempfile.mkdtemp(prefix="bifrost_ygg_")
     for name, impl in available.items():
         cfg = impl["cfg"]
         binpath = impl["bin"]
@@ -812,8 +822,8 @@ def run_ratatoskr_parity(case, available):
         os.makedirs(outdir, exist_ok=True)
         drv = os.path.join(tmproot, "%s_shake.shen" % name)
         with open(drv, "w") as f:
-            f.write('(load "ratatoskr.shen")\n')
-            f.write('(ratatoskr.shake %s "%s")\n' % (files_arg, outdir))
+            f.write('(load "yggdrasil.shen")\n')
+            f.write('(yggdrasil.shake %s "%s")\n' % (files_arg, outdir))
         # NB: NO -q for any host here (lua/rust would silence the file writes).
         if name == "shen-lua":
             argv = [binpath, drv]
@@ -823,7 +833,7 @@ def run_ratatoskr_parity(case, available):
             argv = [binpath, "eval", "-l", drv]
         argv = wrap_executable(argv)
         try:
-            subprocess.run(argv, cwd=rtk_dir, stdin=subprocess.DEVNULL,
+            subprocess.run(argv, cwd=ygg_dir, stdin=subprocess.DEVNULL,
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                            timeout=TIMEOUT_HEAVY)
         except subprocess.TimeoutExpired:
@@ -832,7 +842,7 @@ def run_ratatoskr_parity(case, available):
             digests[name] = None
             continue
         kpath = os.path.join(outdir, "kernel.kl")
-        mpath = os.path.join(outdir, "ratatoskr.manifest")
+        mpath = os.path.join(outdir, "yggdrasil.manifest")
         if os.path.isfile(kpath) and os.path.getsize(kpath) > 0 \
                 and os.path.isfile(mpath) and os.path.getsize(mpath) > 0:
             import hashlib
@@ -865,7 +875,7 @@ def run_ratatoskr_parity(case, available):
             "%s=%s/%s" % (n, d[0][:8], d[1][:8]) for n, d in produced.items())
     elif verdict == "PASS":
         sample = next(iter(distinct)) if distinct else ("?", "?")
-        detail = ("kernel.kl + ratatoskr.manifest BYTE-IDENTICAL across %d hosts "
+        detail = ("kernel.kl + yggdrasil.manifest BYTE-IDENTICAL across %d hosts "
                   "(kernel md5 %s, manifest md5 %s)"
                   % (len(produced), sample[0][:8], sample[1][:8]))
     else:
@@ -874,15 +884,15 @@ def run_ratatoskr_parity(case, available):
 
 
 # --------------------------------------------------------------------------
-# Shake-then-run: shake a script-mode program via Ratatoskr, build a standalone
+# Shake-then-run: shake a script-mode program via Yggdrasil, build a standalone
 # artifact for each target, run it, and diff the artifacts against each other.
 # This exercises the real stand-alone DEPLOY path (not load-from-source), so it
 # is the strongest form of cross-impl agreement. Opt-in via --shake.
 # --------------------------------------------------------------------------
 
-# Each Ratatoskr build target maps onto the impl column it runs on, so shake
-# results line up with the normal matrix. All eight bifrost ports now have a
-# Ratatoskr builder.
+# Each Yggdrasil build target maps onto the impl column it runs on, so shake
+# results line up with the normal matrix. All nine bifrost ports now have a
+# Yggdrasil builder.
 #
 # The `julia` target is special: shen-julia's stand-alone artifact is produced
 # by AOT-compiling the shaken kernel+user KL into baked Julia methods and (per
@@ -895,48 +905,49 @@ def run_ratatoskr_parity(case, available):
 # shaken slice (boot a ~200-line kernel instead of the full ~2500-line kernel).
 TARGET_TO_IMPL = {"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
                   "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
-                  "scheme": "shen-scheme", "swift": "shen-swift"}
+                  "scheme": "shen-scheme", "swift": "shen-swift", "truffle": "shen-truffle"}
 
 
-def _ratatoskr_cli():
-    """Locate the Ratatoskr CLI. Returns (argv_prefix, cwd) or None.
+def _yggdrasil_cli():
+    """Locate the Yggdrasil CLI. Returns (argv_prefix, cwd) or None.
 
-    Ratatoskr removed its duplicate Python CLI (`ratatoskr_cli.py`) in favour
+    Yggdrasil removed its duplicate Python CLI (`yggdrasil_cli.py`) in favour
     of a self-contained Go binary that embeds the shaker, the kernel slice and
     the builders, so drive that binary rather than importing a module.
 
     Resolution order:
-      1. $BIFROST_RATATOSKR_BIN            -- an explicit binary
-      2. `ratatoskr` on PATH
-      3. a built `ratatoskr` in $BIFROST_RATATOSKR_DIR
-      4. `go run .` against a checkout at $BIFROST_RATATOSKR_DIR
+      1. $BIFROST_YGGDRASIL_BIN            -- an explicit binary
+      2. `yggdrasil` on PATH
+      3. a built `yggdrasil` in $BIFROST_YGGDRASIL_DIR
+      4. `go run .` against a checkout at $BIFROST_YGGDRASIL_DIR
     """
-    env_bin = os.environ.get("BIFROST_RATATOSKR_BIN", "")
+    env_bin = os.environ.get("BIFROST_YGGDRASIL_BIN", "")
     if env_bin:
         hit = find_executable_path(env_bin)
         if hit:
             return [hit], None
-    hit = find_executable_path("ratatoskr")
+    hit = find_executable_path("yggdrasil")
     if hit:
         return [hit], None
-    rtk_dir = os.environ.get("BIFROST_RATATOSKR_DIR", RATATOSKR_DIR_DEFAULT)
-    for name in ("ratatoskr", "ratatoskr.exe"):
-        hit = find_executable_path(os.path.join(rtk_dir, name))
+    ygg_dir = os.environ.get("BIFROST_YGGDRASIL_DIR", YGGDRASIL_DIR_DEFAULT)
+    for rel in ((".bin", "yggdrasil"), (".bin", "yggdrasil.exe"),
+                ("yggdrasil",), ("yggdrasil.exe",)):
+        hit = find_executable_path(os.path.join(ygg_dir, *rel))
         if hit:
             return [hit], None
-    if os.path.isfile(os.path.join(rtk_dir, "main.go")) and find_executable_path("go"):
-        return ["go", "run", "."], rtk_dir
+    if os.path.isfile(os.path.join(ygg_dir, "main.go")) and find_executable_path("go"):
+        return ["go", "run", "."], ygg_dir
     return None
 
 
-def _ratatoskr_targets(rtk, cwd):
-    """Stage-2 target names this machine can build, per `ratatoskr targets`.
+def _yggdrasil_targets(ygg, cwd):
+    """Stage-2 target names this machine can build, per `yggdrasil targets`.
 
     Output is one target per line, name first:
         go     runs on shen-go    needs go
     """
     try:
-        proc = subprocess.run(wrap_executable(rtk + ["targets"]), cwd=cwd,
+        proc = subprocess.run(wrap_executable(ygg + ["targets"]), cwd=cwd,
                               stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                               stderr=subprocess.DEVNULL, timeout=TIMEOUT_DEFAULT)
     except (OSError, subprocess.TimeoutExpired):
@@ -967,17 +978,17 @@ def run_shake_case(case, available, suite=None):
                    "rc": None, "status": "SKIP"} for n in available}
     extra = suite.get("extra_strip_prefixes", ())
 
-    found = _ratatoskr_cli()
+    found = _yggdrasil_cli()
     if found is None:
         # Fail closed. A caller that asked for --shake and got no shaker has
         # verified nothing; reporting PASS here made an unrun lane look green.
-        rtk_dir = os.environ.get("BIFROST_RATATOSKR_DIR", RATATOSKR_DIR_DEFAULT)
+        ygg_dir = os.environ.get("BIFROST_YGGDRASIL_DIR", YGGDRASIL_DIR_DEFAULT)
         return {"per_impl": results, "verdict": "FAIL",
-                "detail": "shake requested but no Ratatoskr CLI found. Put "
-                          "`ratatoskr` on PATH, set $BIFROST_RATATOSKR_BIN to "
-                          "the binary, or point $BIFROST_RATATOSKR_DIR at a "
-                          "checkout with Go available (looked in %s)" % rtk_dir}
-    rtk, rtk_cwd = found
+                "detail": "shake requested but no Yggdrasil CLI found. Put "
+                          "`yggdrasil` on PATH, set $BIFROST_YGGDRASIL_BIN to "
+                          "the binary, or point $BIFROST_YGGDRASIL_DIR at a "
+                          "checkout with Go available (looked in %s)" % ygg_dir}
+    ygg, ygg_cwd = found
 
     prog = case["program"]
     prog = prog if os.path.isabs(prog) else os.path.join(suite["programs_dir"], prog)
@@ -993,10 +1004,10 @@ def run_shake_case(case, available, suite=None):
     host = _launcher_argv(available[host_impl])
     style = "positional" if host_impl == "shen-lua" else "sub"
 
-    targets = _ratatoskr_targets(rtk, rtk_cwd)
+    targets = _yggdrasil_targets(ygg, ygg_cwd)
     if not targets:
         return {"per_impl": results, "verdict": "FAIL",
-                "detail": "Ratatoskr CLI reported no stage-2 targets"}
+                "detail": "Yggdrasil CLI reported no stage-2 targets"}
 
     timeout = TIMEOUT_HEAVY
     outroot = tempfile.mkdtemp(prefix="bifrost_shake_")
@@ -1004,17 +1015,17 @@ def run_shake_case(case, available, suite=None):
         if target not in targets or impl_name not in available:
             continue  # leaves the column as SKIP
         r = results[impl_name]
-        # `ratatoskr run` does stage 1 + stage 2 + execute. Each target gets
+        # `yggdrasil run` does stage 1 + stage 2 + execute. Each target gets
         # its own outdir so concurrent builder outputs cannot collide. The
         # artifact's stdout is passed through verbatim and the CLI keeps its
         # own chatter on stderr, so capture the two separately: stdout is the
         # thing being compared, stderr is only diagnostics.
         outdir = os.path.join(outroot, target)
-        argv = wrap_executable(rtk + ["run", prog, outdir, "--target", target,
+        argv = wrap_executable(ygg + ["run", prog, outdir, "--target", target,
                                       "--host", " ".join(host),
                                       "--eval-style", style])
         try:
-            proc = subprocess.run(argv, cwd=rtk_cwd, stdin=subprocess.DEVNULL,
+            proc = subprocess.run(argv, cwd=ygg_cwd, stdin=subprocess.DEVNULL,
                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                   timeout=timeout)
         except subprocess.TimeoutExpired:
@@ -1144,8 +1155,8 @@ def execute_cases(cases, available, suite, heavy_timeout=TIMEOUT_HEAVY,
         t0 = time.time()
         if c["mode"] == "special-hush":
             res = run_hush_divergence(c, available)
-        elif c["expect"] == "ratatoskr-parity":
-            res = run_ratatoskr_parity(c, available)
+        elif c["expect"] == "yggdrasil-parity":
+            res = run_yggdrasil_parity(c, available)
         elif shake and c["mode"] == "script":
             res = run_shake_case(c, available, suite)
         else:
@@ -1195,7 +1206,7 @@ def run_suite(suite, restrict=None, only=None, include_heavy=False,
 # These make bifrost the single front door for Shen across all ports, the way
 # Roswell (`ros`) is for Common Lisp: `run`/`eval`/`repl` launch a program on a
 # chosen/active port, `impls`/`use` list and select, `install` builds/fetches a
-# port, `build` shells out to Ratatoskr. The differential test matrix remains
+# port, `build` shells out to Yggdrasil. The differential test matrix remains
 # the DEFAULT (bare `bifrost` / the existing flags); these are added as verbs.
 # --------------------------------------------------------------------------
 
@@ -1294,7 +1305,8 @@ def cmd_launch(verb, rest, adapters):
     if verb == "repl":
         # Interactive: inherit the terminal, don't capture.
         tmpl = impl["cfg"].get("repl") or impl["cfg"]["eval"]
-        argv = wrap_executable([_sub_tokens(t, {"{bin}": impl["bin"]}) for t in tmpl])
+        argv = _with_launcher(impl["cfg"], [_sub_tokens(t, {"{bin}": impl["bin"]}) for t in tmpl])
+        argv = wrap_executable(argv)
         sys.stderr.write("# bifrost repl on %s (%s)\n" % (name, source))
         try:
             return subprocess.call(argv)
@@ -1368,26 +1380,26 @@ def cmd_use(rest, adapters):
 
 
 def cmd_build(rest, adapters):
-    """Delegate to Ratatoskr: shake a program and build a standalone artifact."""
+    """Delegate to Yggdrasil: shake a program and build a standalone artifact."""
     ap = argparse.ArgumentParser(prog="bifrost build")
     ap.add_argument("file"); ap.add_argument("outdir")
     ap.add_argument("--target", required=True,
-                    help="ratatoskr target (lisp/lua/go/rust/js)")
+                    help="yggdrasil target (lisp/lua/go/rust/js)")
     ap.add_argument("--run", action="store_true", help="run the artifact after building")
     args = ap.parse_args(rest)
-    found = _ratatoskr_cli()
+    found = _yggdrasil_cli()
     if found is None:
-        sys.stderr.write("bifrost: Ratatoskr CLI not found. Put `ratatoskr` on "
-                         "PATH, set $BIFROST_RATATOSKR_BIN, or point "
-                         "$BIFROST_RATATOSKR_DIR at a checkout (needs Go).\n")
+        sys.stderr.write("bifrost: Yggdrasil CLI not found. Put `yggdrasil` on "
+                         "PATH, set $BIFROST_YGGDRASIL_BIN, or point "
+                         "$BIFROST_YGGDRASIL_DIR at a checkout (needs Go).\n")
         return 2
-    rtk, rtk_cwd = found
-    # The Ratatoskr CLI's own build/run verbs do stage 1 + stage 2 in one shot.
+    ygg, ygg_cwd = found
+    # The Yggdrasil CLI's own build/run verbs do stage 1 + stage 2 in one shot.
     verb = "run" if args.run else "build"
-    argv = wrap_executable(rtk + [verb, os.path.abspath(args.file),
+    argv = wrap_executable(ygg + [verb, os.path.abspath(args.file),
                                   os.path.abspath(args.outdir),
                                   "--target", args.target])
-    return subprocess.call(argv, cwd=rtk_cwd)
+    return subprocess.call(argv, cwd=ygg_cwd)
 
 
 def _run_step(argv, cwd=None, env_extra=None):
@@ -1555,7 +1567,7 @@ def main(argv=None):
         return sub
 
     ap = argparse.ArgumentParser(description="Bifrost cross-impl Shen meta test harness")
-    ap.add_argument("--heavy", action="store_true", help="include heavy (ratatoskr) cases")
+    ap.add_argument("--heavy", action="store_true", help="include heavy (yggdrasil) cases")
     ap.add_argument("--only", nargs="*", help="run only the named cases")
     ap.add_argument("--impls", help="comma-separated subset of impls to drive")
     ap.add_argument("--list", action="store_true", help="list impls + cases and exit")
@@ -1564,7 +1576,7 @@ def main(argv=None):
                     help="run a third-party project's bifrost.suite.json instead "
                          "of Bifrost's own corpus")
     ap.add_argument("--shake", action="store_true",
-                    help="for script-mode cases, shake the program via Ratatoskr "
+                    help="for script-mode cases, shake the program via Yggdrasil "
                          "and diff the standalone ARTIFACTS per target (deploy-path "
                          "parity) instead of running the source on each launcher")
     args = ap.parse_args(argv)

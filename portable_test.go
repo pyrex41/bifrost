@@ -117,6 +117,35 @@ func TestOSOverridesMerge(t *testing.T) {
 	}
 }
 
+func TestLauncherPrefixIsAppliedOnce(t *testing.T) {
+	cfg := Adapter{Launcher: []string{"node"}}
+	if got := launcherArgv(cfg, []string{"/tmp/shen.js", "eval"}); !reflect.DeepEqual(got, []string{"node", "/tmp/shen.js", "eval"}) {
+		t.Fatalf("launcher prefix = %v", got)
+	}
+	if got := launcherArgv(cfg, []string{"node", "/tmp/shen.js"}); !reflect.DeepEqual(got, []string{"node", "/tmp/shen.js"}) {
+		t.Fatalf("duplicate launcher prefix = %v", got)
+	}
+}
+
+func TestShenTruffleAdapter(t *testing.T) {
+	a, err := loadAdapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := a.effectiveForPlatform("shen-truffle", "linux")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Env != "BIFROST_SHEN_TRUFFLE" || cfg.Kernel != "41.2" || cfg.Status != "production" {
+		t.Fatalf("unexpected shen-truffle adapter: %#v", cfg)
+	}
+	got := buildArgv(Impl{Name: "shen-truffle", Cfg: cfg, Bin: "/tmp/shen-truffle"}, aCase{Mode: "eval", Expr: "(+ 1 2)"}, "")
+	want := []string{"/tmp/shen-truffle", "eval", "-e", "(+ 1 2)"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("shen-truffle eval argv = %v, want %v", got, want)
+	}
+}
+
 func TestNormalizeStripsChatter(t *testing.T) {
 	in := "(fn foo)\nhello\nrun time: 0.1 secs\n0\n"
 	if got := normalize(in, nil); got != "hello" {

@@ -97,8 +97,8 @@ func executeCases(cases []aCase, available map[string]Impl, s suite, programsDir
 		switch {
 		case c.Mode == "special-hush":
 			res = runHushDivergence(c, available)
-		case c.Expect == "ratatoskr-parity":
-			res = runRatatoskrParity(c, available)
+		case c.Expect == "yggdrasil-parity":
+			res = runYggdrasilParity(c, available)
 		case shake && c.Mode == "script":
 			res = runShakeCase(c, available, s, programsDir)
 		default:
@@ -221,7 +221,7 @@ func sortedSkip(m map[string]string) []string {
 // runMatrix is the default (no-subcommand) path: the differential test matrix.
 func runMatrix(args []string) int {
 	fs := newFlagSet("bifrost")
-	heavy := fs.Bool("heavy", false, "include heavy (ratatoskr) cases")
+	heavy := fs.Bool("heavy", false, "include heavy (yggdrasil) cases")
 	only := fs.String("only", "", "run only these cases (comma-separated)")
 	implsFlag := fs.String("impls", "", "comma-separated subset of impls to drive")
 	list := fs.Bool("list", false, "list impls + cases and exit")
