@@ -7,7 +7,7 @@
 > behaviours across **all** the Shen implementations and asserts they produce
 > the same observable result (differential / conformance testing).
 
-It sits alongside [Ratatoskr / Yggdrasil](../ratatoskr) — the two-stage shaker —
+It sits alongside [Yggdrasil](../yggdrasil) — the two-stage shaker —
 in the same Norse lineage, and drives it for the `--shake` deploy-path checks.
 
 Differential testing is its origin, but Bifrost is now three things:
@@ -62,9 +62,9 @@ The corpus (`cases/*.json`, driven by `programs/*.shen`) includes:
   - `load-toplevel-echo` — `(load FILE)` echoes each top-level form's value
     regardless of fasl-cache state (shen-lua dropped the echo on a warm cache
     hit; pyrex41/shen-lua#40).
-- **Heavy** (`--heavy`) — **Ratatoskr stage-1 parity**: run
-  `(ratatoskr.shake ["tests/fib.shen"] OUT)` on every host and assert the
-  produced `kernel.kl` + `ratatoskr.manifest` are **byte-identical** across
+- **Heavy** (`--heavy`) — **Yggdrasil stage-1 parity**: run
+  `(yggdrasil.shake ["tests/fib.shen"] OUT)` on every host and assert the
+  produced `kernel.kl` + `yggdrasil.manifest` are **byte-identical** across
   hosts. (User KL differs only by gensym counter, so it is *not* asserted.)
 
 ### Expected vs. agreement modes
@@ -82,7 +82,7 @@ Each case is one of two modes:
 ```bash
 # Standalone runner — works with just python3, no third-party deps:
 python3 bifrost.py                 # light cases + matrix; exit !=0 on real FAIL
-python3 bifrost.py --heavy         # also run the ratatoskr stage-1 parity case
+python3 bifrost.py --heavy         # also run the yggdrasil stage-1 parity case
 python3 bifrost.py --list          # list discovered impls + cases
 python3 bifrost.py --only int-mul float-add-imprecise
 python3 bifrost.py --impls shen-cl,shen-go
@@ -90,7 +90,7 @@ python3 bifrost.py --json          # machine-readable result blob
 
 # Optional pytest wrapper (same corpus; divergences become xfail):
 pytest
-BIFROST_HEAVY=1 pytest -k ratatoskr
+BIFROST_HEAVY=1 pytest -k yggdrasil
 ```
 
 `DIVERGE` rows are reported in their own section and **do not** fail the run.
@@ -128,7 +128,7 @@ default.
 ### Shake-then-run (deploy-path parity)
 
 `--shake` runs each **script-mode** program through
-[Ratatoskr](../ratatoskr): it tree-shakes the program once, builds a *standalone
+[Yggdrasil](../yggdrasil): it tree-shakes the program once, builds a *standalone
 artifact* for every target (Lisp/Lua/Go/Rust/JS/Julia), runs each artifact, and
 diffs them. This checks the real stand-alone deploy path, not just
 load-from-source.
@@ -141,9 +141,9 @@ python3 bifrost.py --shake --impls shen-lua,ShenScript # just the fast ones
 Artifacts map onto their impl column (lisp→`shen-cl`, lua→`shen-lua`,
 go→`shen-go`, rust→`shen-rust`, js→`ShenScript`, julia→`shen-julia`,
 scheme→`shen-scheme`, swift→`shen-swift`) — all eight ports now have a
-Ratatoskr builder. Needs the per-target toolchains
+Yggdrasil builder. Needs the per-target toolchains
 (`sbcl`/`luajit`/`go`/`cargo`/`node`/`julia`/`chez`/`swift`) and
-`$BIFROST_RATATOSKR_DIR` (default `../ratatoskr`); missing toolchains are
+`$BIFROST_YGGDRASIL_DIR` (default `../yggdrasil`); missing toolchains are
 skipped, not failed. This mode is minutes, not seconds: go/rust compile from
 scratch, and the **julia** target AOT-bakes a per-program sysimage
 (PackageCompiler, ~250MB, several minutes) — the deploy artifact for
@@ -153,10 +153,10 @@ self-contained Chez program; the **swift** target drives the shen-swift
 tree-walking interpreter on the shaken slice in `--shaken` mode (booting a
 ~200-line kernel instead of the full ~2500-line kernel).
 
-`--shake` drives the **Go `ratatoskr` binary** (resolved on `$PATH`, else
-`$RATATOSKR_BIN`, else `$BIFROST_RATATOSKR_DIR` / a sibling `../ratatoskr`); no
-Python is involved. The heavy `ratatoskr-shake-parity` case (`--heavy`) likewise
-shakes on each host via the Go ratatoskr and diffs the kernel.kl/manifest md5s.
+`--shake` drives the **Go `yggdrasil` binary** (resolved on `$PATH`, else
+`$YGGDRASIL_BIN`, else `$BIFROST_YGGDRASIL_DIR` / a sibling `../yggdrasil`); no
+Python is involved. The heavy `yggdrasil-shake-parity` case (`--heavy`) likewise
+shakes on each host via the Go yggdrasil and diffs the kernel.kl/manifest md5s.
 
 ## How implementations are located
 
@@ -197,7 +197,7 @@ go build -o .bin/shen-go -C /path/to/shen-go ./cmd/shen
   Bifrost's normaliser strips that chatter. It also has no clean script value
   channel, so file-mode programs end with `(do (print …) (nl))`.
 - **shen-lua / shen-rust** must be driven **without** `-q` for normal cases and
-  for the ratatoskr parity case, or `pr` output is silenced (the
+  for the yggdrasil parity case, or `pr` output is silenced (the
   `hush-file-write` divergence). This is exactly why Bifrost's eval/script
   templates for those two do **not** pass `-q`.
 
@@ -217,7 +217,7 @@ bifrost repl [--impl X]            # interactive REPL (inherits your terminal)
 bifrost impls [--versions]         # list ports: state, kernel (live probe), status, active(*)
 bifrost use IMPL [--project]       # set the active port (global, or ./.bifrost-impl pin)
 bifrost install IMPL [--method M] [--git URL] [--ref R] [--force]
-bifrost build prog.shen OUT --target T [--run]   # standalone artifact (delegates to Ratatoskr)
+bifrost build prog.shen OUT --target T [--run]   # standalone artifact (delegates to Yggdrasil)
 ```
 
 ### Choosing the implementation
@@ -274,7 +274,7 @@ Port-specific install notes (see each adapter's `_install_note`):
 On a machine with none of the ports present, this order works with the fewest
 prerequisites (each port lands at the clone/launcher locations in
 `adapters.json` — the bundled defaults assume sibling checkouts (for example,
-`../shen-go` and `../ratatoskr`). If your ports live elsewhere, point a
+`../shen-go` and `../yggdrasil`). If your ports live elsewhere, point a
 project-local `adapters.json` or `$BIFROST_ADAPTERS` at your own paths first:
 
 1. `bifrost install shen-go` — needs only `git` + `go`; gives you a working
@@ -448,9 +448,9 @@ print(blob["cases"]["self-suite"]["verdict"])   # PASS / FAIL / DIVERGE
   adapters.go         port registry: load / discover / resolve / os_overrides
   run.go              launch path: build_argv, run, normalize, exec wrapping
   front.go            verbs: run/eval/repl/impls/use
-  install.go          install backends + build (delegates to ratatoskr)
+  install.go          install backends + build (delegates to yggdrasil)
   matrix.go,runmatrix.go  differential test matrix, --suite, reporting
-  shake.go            --shake + ratatoskr-parity (drive the Go ratatoskr)
+  shake.go            --shake + yggdrasil-parity (drive the Go yggdrasil)
   *_test.go           cross-platform unit tests (go test ./...)
 bifrost.py          the original Python — kept as the reference oracle
 test_bifrost.py     pytest wrapper over the same corpus (oracle checks)

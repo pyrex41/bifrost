@@ -187,7 +187,7 @@ func runInvocation(argv []string, timeout time.Duration, stdinEOF bool, cwd stri
 type aCase struct {
 	Name            string            `json:"name"`
 	Mode            string            `json:"mode"`   // eval | script | version | repl-eof | special-hush
-	Expect          string            `json:"expect"` // output | agreement | marker | version | clean-exit | divergence-table | ratatoskr-parity
+	Expect          string            `json:"expect"` // output | agreement | marker | version | clean-exit | divergence-table | yggdrasil-parity
 	Expr            string            `json:"expr"`
 	Program         string            `json:"program"`
 	Golden          string            `json:"golden"`

@@ -7,7 +7,7 @@ never silently treated as a pass-or-fail. Heavy cases are skipped unless
 BIFROST_HEAVY is set in the environment.
 
 Run:  pytest            (light cases)
-      BIFROST_HEAVY=1 pytest -k ratatoskr   (include the heavy parity case)
+      BIFROST_HEAVY=1 pytest -k yggdrasil   (include the heavy parity case)
 """
 
 import os
@@ -26,8 +26,8 @@ _cases = bifrost.load_cases(include_heavy=_HEAVY)
 def _run(case):
     if case["mode"] == "special-hush":
         return bifrost.run_hush_divergence(case, _available)
-    if case["expect"] == "ratatoskr-parity":
-        return bifrost.run_ratatoskr_parity(case, _available)
+    if case["expect"] == "yggdrasil-parity":
+        return bifrost.run_yggdrasil_parity(case, _available)
     return bifrost.evaluate_case(case, _available, bifrost.TIMEOUT_HEAVY)
 
 
