@@ -169,7 +169,7 @@ def find_adapters_path():
 ADAPTERS_PATH = os.path.join(HERE, "adapters.json")  # packaged default
 
 # Order in which impls appear in the matrix.
-IMPL_ORDER = ["shen-cl", "shen-go", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle"]
+IMPL_ORDER = ["shen-cl", "shen-go", "shen-erl", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle"]
 
 TIMEOUT_DEFAULT = 60      # seconds, per invocation
 TIMEOUT_HEAVY = 300       # seconds, for heavy (yggdrasil) cases
@@ -891,7 +891,7 @@ def run_yggdrasil_parity(case, available):
 # --------------------------------------------------------------------------
 
 # Each Yggdrasil build target maps onto the impl column it runs on, so shake
-# results line up with the normal matrix. All nine bifrost ports now have a
+# results line up with the normal matrix. All Bifrost ports have a
 # Yggdrasil builder.
 #
 # The `julia` target is special: shen-julia's stand-alone artifact is produced
@@ -904,7 +904,7 @@ def run_yggdrasil_parity(case, available):
 # The `swift` target drives the shen-swift tree-walking interpreter on the
 # shaken slice (boot a ~200-line kernel instead of the full ~2500-line kernel).
 TARGET_TO_IMPL = {"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
-                  "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
+                  "erlang": "shen-erl", "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
                   "scheme": "shen-scheme", "swift": "shen-swift", "truffle": "shen-truffle"}
 
 

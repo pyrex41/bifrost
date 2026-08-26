@@ -129,7 +129,7 @@ default.
 
 `--shake` runs each **script-mode** program through
 [Yggdrasil](../yggdrasil): it tree-shakes the program once, builds a *standalone
-artifact* for every target (Lisp/Lua/Go/Rust/JS/Julia), runs each artifact, and
+artifact* for every target, runs each artifact, and
 diffs them. This checks the real stand-alone deploy path, not just
 load-from-source.
 
@@ -139,10 +139,11 @@ python3 bifrost.py --shake --impls shen-lua,ShenScript # just the fast ones
 ```
 
 Artifacts map onto their impl column (lisp→`shen-cl`, lua→`shen-lua`,
-go→`shen-go`, rust→`shen-rust`, js→`ShenScript`, julia→`shen-julia`,
-scheme→`shen-scheme`, swift→`shen-swift`, truffle→`shen-truffle`) — all nine ports now have a
+go→`shen-go`, erlang→`shen-erl`, rust→`shen-rust`, js→`ShenScript`,
+julia→`shen-julia`, scheme→`shen-scheme`, swift→`shen-swift`,
+truffle→`shen-truffle`) — all ten ports have a
 Yggdrasil builder. Needs the per-target toolchains
-(`sbcl`/`luajit`/`go`/`cargo`/`node`/`julia`/`chez`/`swift`/`mvn` + Java) and
+(`sbcl`/`luajit`/`go`/Erlang/`cargo`/`node`/`julia`/`chez`/`swift`/`mvn` + Java) and
 `$BIFROST_YGGDRASIL_DIR` (default `../yggdrasil`); missing toolchains are
 skipped, not failed. This mode is minutes, not seconds: go/rust compile from
 scratch, and the **julia** target AOT-bakes a per-program sysimage
@@ -173,6 +174,7 @@ Defaults (see [`adapters.json`](adapters.json)):
 |------|--------------|------------------|
 | `shen-cl` | `BIFROST_SHEN_CL` | `…/shen-cl/bin/sbcl/shen` (also `clisp`, `ecl`) |
 | `shen-go` | `BIFROST_SHEN_GO` | `.bin/shen-go` (build: `go build -o .bin/shen-go ./cmd/shen`) |
+| `shen-erl` | `BIFROST_SHEN_ERL` | `…/shen-erl/bin/shen-erl` (Erlang/OTP) |
 | `shen-rust` | `BIFROST_SHEN_RUST` | `…/shen-rust/target/release/shen-rust` |
 | `shen-lua` | `BIFROST_SHEN_LUA` | `…/shen-lua/bin/shen` (needs `luajit`; falls back to the luarocks-installed `/usr/local/bin/shen`) |
 | `ShenScript` | `BIFROST_SHENSCRIPT` | `node …/ShenScript/bin/shen.js` |
@@ -181,7 +183,7 @@ Defaults (see [`adapters.json`](adapters.json)):
 | `shen-swift` | `BIFROST_SHEN_SWIFT` | `…/shen-swift/.build/release/shen-swift` (needs `swift`) |
 | `shen-truffle` | `BIFROST_SHEN_TRUFFLE` | `…/shen-truffle/target/shen-truffle/bin/shen-truffle` (build: `mvn package -DskipTests`) |
 
-All nine target ShenOSKernel **41.2**. Run `bifrost impls --versions` to see the
+All ten target ShenOSKernel **41.2**. Run `bifrost impls --versions` to see the
 live per-port kernel version, install state, and which is active.
 
 To build shen-go locally into the gitignored `.bin/`:
@@ -243,7 +245,7 @@ Each port declares an **install backend** in `adapters.json` (asdf/mise style):
 |---|---|---|
 | `brew` | shen-scheme (and shen-cl via `--method brew`) | `brew install <formula>` |
 | `luarocks` | shen-lua via `--method luarocks` | `luarocks install shen` (rock **0.10.0-1**+ bundles kernel **41.2**; only the old 0.9.0-1 was 41.1) |
-| `git-build` | shen-cl, shen-go, shen-rust, shen-lua, ShenScript, shen-julia, shen-swift, shen-truffle | clone (if absent) + the port's `build` recipe (single `argv`, or a `steps` list run in order) |
+| `git-build` | shen-cl, shen-go, shen-erl, shen-rust, shen-lua, ShenScript, shen-julia, shen-swift, shen-truffle | clone (if absent) + the port's `build` recipe (single `argv`, or a `steps` list run in order) |
 
 `install` prechecks the required toolchain (and names the exact missing tool
 rather than failing opaquely — when `--method` overrides the default, the

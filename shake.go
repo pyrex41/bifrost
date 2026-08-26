@@ -15,7 +15,7 @@ import (
 )
 
 // Each Yggdrasil build target maps onto the impl column it runs on, so shake
-// results line up with the normal matrix. All eight bifrost ports now have a
+// results line up with the normal matrix. All Bifrost ports have a
 // Yggdrasil builder.
 //
 // The `julia` target is special: shen-julia's stand-alone artifact AOT-compiles
@@ -28,8 +28,9 @@ import (
 // (boot a ~200-line shaken kernel instead of the full ~2500-line kernel).
 var targetToImpl = map[string]string{
 	"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
-	"rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
+	"erlang": "shen-erl", "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
 	"scheme": "shen-scheme", "swift": "shen-swift",
+	"truffle": "shen-truffle",
 }
 
 const shakeTargetTimeout = 20 * time.Minute // accommodates the julia sysimage bake

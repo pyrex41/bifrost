@@ -146,6 +146,28 @@ func TestShenTruffleAdapter(t *testing.T) {
 	}
 }
 
+func TestShenErlAdapter(t *testing.T) {
+	a, err := loadAdapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := a.effectiveForPlatform("shen-erl", "linux")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Env != "BIFROST_SHEN_ERL" || cfg.Status != "production" {
+		t.Fatalf("unexpected shen-erl adapter: %#v", cfg)
+	}
+	got := buildArgv(Impl{Name: "shen-erl", Cfg: cfg, Bin: "/tmp/shen-erl"}, aCase{Mode: "eval", Expr: "(+ 1 2)"}, "")
+	want := []string{"/tmp/shen-erl", "eval", "-e", "(+ 1 2)"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("shen-erl eval argv = %v, want %v", got, want)
+	}
+	if targetToImpl["erlang"] != "shen-erl" {
+		t.Fatalf("erlang shake target maps to %q", targetToImpl["erlang"])
+	}
+}
+
 func TestNormalizeStripsChatter(t *testing.T) {
 	in := "(fn foo)\nhello\nrun time: 0.1 secs\n0\n"
 	if got := normalize(in, nil); got != "hello" {
