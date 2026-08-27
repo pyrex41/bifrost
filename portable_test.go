@@ -136,7 +136,7 @@ func TestShenTruffleAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Env != "BIFROST_SHEN_TRUFFLE" || cfg.Kernel != "41.2" || cfg.Status != "production" {
+	if cfg.Env != "BIFROST_SHEN_TRUFFLE" || cfg.Kernel != "42" || cfg.Status != "production" {
 		t.Fatalf("unexpected shen-truffle adapter: %#v", cfg)
 	}
 	got := buildArgv(Impl{Name: "shen-truffle", Cfg: cfg, Bin: "/tmp/shen-truffle"}, aCase{Mode: "eval", Expr: "(+ 1 2)"}, "")

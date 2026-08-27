@@ -63,6 +63,7 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
+    "kernel": "42",
     "build": {
       "cwd": "../shen-cl",
       "argv": ["make", "build-sbcl"],
@@ -97,12 +98,13 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
+    "kernel": "42",
     "install": {
       "method": "git-build",
       "git": "https://github.com/pyrex41/shen-go",
       "needs": ["git", "go"]
     },
-    "_install_note": "git-build clones the pyrex41 fork: it carries the standard launcher CLI (eval/script/--version, kernel 41.2) that Bifrost drives. Upstream tiancaiamao/shen-go lacks those subcommands (S41.1) and does not exit on stdin EOF, so it cannot be driven by Bifrost."
+    "_install_note": "git-build clones the pyrex41 fork: it carries the standard launcher CLI (eval/script/--version, runtime kernel 42 / S42.0) that Bifrost drives. Upstream tiancaiamao/shen-go lacks those subcommands, so it cannot be driven by Bifrost."
   },
 
   "shen-erl": {
@@ -121,12 +123,13 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
+    "kernel": "42",
     "install": {
       "method": "git-build",
       "git": "https://github.com/pyrex41/shen-erl",
       "needs": ["git", "make", "erl", "erlc", "cc", "curl", "unzip", "tar", "shasum"]
     },
-    "_install_note": "git-build clones the maintained S41.2 fork and compiles the Erlang runtime plus KLambda kernel. The launcher infers its ebin directory from its own location; $SHEN_ERL_ROOTDIR remains an optional override."
+    "_install_note": "git-build clones the maintained S42.0 fork and compiles the Erlang runtime plus KLambda kernel. The launcher infers its ebin directory from its own location; $SHEN_ERL_ROOTDIR remains an optional override."
   },
 
   "shen-rust": {
@@ -145,6 +148,7 @@
     "repl":    ["{bin}"],
     "hush_writes_file": false,
     "status": "production",
+    "kernel": "42",
     "install": {
       "method": "git-build",
       "git": "https://github.com/pyrex41/shen-rust",
@@ -164,6 +168,7 @@
     "repl":    ["{bin}", "-q"],
     "hush_writes_file": false,
     "status": "production",
+    "kernel": "42",
     "build": {
       "cwd": "../shen-lua",
       "argv": ["bin/shen", "-e", "(version)"],
@@ -190,6 +195,7 @@
     "repl":    ["node", "{bin}"],
     "hush_writes_file": true,
     "status": "production",
+    "kernel": "42",
     "build": {
       "cwd": "../ShenScript",
       "steps": [
@@ -223,6 +229,7 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
+    "kernel": "42",
     "install": {
       "method": "brew",
       "package": "shen-scheme",
@@ -244,6 +251,7 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
+    "kernel": "42",
     "build": {
       "cwd": "../shen-julia",
       "argv": ["julia", "--project=.", "-e", "using Pkg; Pkg.instantiate()"],
@@ -268,6 +276,7 @@
     "repl": ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
+    "kernel": "42",
     "build": {
       "cwd": "../shen-swift",
       "argv": ["swift", "build", "-c", "release"],
@@ -293,7 +302,7 @@
     "repl": ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "kernel": "41.2",
+    "kernel": "42",
     "build": {
       "cwd": "../shen-truffle",
       "argv": ["mvn", "package", "-DskipTests"],
