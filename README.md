@@ -125,6 +125,58 @@ default.
 > `python bifrost.py --json` across the corpus); `go test ./...` plus a
 > Windows/Linux/macOS CI matrix guard the binary.
 
+### Reproducible Shen matrix with Nix
+
+Nix is the recommended convenience path for a reproducible multi-port matrix,
+but it is optional. Direct `go run .`, the release binary, `bifrost.py`, and
+every adapter continue to work with ordinary tools from `PATH`.
+
+Each Shen port repository owns a small flake exporting its `devShell` and a
+`toolchain` package. Bifrost owns only its own development environment and a
+runtime composer that selects those port-owned packages.
+
+```bash
+nix develop                         # Bifrost development only
+nix develop ../shen-rust            # one port, directly
+nix develop ../shen-truffle          # Maven + pinned GraalVM 25.0.2
+nix build                           # build the Bifrost Go binary
+```
+
+Use Bifrost's composer for one port, an ad-hoc subset, or the whole matrix. The
+`--` separates port names from the command to run; without a command it starts
+your shell.
+
+```bash
+nix run .#env -- shen-rust -- cargo test
+nix run .#env -- shen-rust shen-erl -- go run . --impls shen-rust,shen-erl
+nix run .#env -- all -- go run .
+```
+
+From a sibling checkout, replace `.` with `../bifrost`. Set
+`BIFROST_PORTS_ROOT` when the port repositories do not share Bifrost's parent
+directory. Port flakes remain independently usable and independently pinned;
+Bifrost composes them without duplicating their dependency lists. Shen
+launchers are still resolved through `adapters.json`.
+
+For automatic activation, install direnv once and authorize this checkout:
+
+```bash
+direnv allow
+```
+
+The checked-in `.envrc` enters the lightweight default shell whenever the
+Bifrost directory becomes active. Lefthook uses the same environment for
+formatting and syntax checks on commit and the fast Go/Python portability/flake
+checks before push. The live
+multi-port matrix remains an explicit Bifrost run because it is substantially
+slower:
+
+```bash
+lefthook install
+lefthook run pre-commit
+lefthook run pre-push
+```
+
 ### Shake-then-run (deploy-path parity)
 
 `--shake` runs each **script-mode** program through
