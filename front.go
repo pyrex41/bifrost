@@ -67,7 +67,11 @@ func resolveActiveImpl(a *Adapters, override string) (string, string) {
 	return "", "default"
 }
 
-var versionRe = regexp.MustCompile(`\b(\d+\.\d+)\b`)
+// Port banners put the Shen kernel version first (for S42 this is the integer
+// `42`), followed by implementation/port versions. Capture either an integer
+// or dotted version and use the first token so `--versions` reports the runtime
+// kernel rather than the port release (e.g. shen-cl's 3.0.3).
+var versionRe = regexp.MustCompile(`\b(\d+(?:\.\d+)?)\b`)
 
 // probeKernelVersion runs a port's version probe live (README badges drift).
 func probeKernelVersion(impl Impl) string {

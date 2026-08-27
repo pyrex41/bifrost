@@ -47,7 +47,7 @@ The corpus (`cases/*.json`, driven by `programs/*.shen`) includes:
   countdown that must not blow any stack), a small **Prolog** query, and
   **`trap-error`** catchability.
 - **CLI parity** — `eval -e` prints the value; `(version)` / `--version` carry
-  the kernel version **41.2**; **stdin-EOF causes a clean exit** (no hang) on
+  the runtime kernel version **42** (distribution 42.0); **stdin-EOF causes a clean exit** (no hang) on
   every impl.
 - **Divergences** — **none open.** Every tracked cross-port difference has
   converged and is now asserted as a **hard agreement** (a regression is a real
@@ -235,7 +235,7 @@ Defaults (see [`adapters.json`](adapters.json)):
 | `shen-swift` | `BIFROST_SHEN_SWIFT` | `…/shen-swift/.build/release/shen-swift` (needs `swift`) |
 | `shen-truffle` | `BIFROST_SHEN_TRUFFLE` | `…/shen-truffle/target/shen-truffle/bin/shen-truffle` (build: `mvn package -DskipTests`) |
 
-All ten target ShenOSKernel **41.2**. Run `bifrost impls --versions` to see the
+All ten target ShenOSKernel **42.0** (runtime `(version)` is `42`). Run `bifrost impls --versions` to see the
 live per-port kernel version, install state, and which is active.
 
 To build shen-go locally into the gitignored `.bin/`:
