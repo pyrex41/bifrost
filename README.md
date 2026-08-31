@@ -48,7 +48,8 @@ The corpus (`cases/*.json`, driven by `programs/*.shen`) includes:
   **`trap-error`** catchability.
 - **CLI parity** — `eval -e` prints the value; `(version)` / `--version` carry
   the runtime kernel version **42** (distribution 42.0); **stdin-EOF causes a clean exit** (no hang) on
-  every impl.
+  every impl. Experimental `shen-c` / `shen-forth` are included with the same
+  kernel version; their adapters stay experimental.
 - **Divergences** — **none open.** Every tracked cross-port difference has
   converged and is now asserted as a **hard agreement** (a regression is a real
   FAIL, no longer a documented difference):
@@ -234,8 +235,13 @@ Defaults (see [`adapters.json`](adapters.json)):
 | `shen-julia` | `BIFROST_SHEN_JULIA` | `…/shen-julia/bin/shen` (needs `julia`) |
 | `shen-swift` | `BIFROST_SHEN_SWIFT` | `…/shen-swift/.build/release/shen-swift` (needs `swift`) |
 | `shen-truffle` | `BIFROST_SHEN_TRUFFLE` | `…/shen-truffle/target/shen-truffle/bin/shen-truffle` (build: `mvn package -DskipTests`) |
+| `shen-c` | `BIFROST_SHEN_C` | `…/shen-c/bin/shen-c` (experimental S42; self-locates, no `$SHEN_C_HOME`) |
+| `shen-forth` | `BIFROST_SHEN_FORTH` | `…/shen-forth/bin/shen` (experimental S42 Gforth interpreter; no chdir) |
 
-All ten target ShenOSKernel **42.0** (runtime `(version)` is `42`). Run `bifrost impls --versions` to see the
+Ports listed above target ShenOSKernel **42.0** (runtime `(version)` is `42`).
+`shen-c` and `shen-forth` stay **experimental**. `shen-c` self-locates its
+kernel (do not set `$SHEN_C_HOME`); `shen-forth` is Gforth interpreter-only
+with a port-owned mark/sweep heap. Run `bifrost impls --versions` to see the
 live per-port kernel version, install state, and which is active.
 
 To build shen-go locally into the gitignored `.bin/`:
@@ -297,7 +303,7 @@ Each port declares an **install backend** in `adapters.json` (asdf/mise style):
 |---|---|---|
 | `brew` | shen-scheme (and shen-cl via `--method brew`) | `brew install <formula>` |
 | `luarocks` | shen-lua via `--method luarocks` | `luarocks install shen` (rock **0.10.0-1**+ bundles kernel **41.2**; only the old 0.9.0-1 was 41.1) |
-| `git-build` | shen-cl, shen-go, shen-erl, shen-rust, shen-lua, ShenScript, shen-julia, shen-swift, shen-truffle | clone (if absent) + the port's `build` recipe (single `argv`, or a `steps` list run in order) |
+| `git-build` | shen-cl, shen-go, shen-erl, shen-rust, shen-lua, ShenScript, shen-julia, shen-swift, shen-truffle, shen-c, shen-forth | clone (if absent) + the port's `build` recipe (single `argv`, or a `steps` list run in order) |
 
 `install` prechecks the required toolchain (and names the exact missing tool
 rather than failing opaquely — when `--method` overrides the default, the

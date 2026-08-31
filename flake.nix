@@ -28,7 +28,7 @@
             # installation which launched this app rather than nesting one.
             runtimeInputs = base;
             text = ''
-              all_ports=(shen-cl shen-go shen-erl shen-rust shen-lua ShenScript shen-scheme shen-julia shen-swift shen-truffle)
+              all_ports=(shen-cl shen-go shen-erl shen-rust shen-lua ShenScript shen-scheme shen-julia shen-swift shen-truffle shen-c shen-forth)
               selected=()
               while [[ $# -gt 0 && "$1" != "--" ]]; do
                 if [[ "$1" == "all" ]]; then selected=("''${all_ports[@]}"); else selected+=("$1"); fi

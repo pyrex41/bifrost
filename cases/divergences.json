@@ -5,12 +5,13 @@
       "name": "hush-file-write",
       "mode": "special-hush",
       "expect": "agreement",
-      "doc": "RESOLVED (was a known divergence): under -q (*hush* = true), `pr` to a FILE stream now WRITES on every impl. *hush* only gates the standard output stream, never an explicit file stream. Previously shen-lua/shen-rust SILENCED the write (zero-byte file) under -q while shen-cl/shen-go/ShenScript wrote; the shen-lua (fix/hush-pr-file-22) and shen-rust (fix/hush-pr-file-2) fixes converged this. Now asserted as a HARD agreement: every available impl must land in the same bucket (all 'written'); any impl that silences the write is a real FAIL."
+      "doc": "RESOLVED (was a known divergence): under -q (*hush* = true), `pr` to a FILE stream now WRITES on every impl. *hush* only gates stdout, never stderr or an explicit file stream. Driven as `{bin} eval -q -l PROG`. S42 shen-c/shen-forth need host `pr` overrides (stock writer.kl returns without writing whenever *hush* for every stream) and eval -q/-l. Previously shen-lua/shen-rust SILENCED the write (zero-byte file) under -q while shen-cl/shen-go/ShenScript wrote. Hard agreement: every available impl must land in the same bucket (all 'written'); any impl that silences the write is a real FAIL."
     },
     {
       "name": "load-toplevel-echo",
       "mode": "eval",
       "expr": "(load \"programs/load-echo-probe.shen\")",
+      "cwd": ".",
       "expect": "agreement",
       "known_divergence": "s42-load-echo-format",
       "doc": "RESOLVED (was a known divergence): `(load FILE)` now echoes each toplevel form's evaluated value on every impl, cache state notwithstanding. The canonical kernel load (klambda/load.kl -> shen.eval-and-print) PRINTS each toplevel result before returning `loaded` (the echo from `shen eval -l FILE` / `(load FILE)` at the REPL; NOT `script` mode, which is quiet everywhere -- so this case uses eval mode). shen-rust and shen-go always emitted it; shen-lua emitted it on a COLD fasl cache but DROPPED it on a WARM fasl-cache HIT (boot.lua returned `loaded` straight out of fasl_replay without re-running the kernel load), making `(load file)` stdout cache-state dependent -- a cross-port divergence AND an intra-port nondeterminism. Fixed in shen-lua by recording the per-form echo bytes as fasl \"e\" records on the miss and re-pr'ing them on the hit (pyrex41/shen-lua#40, PR #41). The cosmetic `run time:` banner stays dropped on a warm hit by design; the normaliser here strips the whole banner (text line + the blank line its leading newline produces) so that omission is not itself a divergence. Now asserted as a HARD agreement: every available impl must echo `\"PROBE\"` / `42` / `(fn p)` (the last stripped by the normaliser) then `loaded`; any impl that drops the value echo is a real FAIL."

@@ -146,6 +146,154 @@ func TestShenTruffleAdapter(t *testing.T) {
 	}
 }
 
+func TestDefaultSuiteCwdIsCheckout(t *testing.T) {
+	s := defaultSuite()
+	if s.DefaultCwd == "" {
+		t.Fatal("default suite cwd must not be empty")
+	}
+	probe := filepath.Join(s.DefaultCwd, "programs", "load-echo-probe.shen")
+	if _, err := os.Stat(probe); err != nil {
+		t.Fatalf("load-echo probe missing at %s: %v", probe, err)
+	}
+	cases, err := s.loadCases(false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, c := range cases {
+		if c.Name == "load-toplevel-echo" {
+			found = true
+			if c.Cwd != "." {
+				t.Fatalf("load-toplevel-echo cwd = %q, want .", c.Cwd)
+			}
+			if got := s.cwdFor(c); got != s.DefaultCwd && got != s.Root {
+				absRoot, _ := filepath.Abs(s.Root)
+				if got != absRoot {
+					t.Fatalf("cwdFor(load-toplevel-echo) = %q, want checkout %q", got, s.DefaultCwd)
+				}
+			}
+		}
+	}
+	if !found {
+		t.Fatal("load-toplevel-echo missing from default suite")
+	}
+}
+
+func TestShenCAdapter(t *testing.T) {
+	a, err := loadAdapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := a.effectiveForPlatform("shen-c", "linux")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Env != "BIFROST_SHEN_C" || cfg.Status != "experimental" || cfg.Kernel != "42" {
+		t.Fatalf("unexpected shen-c adapter: %#v", cfg)
+	}
+	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-c/bin/shen-c" {
+		t.Fatalf("shen-c default_paths = %v, want [../shen-c/bin/shen-c] only", cfg.DefaultPaths)
+	}
+	impl := Impl{Name: "shen-c", Cfg: cfg, Bin: "/tmp/shen-c"}
+	evalGot := buildArgv(impl, aCase{Mode: "eval", Expr: "(+ 1 2)"}, "")
+	evalWant := []string{"/tmp/shen-c", "eval", "-e", "(+ 1 2)"}
+	if !reflect.DeepEqual(evalGot, evalWant) {
+		t.Fatalf("shen-c eval argv = %v, want %v", evalGot, evalWant)
+	}
+	scriptGot := buildArgv(impl, aCase{Mode: "script", Program: "/tmp/p.shen"}, "")
+	scriptWant := []string{"/tmp/shen-c", "script", "/tmp/p.shen"}
+	if !reflect.DeepEqual(scriptGot, scriptWant) {
+		t.Fatalf("shen-c script argv = %v, want %v", scriptGot, scriptWant)
+	}
+	versionGot := buildArgv(impl, aCase{Mode: "version"}, "")
+	versionWant := []string{"/tmp/shen-c", "--version"}
+	if !reflect.DeepEqual(versionGot, versionWant) {
+		t.Fatalf("shen-c version argv = %v, want %v", versionGot, versionWant)
+	}
+	replGot := buildArgv(impl, aCase{Mode: "repl-eof"}, "")
+	replWant := []string{"/tmp/shen-c"}
+	if !reflect.DeepEqual(replGot, replWant) {
+		t.Fatalf("shen-c repl argv = %v, want %v", replGot, replWant)
+	}
+	found := false
+	for _, name := range implOrder {
+		if name == "shen-c" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("implOrder omits shen-c")
+	}
+}
+
+func TestShenForthAdapter(t *testing.T) {
+	a, err := loadAdapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := a.effectiveForPlatform("shen-forth", "linux")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Env != "BIFROST_SHEN_FORTH" || cfg.Status != "experimental" || cfg.Kernel != "42" {
+		t.Fatalf("unexpected shen-forth adapter: %#v", cfg)
+	}
+	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-forth/bin/shen" {
+		t.Fatalf("shen-forth default_paths = %v, want [../shen-forth/bin/shen] only", cfg.DefaultPaths)
+	}
+	impl := Impl{Name: "shen-forth", Cfg: cfg, Bin: "/tmp/shen-forth"}
+	evalGot := buildArgv(impl, aCase{Mode: "eval", Expr: "(+ 1 2)"}, "")
+	evalWant := []string{"/tmp/shen-forth", "eval", "-e", "(+ 1 2)"}
+	if !reflect.DeepEqual(evalGot, evalWant) {
+		t.Fatalf("shen-forth eval argv = %v, want %v", evalGot, evalWant)
+	}
+	scriptGot := buildArgv(impl, aCase{Mode: "script", Program: "/tmp/p.shen"}, "")
+	scriptWant := []string{"/tmp/shen-forth", "script", "/tmp/p.shen"}
+	if !reflect.DeepEqual(scriptGot, scriptWant) {
+		t.Fatalf("shen-forth script argv = %v, want %v", scriptGot, scriptWant)
+	}
+	versionGot := buildArgv(impl, aCase{Mode: "version"}, "")
+	versionWant := []string{"/tmp/shen-forth", "--version"}
+	if !reflect.DeepEqual(versionGot, versionWant) {
+		t.Fatalf("shen-forth version argv = %v, want %v", versionGot, versionWant)
+	}
+	replGot := buildArgv(impl, aCase{Mode: "repl-eof"}, "")
+	replWant := []string{"/tmp/shen-forth"}
+	if !reflect.DeepEqual(replGot, replWant) {
+		t.Fatalf("shen-forth repl argv = %v, want %v", replGot, replWant)
+	}
+	found := false
+	for _, name := range implOrder {
+		if name == "shen-forth" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("implOrder omits shen-forth")
+	}
+}
+
+func TestAvailableForCaseKernelSplit(t *testing.T) {
+	available := map[string]Impl{
+		"shen-go":    {Name: "shen-go", Cfg: Adapter{Kernel: "41.2"}},
+		"shen-c":     {Name: "shen-c", Cfg: Adapter{Kernel: "42"}},
+		"shen-forth": {Name: "shen-forth", Cfg: Adapter{Kernel: "42"}},
+	}
+	got := availableForCase(aCase{Kernels: []string{"41.2"}}, available)
+	if len(got) != 1 || got["shen-go"].Name != "shen-go" {
+		t.Fatalf("41.2 filter = %#v", got)
+	}
+	got42 := availableForCase(aCase{Kernels: []string{"42"}}, available)
+	if len(got42) != 2 || got42["shen-c"].Name == "" || got42["shen-forth"].Name == "" {
+		t.Fatalf("42 filter = %#v", got42)
+	}
+	if adapterKernel(Impl{Cfg: Adapter{}}) != "41.2" {
+		t.Fatal("missing kernel should default to 41.2")
+	}
+}
+
 func TestShenErlAdapter(t *testing.T) {
 	a, err := loadAdapters()
 	if err != nil {

@@ -150,6 +150,88 @@ def test_os_overrides_absent_is_identity():
     assert bifrost.apply_os_overrides(cfg, "win32") == cfg
 
 
+def test_shen_c_adapter_is_experimental_self_locating():
+    adapters = bifrost.load_adapters()
+    assert "shen-c" in adapters
+    assert "shen-c" in bifrost.IMPL_ORDER
+    cfg = adapters["shen-c"]
+    assert cfg["env"] == "BIFROST_SHEN_C"
+    assert cfg["default_paths"] == ["../shen-c/bin/shen-c"]
+    assert cfg["status"] == "experimental"
+    assert cfg.get("kernel") == "42"
+    assert cfg["eval"] == ["{bin}", "eval", "-e", "{expr}"]
+    assert cfg["script"] == ["{bin}", "script", "{file}"]
+    assert cfg["version"] == ["{bin}", "--version"]
+    assert cfg["repl"] == ["{bin}"]
+    assert "SHEN_C_HOME" not in cfg
+    impl = {"cfg": cfg, "bin": "/tmp/shen-c"}
+    assert bifrost.build_argv(impl, {"mode": "eval", "expr": "(+ 1 2)"}) == [
+        "/tmp/shen-c", "eval", "-e", "(+ 1 2)"
+    ]
+
+
+def test_shen_forth_adapter_is_experimental_argv_lists():
+    adapters = bifrost.load_adapters()
+    assert "shen-forth" in adapters
+    assert "shen-forth" in bifrost.IMPL_ORDER
+    cfg = adapters["shen-forth"]
+    assert cfg["env"] == "BIFROST_SHEN_FORTH"
+    assert cfg["default_paths"] == ["../shen-forth/bin/shen"]
+    assert cfg["status"] == "experimental"
+    assert cfg.get("kernel") == "42"
+    assert cfg["eval"] == ["{bin}", "eval", "-e", "{expr}"]
+    assert cfg["script"] == ["{bin}", "script", "{file}"]
+    assert cfg["version"] == ["{bin}", "--version"]
+    assert cfg["repl"] == ["{bin}"]
+    assert "SHEN_C_HOME" not in cfg
+    impl = {"cfg": cfg, "bin": "/tmp/shen-forth"}
+    assert bifrost.build_argv(impl, {"mode": "eval", "expr": "(+ 1 2)"}) == [
+        "/tmp/shen-forth", "eval", "-e", "(+ 1 2)"
+    ]
+    assert bifrost.build_argv(impl, {"mode": "script", "program": "/tmp/p.shen"}) == [
+        "/tmp/shen-forth", "script", "/tmp/p.shen"
+    ]
+
+
+def test_adapter_kernel_defaults_to_41_2():
+    assert bifrost.adapter_kernel({"cfg": {}}) == "41.2"
+    assert bifrost.adapter_kernel({"cfg": {"kernel": "42"}}) == "42"
+
+
+def test_available_for_case_filters_s42_from_41_2():
+    available = {
+        "shen-go": {"cfg": {"kernel": "41.2"}, "bin": "/tmp/go"},
+        "shen-c": {"cfg": {"kernel": "42"}, "bin": "/tmp/c"},
+        "shen-forth": {"cfg": {"kernel": "42"}, "bin": "/tmp/f"},
+    }
+    got = bifrost.available_for_case({"kernels": ["41.2"]}, available)
+    assert list(got) == ["shen-go"]
+    got42 = bifrost.available_for_case({"kernels": ["42"]}, available)
+    assert set(got42) == {"shen-c", "shen-forth"}
+    assert bifrost.available_for_case({}, available) is available
+
+
+def test_default_suite_cwd_is_repo_root():
+    assert bifrost.DEFAULT_SUITE["default_cwd"] == bifrost.HERE
+    assert bifrost.DEFAULT_SUITE["root"] == bifrost.HERE
+    probe = os.path.join(bifrost.HERE, "programs", "load-echo-probe.shen")
+    assert os.path.isfile(probe)
+    by_name = {c["name"]: c for c in bifrost.load_cases(include_heavy=False)}
+    assert by_name["load-toplevel-echo"].get("cwd") == "."
+
+
+def test_version_expr_cases_are_kernel_split():
+    cases = bifrost.load_cases(include_heavy=False)
+    by_name = {c["name"]: c for c in cases}
+    c412 = by_name["version-expr-41-2"]
+    c42 = by_name["version-expr-42"]
+    assert c412["golden"] == "41.2" and c412.get("kernels") == ["41.2"]
+    assert c42["golden"] == "42" and c42.get("kernels") == ["42"]
+    banner = by_name["version-banner-contains"]
+    assert banner.get("kernels") == ["41.2"]
+    assert banner.get("contains") == "41.2"
+
+
 # ---- subcommand router back-compat ---------------------------------------
 
 def test_router_passes_through_non_subcommands():

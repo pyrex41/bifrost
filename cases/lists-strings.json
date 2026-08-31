@@ -35,14 +35,16 @@
       "mode": "eval",
       "expr": "(@s \"foo\" \"bar\")",
       "expect": "output",
-      "golden": "foobar"
+      "golden": "foobar",
+      "doc": "eval print is unquoted (Go shen.a / S42 C display / Forth kl-print). KLambda str still quotes. shen-c and shen-forth must agree with each other on this surface."
     },
     {
       "name": "tlstr",
       "mode": "eval",
       "expr": "(tlstr \"hello\")",
       "expect": "output",
-      "golden": "ello"
+      "golden": "ello",
+      "doc": "string tail; CLI eval print unquoted so C and Forth agree with the Go golden"
     },
     {
       "name": "string-to-n",
@@ -56,7 +58,8 @@
       "mode": "eval",
       "expr": "(n->string 65)",
       "expect": "output",
-      "golden": "A"
+      "golden": "A",
+      "doc": "n->string result is a string; eval print unquoted (A not \"A\")"
     }
   ]
 }

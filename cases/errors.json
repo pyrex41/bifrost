@@ -15,14 +15,14 @@
       "expr": "(trap-error (simple-error \"boom\") (lambda E (error-to-string E)))",
       "expect": "output",
       "golden": "boom",
-      "doc": "user (simple-error ...) is catchable and error-to-string recovers the message identically everywhere"
+      "doc": "user (simple-error ...) is catchable and error-to-string recovers the message identically everywhere. Eval print is unquoted, so S42 C/Forth agree with the Go golden (boom not \"boom\")."
     },
     {
       "name": "error-message-head",
       "mode": "eval",
       "expr": "(trap-error (head []) (lambda E (error-to-string E)))",
       "expect": "agreement",
-      "doc": "the kernel error MESSAGE for (head []) should agree across impls (it does: 'head expects a non-empty list')"
+      "doc": "the kernel error MESSAGE for (head []) should agree across impls on the same kernel. S41.2 is 'head expects a non-empty list'; S42 sys.kl includes a trailing newline in the kernel string. Combined shen-go (41.2) vs shen-c/shen-forth (42) may FAIL — that is a kernel split, not a quoting bug."
     },
     {
       "name": "int-div-zero",

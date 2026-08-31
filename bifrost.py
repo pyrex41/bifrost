@@ -169,7 +169,7 @@ def find_adapters_path():
 ADAPTERS_PATH = os.path.join(HERE, "adapters.json")  # packaged default
 
 # Order in which impls appear in the matrix.
-IMPL_ORDER = ["shen-cl", "shen-go", "shen-erl", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle"]
+IMPL_ORDER = ["shen-cl", "shen-go", "shen-erl", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle", "shen-c", "shen-forth"]
 
 TIMEOUT_DEFAULT = 60      # seconds, per invocation
 TIMEOUT_HEAVY = 300       # seconds, for heavy (yggdrasil) cases
@@ -182,15 +182,17 @@ TIMEOUT_HEAVY = 300       # seconds, for heavy (yggdrasil) cases
 # `bifrost.suite.json` manifest (see build_suite_from_manifest / --suite).
 # --------------------------------------------------------------------------
 
-# Bifrost's own corpus. `default_cwd=None` -> launchers inherit Bifrost's cwd;
-# the built-in script-mode programs use absolute {file} paths so cwd is moot.
+# Bifrost's own corpus. Launchers run from the checkout so eval
+# `(load "programs/...")` is cwd-stable even when bifrost.py is invoked by
+# absolute path from another directory. Script-mode `{file}` paths are
+# already absolute.
 DEFAULT_SUITE = {
     "name": "bifrost",
     "programs_dir": PROGRAMS_DIR,
     "cases_dir": CASES_DIR,
     "inline_cases": None,
     "root": HERE,
-    "default_cwd": None,
+    "default_cwd": HERE,
     "extra_strip_prefixes": (),
 }
 
@@ -563,6 +565,19 @@ def _marker_check(results, marker):
     return (not missing), missing
 
 
+def adapter_kernel(impl):
+    """Kernel id from the adapter. Missing field means production 41.2."""
+    return (impl.get("cfg") or {}).get("kernel") or "41.2"
+
+
+def available_for_case(case, available):
+    """Restrict impls when a case lists `kernels` (e.g. 41.2 vs S42)."""
+    wanted = case.get("kernels")
+    if not wanted:
+        return available
+    return {n: i for n, i in available.items() if adapter_kernel(i) in wanted}
+
+
 def evaluate_case(case, available, heavy_timeout, suite=None):
     """Run case on every available impl and decide pass/fail/divergence.
 
@@ -571,7 +586,11 @@ def evaluate_case(case, available, heavy_timeout, suite=None):
       verdict : "PASS" | "FAIL" | "DIVERGE"
       detail  : human string
     """
+    available = available_for_case(case, available)
     results = {}
+    if not available:
+        return {"per_impl": results, "verdict": "PASS",
+                "detail": "skipped: no matching kernels"}
     for name, impl in available.items():
         results[name] = run_case_on_impl(name, impl, case, heavy_timeout, suite)
 

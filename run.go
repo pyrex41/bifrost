@@ -224,6 +224,7 @@ type aCase struct {
 	Table           map[string]string `json:"table"`
 	ShakeFiles      string            `json:"shake_files"`
 	Group           string            `json:"group"`
+	Kernels         []string          `json:"kernels"`
 }
 
 // buildArgv builds the argv for (impl, case) per its mode.

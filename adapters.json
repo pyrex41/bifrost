@@ -314,5 +314,59 @@
       "needs": ["git", "mvn", "java"]
     },
     "_install_note": "git-build clones shen-truffle and runs `mvn package -DskipTests`; the relocatable launcher is target/shen-truffle/bin/shen-truffle. Set $BIFROST_SHEN_TRUFFLE to override the path."
+  },
+
+  "shen-c": {
+    "env": "BIFROST_SHEN_C",
+    "default_paths": [
+      "../shen-c/bin/shen-c"
+    ],
+    "eval":    ["{bin}", "eval", "-e", "{expr}"],
+    "script":  ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "--version"],
+    "repl":    ["{bin}"],
+    "hush_writes_file": true,
+    "status": "experimental",
+    "kernel": "42",
+    "build": {
+      "cwd": "../shen-c",
+      "argv": ["make"],
+      "out": "bin/shen-c"
+    },
+    "install": {
+      "method": "git-build",
+      "package": "shen-c",
+      "git": "https://github.com/pyrex41/shen-c",
+      "needs": ["git", "make", "cc", "pkg-config"]
+    },
+    "_install_note": "experimental C port. git-build clones pyrex41/shen-c and runs `make` (C17 + Boehm GC via Nix pkg-config bdw-gc, not Homebrew libgc). The compiled launcher is bin/shen-c; it self-locates the kernel via home_from_executable() looking for shen/src/kl/sys.kl, so Bifrost must not set $SHEN_C_HOME. Point $BIFROST_SHEN_C at bin/shen-c if needed. Install is blocked unless `--force` because status is experimental.",
+    "_note": "S42 C tree-walker (kernel (version) is 42 unquoted on eval; --version banner is Shen-C 0.2.3, not 41.2). CLI: eval -e / eval -q -l / script FILE / --version / bare REPL. Eval print is unquoted (shen.a). Host pr override: *hush* gates stdout only. Boot loads types.kl declare and declarations.kl (shen.build-lambda-table (external shen)); do not skip them. C17 + Nix pkg-config bdw-gc, no Homebrew, no C++ rewrite. Prefer ../shen-c/bin/shen-c (not the rlwrap wrapper). Do not claim corpus green without a live runme.shen log. Go is AOT+interpreter on S41.2; C is a tree-walker on S42 — do not claim C should match Go wall times without a profile."
+  },
+
+  "shen-forth": {
+    "env": "BIFROST_SHEN_FORTH",
+    "default_paths": [
+      "../shen-forth/bin/shen"
+    ],
+    "eval":    ["{bin}", "eval", "-e", "{expr}"],
+    "script":  ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "--version"],
+    "repl":    ["{bin}"],
+    "hush_writes_file": true,
+    "status": "experimental",
+    "kernel": "42",
+    "build": {
+      "cwd": "../shen-forth",
+      "argv": ["make"],
+      "out": "bin/shen"
+    },
+    "install": {
+      "method": "git-build",
+      "package": "shen-forth",
+      "git": "https://github.com/pyrex41/shen-forth",
+      "needs": ["git", "gforth", "make"]
+    },
+    "_install_note": "experimental Gforth-first interpreter. git-build clones pyrex41/shen-forth; `make` runs the harness plus launcher KL eval after boot. bin/shen exports SHEN_FORTH_ROOT for kernel/klambda bootstrap and does not chdir — `open`/`load` stay process-cwd-relative. Needs gforth on PATH. Point $BIFROST_SHEN_FORTH at bin/shen if needed. Install is blocked unless `--force` because status is experimental.",
+    "_note": "S42 Gforth interpreter (kernel (version) is 42 unquoted on eval; --version is shen-forth 0.1.0-s42, not 41.2). Interpreter only: no AOT, no C, no Boehm (port-owned mark/sweep in src/heap.fs). CLI is argv lists: eval -e / script FILE / --version / bare REPL, plus eval -q -l for hush/load. script FILE is kernel (load FILE) in src/launcher.fs, not a KL slurp. *hush* gates stdout only (not stderr, not files; do not reuse shen.char-stoutput? as the hush predicate). Boot loads types.kl declare and declarations.kl (shen.build-lambda-table (external shen)); do not skip them. Canonical suite is kernel/tests/runme.shen (harness.shen + kerneltests.shen). Do not claim corpus green without a live runme.shen log. Compare reference is shen-go S41.2 (not shen-go-shen42). vs shen-go S41.2 goldens (version 41.2, float shortest-roundtrip, S41.2 error strings) may FAIL. bin/shen locates gforth via $GFORTH, PATH, flake result/bin/gforth, then Nix-store gforth-0.7.3 — Bifrost must not require gforth already on PATH."
   }
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -25,7 +26,38 @@ type suite struct {
 	useEmbedded   bool
 }
 
-func defaultSuite() suite { return suite{Name: "bifrost", useEmbedded: true} }
+func defaultSuite() suite {
+	root := bifrostCheckoutRoot()
+	return suite{Name: "bifrost", useEmbedded: true, Root: root, DefaultCwd: root}
+}
+
+// bifrostCheckoutRoot is the directory that contains programs/load-echo-probe.shen
+// so eval (load "programs/...") is cwd-stable when the binary is launched from
+// a parent directory. Falls back to process cwd.
+func bifrostCheckoutRoot() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = ""
+	}
+	dir := cwd
+	for i := 0; i < 6 && dir != ""; i++ {
+		if _, err := os.Stat(filepath.Join(dir, "programs", "load-echo-probe.shen")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+	if _, thisFile, _, ok := runtime.Caller(0); ok {
+		src := filepath.Dir(thisFile)
+		if _, err := os.Stat(filepath.Join(src, "programs", "load-echo-probe.shen")); err == nil {
+			return src
+		}
+	}
+	return cwd
+}
 
 type manifest struct {
 	Name              string   `json:"name"`
@@ -191,9 +223,37 @@ func resultFromInvocation(r runResult, extraPrefixes []string) *implResult {
 	return result
 }
 
+func adapterKernel(im Impl) string {
+	if im.Cfg.Kernel != "" {
+		return im.Cfg.Kernel
+	}
+	return "41.2"
+}
+
+func availableForCase(c aCase, available map[string]Impl) map[string]Impl {
+	if len(c.Kernels) == 0 {
+		return available
+	}
+	want := map[string]bool{}
+	for _, k := range c.Kernels {
+		want[k] = true
+	}
+	out := map[string]Impl{}
+	for n, im := range available {
+		if want[adapterKernel(im)] {
+			out[n] = im
+		}
+	}
+	return out
+}
+
 // evaluateCase runs a case across impls and decides the verdict.
 func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir string, heavyTimeout time.Duration) caseResult {
+	available = availableForCase(c, available)
 	results := map[string]*implResult{}
+	if len(available) == 0 {
+		return caseResult{PerImpl: results, Verdict: "PASS", Detail: "skipped: no matching kernels"}
+	}
 	for name, im := range available {
 		results[name] = runCaseOnImpl(im, c, s, programsDir, heavyTimeout)
 	}
