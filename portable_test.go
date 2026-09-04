@@ -299,7 +299,7 @@ func TestReorderArgs(t *testing.T) {
 }
 
 func TestRouterRecognisesSubcommands(t *testing.T) {
-	for _, v := range []string{"run", "eval", "repl", "impls", "use", "install", "build"} {
+	for _, v := range []string{"run", "eval", "repl", "impls", "use", "env", "install", "build"} {
 		if !subcommands[v] {
 			t.Errorf("subcommand %q not recognised", v)
 		}

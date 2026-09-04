@@ -263,7 +263,7 @@ Parsing, image decoding, Shen kernel boot, and process startup are outside the t
 Reproduce from the Bifrost checkout:
 
 ~~~sh
-nix run .#env -- shen-go shen-joy -- go run . bench shen-joy-vs-shen-go --samples %d --iterations 500 --benchtime 500ms
+nix run .#env -- shen-go shen-joy -- bifrost bench shen-joy-vs-shen-go --samples %d --iterations 500 --benchtime 500ms
 ~~~
 `, r.GeneratedUTC, r.Machine, r.Platform, shortRev(r.ShenJoyRev), shortRev(r.ShenGoRev), r.GoVersion, r.ImageSHA,
 		jmed, jlo, jhi, r.Samples, gmed, glo, ghi, r.Samples, comparison,

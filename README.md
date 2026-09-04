@@ -94,24 +94,22 @@ Only real `FAIL` rows set a non-zero exit code.
 
 ### Install
 
-Bifrost is a single static **Go binary** (no runtime deps), distributed two
-ways — pick whichever suits you:
+Bifrost is implemented as a static **Go binary**. Nix is the preferred way to
+build Bifrost and manage the language/tool dependencies of every Shen port:
 
 ```bash
-# 1. Go toolchain — installs to $GOBIN:
-go install github.com/pyrex41/bifrost@latest
-
-# 2. Prebuilt release binary (no toolchain) — download for your OS/arch from
-#    the GitHub Releases page (produced by GoReleaser on each v* tag), unpack,
-#    put `bifrost` on your PATH.
-
+nix run github:pyrex41/bifrost
+nix build github:pyrex41/bifrost
 ```
 
-The binary embeds `adapters.json` + the corpus, so it is self-contained — but
-the Shen *ports* it drives are resolved on your machine. Point it at your ports
-with the per-impl env vars (below) or a project-local `adapters.json`;
-resolution order is `$BIFROST_ADAPTERS` → `./adapters.json` → the embedded
-default.
+Prebuilt releases and `go install github.com/pyrex41/bifrost@latest` remain
+available for the dependency-free CLI itself. They do not manage port
+toolchains; use `bifrost env` with Nix for that.
+
+The binary embeds `adapters.json` + the corpus. Shen launchers are resolved
+from the selected Nix environment, per-port environment variables, or sibling
+checkouts. Adapter configuration resolves in this order:
+`$BIFROST_ADAPTERS` → `./adapters.json` → the embedded default.
 
 `go test ./...` covers the corpus, adapter contract, command routing, and
 parameterised Windows/Linux/macOS portability helpers. CI runs that same Go
@@ -119,9 +117,11 @@ suite on all three host families.
 
 ### Reproducible Shen matrix with Nix
 
-Nix is the recommended convenience path for a reproducible multi-port matrix,
-but it is optional. Direct `go run .`, the release binary, and every adapter
-continue to work with ordinary tools from `PATH`.
+Nix is the supported, preferred port-management path. Go is Bifrost's
+implementation language; it is not the mechanism used to install the many
+language runtimes behind the ports. Direct binaries can still use explicitly
+configured launchers from `PATH`, but that fallback is not the reproducible
+matrix.
 
 Each Shen port repository owns a small flake exporting its `devShell` and a
 `toolchain` package. Bifrost owns only its own development environment and a
@@ -132,24 +132,30 @@ nix develop                         # Bifrost development only
 nix develop ../shen-rust            # one port, directly
 nix develop ../shen-truffle          # Maven + pinned GraalVM 25.0.2
 nix build                           # build the Bifrost Go binary
+nix run .                           # run the Nix-built Bifrost CLI
 ```
 
-Use Bifrost's composer for one port, an ad-hoc subset, or the whole matrix. The
-`--` separates port names from the command to run; without a command it starts
-your shell.
+Use `bifrost env` for one port, an ad-hoc subset, or the complete supported
+matrix. It validates names against the adapter registry and composes each
+selected sibling repository's pinned `#toolchain`. The `--` separates port
+names from the command; without a command it starts your shell.
 
 ```bash
 nix run .#env -- shen-rust -- cargo test
-nix run .#env -- shen-rust shen-erl -- go run . --impls shen-rust,shen-erl
-nix run .#env -- shen-go shen-joy -- go run . bench shen-joy-vs-shen-go
-nix run .#env -- all -- go run .
+nix run .#env -- shen-rust shen-erl -- bifrost --impls shen-rust,shen-erl
+nix run .#env -- shen-go shen-joy -- bifrost bench shen-joy-vs-shen-go
+nix run .#env -- all -- bifrost
+
+# Equivalent when a Nix-built or release `bifrost` is already on PATH:
+bifrost env shen-go shen-joy -- bifrost bench shen-joy-vs-shen-go
 ```
 
 From a sibling checkout, replace `.` with `../bifrost`. Set
 `BIFROST_PORTS_ROOT` when the port repositories do not share Bifrost's parent
 directory. Port flakes remain independently usable and independently pinned;
-Bifrost composes them without duplicating their dependency lists. Shen
-launchers are still resolved through `adapters.json`.
+Bifrost composes them without duplicating dependency lists or installing
+language runtimes globally. Shen launchers are still resolved through
+`adapters.json`.
 
 For automatic activation, install direnv once and authorize this checkout:
 
@@ -290,7 +296,8 @@ bifrost eval -e '(+ 2 3)' [--impl X]
 bifrost repl [--impl X]            # interactive REPL (inherits your terminal)
 bifrost impls [--versions]         # list ports: state, kernel (live probe), status, active(*)
 bifrost use IMPL [--project]       # set the active port (global, or ./.bifrost-impl pin)
-bifrost install IMPL [--method M] [--git URL] [--ref R] [--force]
+bifrost env IMPL [IMPL ...|all] -- COMMAND   # preferred: compose pinned Nix toolchains
+bifrost install IMPL [--method M] [--git URL] [--ref R] [--force] # legacy fallback
 bifrost build prog.shen OUT --target T [--run]   # standalone artifact (delegates to Yggdrasil)
 ```
 
@@ -308,9 +315,26 @@ per-command override beats a pin beats the global default):
 READMEs' badges drift — e.g. shen-cl's says 41.1 but it reports 41.2), so the
 matrix of who-is-on-what is always accurate.
 
-### Installing a port
+### Managing ports with Nix
 
-Each port declares an **install backend** in `adapters.json` (asdf/mise style):
+Each supported port repository exports a pinned `#toolchain`. Bifrost composes
+those packages without copying their dependency declarations:
+
+```bash
+bifrost env shen-go -- bifrost repl --impl shen-go
+bifrost env shen-go shen-joy -- bifrost --impls shen-go,shen-joy
+bifrost env all -- bifrost
+```
+
+Sibling checkouts are found under the parent of the active adapter file. Set
+`BIFROST_PORTS_ROOT` or pass `--root DIR` for another layout. Missing flakes,
+unknown ports, and missing Nix are explicit errors.
+
+### Legacy mutable installation
+
+`bifrost install` is retained for platforms or ports that cannot use Nix. It
+mutates global or checkout-local state and is not the preferred reproducible
+workflow. Each port declares its fallback backend in `adapters.json`:
 
 | method | ports | what runs |
 |---|---|---|
@@ -343,7 +367,7 @@ Port-specific install notes (see each adapter's `_install_note`):
   precompiling the kernel requires an already-working Shen. After that,
   `bifrost install shen-cl` (which runs `make build-sbcl`) works as usual.
 
-#### Fresh-machine bootstrap (verified on a clean Linux container)
+#### Legacy fresh-machine bootstrap (verified on a clean Linux container)
 
 On a machine with none of the ports present, this order works with the fewest
 prerequisites (each port lands at the clone/launcher locations in
@@ -511,7 +535,8 @@ Add `--shake` to run a suite's script-mode entrypoint through the
   adapters.go         port registry: load / discover / resolve / os_overrides
   run.go              launch path: build_argv, run, normalize, exec wrapping
   front.go            verbs: run/eval/repl/impls/use
-  install.go          install backends + build (delegates to yggdrasil)
+  env.go              preferred Nix composition of port-owned toolchains
+  install.go          legacy mutable installers + build delegation
   matrix.go,runmatrix.go  differential test matrix, --suite, reporting
   shake.go            --shake + yggdrasil-parity (drive the Go yggdrasil)
   *_test.go           cross-platform unit tests (go test ./...)

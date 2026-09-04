@@ -34,7 +34,8 @@ func runStep(argv []string, cwd string, env map[string]string) bool {
 	return cmd.Run() == nil
 }
 
-// cmdInstall installs a port via its declared backend.
+// cmdInstall installs a port via a legacy mutable backend. Reproducible use
+// should prefer cmdEnv and the port-owned Nix flakes.
 func cmdInstall(rest []string, a *Adapters) int {
 	fs := newFlagSet("bifrost install")
 	method := fs.String("method", "", "override install method (brew/npm/luarocks/git-build)")
@@ -48,6 +49,7 @@ func cmdInstall(rest []string, a *Adapters) int {
 		fmt.Fprintln(os.Stderr, "bifrost install: need an impl name")
 		return 2
 	}
+	fmt.Fprintln(os.Stderr, "bifrost: note: mutable install backends are a fallback; prefer `bifrost env PORT -- COMMAND`")
 	name := fs.Arg(0)
 	if !a.has(name) {
 		fmt.Fprintf(os.Stderr, "bifrost: unknown impl %q (known: %s)\n", name, strings.Join(a.names(), ", "))

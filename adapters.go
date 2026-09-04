@@ -207,7 +207,7 @@ func (a *Adapters) resolveOne(name string) (Impl, error) {
 	}
 	bin := a.resolveBin(name, cfg)
 	if bin == "" {
-		return Impl{}, fmt.Errorf("%s is not installed/built. Try: bifrost install %s", name, name)
+		return Impl{}, fmt.Errorf("%s is not available; prefer: bifrost env %s -- bifrost <command>", name, name)
 	}
 	return Impl{Name: name, Cfg: cfg, Bin: bin}, nil
 }

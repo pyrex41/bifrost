@@ -119,7 +119,7 @@ func cmdLaunch(verb string, rest []string, a *Adapters) int {
 
 	name, source := resolveActiveImpl(a, *impl)
 	if name == "" {
-		fmt.Fprintln(os.Stderr, "bifrost: no impl available; try `bifrost install <impl>`")
+		fmt.Fprintln(os.Stderr, "bifrost: no impl available; enter a port's Nix environment with `bifrost env <impl> -- bifrost <command>`")
 		return 2
 	}
 	im, err := a.resolveOne(name)

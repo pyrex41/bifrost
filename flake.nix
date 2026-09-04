@@ -18,6 +18,7 @@
             src = self;
             vendorHash = null;
             doCheck = true;
+            meta.mainProgram = "bifrost";
           };
           toolchain = pkgs.buildEnv { name = "bifrost-toolchain"; paths = base; };
           env = pkgs.writeShellApplication {
@@ -27,33 +28,16 @@
             # installation which launched this app rather than nesting one.
             runtimeInputs = base;
             text = ''
-              all_ports=(shen-cl shen-go shen-joy shen-erl shen-rust shen-lua ShenScript shen-scheme shen-julia shen-swift shen-truffle shen-c)
-              selected=()
-              while [[ $# -gt 0 && "$1" != "--" ]]; do
-                if [[ "$1" == "all" ]]; then selected=("''${all_ports[@]}"); else selected+=("$1"); fi
-                shift
-              done
-              if [[ $# -gt 0 ]]; then shift; fi
-              if [[ ''${#selected[@]} -eq 0 ]]; then
-                echo "usage: nix run .#env -- PORT [PORT ...|all] -- COMMAND [ARG ...]" >&2
-                exit 2
-              fi
-              workspace="''${BIFROST_PORTS_ROOT:-$(dirname "$PWD")}" 
-              installables=()
-              for port in "''${selected[@]}"; do
-                if [[ ! -f "$workspace/$port/flake.nix" ]]; then
-                  echo "bifrost-env: no port flake at $workspace/$port" >&2
-                  exit 2
-                fi
-                installables+=("path:$workspace/$port#toolchain")
-              done
-              if [[ $# -eq 0 ]]; then set -- "''${SHELL:-sh}"; fi
-              exec nix shell "''${installables[@]}" --command "$@"
+              exec ${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/bifrost env "$@"
             '';
           };
         });
 
       apps = forAllSystems (pkgs: {
+        default = {
+          type = "app";
+          program = "${self.packages.${pkgs.stdenv.hostPlatform.system}.default}/bin/bifrost";
+        };
         env = {
           type = "app";
           program = "${self.packages.${pkgs.stdenv.hostPlatform.system}.env}/bin/bifrost-env";
