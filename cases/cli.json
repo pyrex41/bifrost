@@ -22,7 +22,7 @@
       "mode": "version",
       "expect": "version",
       "contains": "42",
-      "doc": "CLI parity: the --version banner contains runtime kernel version 42. shen-lua has no --version flag, so Bifrost falls back to eval of (version). Experimental shen-c/shen-forth banners are port-local; this case uses kernels/adapters that emit 42."
+      "doc": "CLI parity: the --version banner contains runtime kernel version 42. shen-lua has no --version flag, so Bifrost falls back to eval of (version). The experimental shen-c banner is port-local; this case uses kernels/adapters that emit 42."
     },
     {
       "name": "stdin-eof-clean-exit",

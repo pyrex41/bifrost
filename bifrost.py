@@ -169,7 +169,7 @@ def find_adapters_path():
 ADAPTERS_PATH = os.path.join(HERE, "adapters.json")  # packaged default
 
 # Order in which impls appear in the matrix.
-IMPL_ORDER = ["shen-cl", "shen-go", "shen-erl", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle", "shen-c", "shen-forth"]
+IMPL_ORDER = ["shen-cl", "shen-go", "shen-erl", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle", "shen-c"]
 
 TIMEOUT_DEFAULT = 60      # seconds, per invocation
 TIMEOUT_HEAVY = 300       # seconds, for heavy (yggdrasil) cases

@@ -5,7 +5,7 @@
 
   outputs = { self, nixpkgs }:
     let
-      systems = [ "aarch64-darwin" "x86_64-darwin" "aarch64-linux" "x86_64-linux" ];
+      systems = [ "aarch64-darwin" "aarch64-linux" "x86_64-linux" ];
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
     in {
       packages = forAllSystems (pkgs:
@@ -28,7 +28,7 @@
             # installation which launched this app rather than nesting one.
             runtimeInputs = base;
             text = ''
-              all_ports=(shen-cl shen-go shen-erl shen-rust shen-lua ShenScript shen-scheme shen-julia shen-swift shen-truffle shen-c shen-forth)
+              all_ports=(shen-cl shen-go shen-erl shen-rust shen-lua ShenScript shen-scheme shen-julia shen-swift shen-truffle shen-c)
               selected=()
               while [[ $# -gt 0 && "$1" != "--" ]]; do
                 if [[ "$1" == "all" ]]; then selected=("''${all_ports[@]}"); else selected+=("$1"); fi

@@ -227,66 +227,17 @@ func TestShenCAdapter(t *testing.T) {
 	}
 }
 
-func TestShenForthAdapter(t *testing.T) {
-	a, err := loadAdapters()
-	if err != nil {
-		t.Fatal(err)
-	}
-	cfg, err := a.effectiveForPlatform("shen-forth", "linux")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cfg.Env != "BIFROST_SHEN_FORTH" || cfg.Status != "experimental" || cfg.Kernel != "42" {
-		t.Fatalf("unexpected shen-forth adapter: %#v", cfg)
-	}
-	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-forth/bin/shen" {
-		t.Fatalf("shen-forth default_paths = %v, want [../shen-forth/bin/shen] only", cfg.DefaultPaths)
-	}
-	impl := Impl{Name: "shen-forth", Cfg: cfg, Bin: "/tmp/shen-forth"}
-	evalGot := buildArgv(impl, aCase{Mode: "eval", Expr: "(+ 1 2)"}, "")
-	evalWant := []string{"/tmp/shen-forth", "eval", "-e", "(+ 1 2)"}
-	if !reflect.DeepEqual(evalGot, evalWant) {
-		t.Fatalf("shen-forth eval argv = %v, want %v", evalGot, evalWant)
-	}
-	scriptGot := buildArgv(impl, aCase{Mode: "script", Program: "/tmp/p.shen"}, "")
-	scriptWant := []string{"/tmp/shen-forth", "script", "/tmp/p.shen"}
-	if !reflect.DeepEqual(scriptGot, scriptWant) {
-		t.Fatalf("shen-forth script argv = %v, want %v", scriptGot, scriptWant)
-	}
-	versionGot := buildArgv(impl, aCase{Mode: "version"}, "")
-	versionWant := []string{"/tmp/shen-forth", "--version"}
-	if !reflect.DeepEqual(versionGot, versionWant) {
-		t.Fatalf("shen-forth version argv = %v, want %v", versionGot, versionWant)
-	}
-	replGot := buildArgv(impl, aCase{Mode: "repl-eof"}, "")
-	replWant := []string{"/tmp/shen-forth"}
-	if !reflect.DeepEqual(replGot, replWant) {
-		t.Fatalf("shen-forth repl argv = %v, want %v", replGot, replWant)
-	}
-	found := false
-	for _, name := range implOrder {
-		if name == "shen-forth" {
-			found = true
-			break
-		}
-	}
-	if !found {
-		t.Fatal("implOrder omits shen-forth")
-	}
-}
-
 func TestAvailableForCaseKernelSplit(t *testing.T) {
 	available := map[string]Impl{
-		"shen-go":    {Name: "shen-go", Cfg: Adapter{Kernel: "41.2"}},
-		"shen-c":     {Name: "shen-c", Cfg: Adapter{Kernel: "42"}},
-		"shen-forth": {Name: "shen-forth", Cfg: Adapter{Kernel: "42"}},
+		"shen-go": {Name: "shen-go", Cfg: Adapter{Kernel: "41.2"}},
+		"shen-c":  {Name: "shen-c", Cfg: Adapter{Kernel: "42"}},
 	}
 	got := availableForCase(aCase{Kernels: []string{"41.2"}}, available)
 	if len(got) != 1 || got["shen-go"].Name != "shen-go" {
 		t.Fatalf("41.2 filter = %#v", got)
 	}
 	got42 := availableForCase(aCase{Kernels: []string{"42"}}, available)
-	if len(got42) != 2 || got42["shen-c"].Name == "" || got42["shen-forth"].Name == "" {
+	if len(got42) != 1 || got42["shen-c"].Name == "" {
 		t.Fatalf("42 filter = %#v", got42)
 	}
 	if adapterKernel(Impl{Cfg: Adapter{}}) != "41.2" {
