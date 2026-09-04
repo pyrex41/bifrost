@@ -2,7 +2,7 @@
 .bin/
 
 # Scratch output from runs (hush-write temp files, shake artefacts).
-# Anchored to repo root so it never matches the pybin/bifrost_cli package.
+# Anchored to the repository root.
 /scratch/
 *.out
 /bifrost_*/
@@ -18,17 +18,13 @@
 # Local Claude Code session config.
 .claude/
 
-# Python
-__pycache__/
-*.pyc
-.pytest_cache/
-.venv/
-
 # OS
 .DS_Store
 
-# Compiled Go binary bundled into the uvx wheel at build time.
-pybin/*/_bin/
+# Editor/tool caches that may be left by external tooling.
+__pycache__/
+*.pyc
+.pytest_cache/
 
 # Default `go build` output (binary name == module name).
 /bifrost

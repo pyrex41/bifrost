@@ -107,7 +107,7 @@ func launcherArgv(cfg Adapter, argv []string) []string {
 }
 
 // normalize strips launcher chatter so behaviour is compared, not chrome. A
-// faithful port of bifrost.py's normalize (run-time banner, (fn ...) load
+// shared output normalizer (run-time banner, (fn ...) load
 // echoes, shen-lua's trailing value echo, suite-supplied prefixes, blank runs).
 func normalize(text string, extraPrefixes []string) string {
 	text = strings.ReplaceAll(text, "\r\n", "\n")
@@ -166,7 +166,7 @@ func normalize(text string, extraPrefixes []string) string {
 	return strings.Join(collapsed, "\n")
 }
 
-// runResult mirrors Python run_invocation's dict.
+// runResult captures the portable process outcome used by the matrix.
 type runResult struct {
 	Rc      int // -1 if unknown/timeout
 	Out     string

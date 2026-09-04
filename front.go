@@ -12,7 +12,7 @@ import (
 
 const projectPin = ".bifrost-impl"
 
-// userConfigDir mirrors bifrost.py: %APPDATA%\bifrost on Windows, else
+// userConfigDir uses %APPDATA%\bifrost on Windows, else
 // $XDG_CONFIG_HOME/bifrost or ~/.config/bifrost.
 func userConfigDir() string {
 	home, _ := os.UserHomeDir()

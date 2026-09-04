@@ -11,7 +11,7 @@ import (
 
 // implOrder is the order ports appear in the matrix and in listings.
 var implOrder = []string{
-	"shen-cl", "shen-go", "shen-erl", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle", "shen-c",
+	"shen-cl", "shen-go", "shen-joy", "shen-erl", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle", "shen-c",
 }
 
 // BuildRecipe is a port's source-build step (git-build install + yggdrasil host).
@@ -110,7 +110,7 @@ func (a *Adapters) names() []string {
 }
 
 // effective parses an adapter and shallow-merges its os_overrides for the
-// current platform (runtime.GOOS mapped to Python's sys.platform names).
+// current platform (runtime.GOOS mapped to the adapter schema's platform keys).
 func (a *Adapters) effective(name string) (Adapter, error) {
 	return a.effectiveForPlatform(name, platformKey())
 }
@@ -123,7 +123,7 @@ func (a *Adapters) effectiveForPlatform(name, platform string) (Adapter, error) 
 	}
 	if ov, ok := ad.OSOverrides[platform]; ok {
 		// Unmarshaling the override into the same struct overwrites exactly the
-		// fields the override sets (shallow merge), matching the Python dict.update.
+		// fields the override sets (a shallow merge).
 		if err := json.Unmarshal(ov, &ad); err != nil {
 			return ad, err
 		}

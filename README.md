@@ -20,8 +20,8 @@ Differential testing is its origin, but Bifrost is now three things:
 3. **a Roswell-style front door** — [`run`/`eval`/`repl`/`impls`/`use`/`install`/`build`](#bifrost-as-a-shen-front-door-roswell-style)
    give Shen one CLI across all ports, on Linux, macOS **and Windows**.
 
-It is packaged as a [uv](https://docs.astral.sh/uv/) tool, so it runs with no
-install: `uvx --from git+https://…/bifrost bifrost …`.
+The implementation is a single Go binary with no Python runtime or packaging
+dependency.
 
 ## The three-way distinction (read this first)
 
@@ -81,17 +81,12 @@ Each case is one of two modes:
 ## Running it
 
 ```bash
-# Standalone runner — works with just python3, no third-party deps:
-python3 bifrost.py                 # light cases + matrix; exit !=0 on real FAIL
-python3 bifrost.py --heavy         # also run the yggdrasil stage-1 parity case
-python3 bifrost.py --list          # list discovered impls + cases
-python3 bifrost.py --only int-mul float-add-imprecise
-python3 bifrost.py --impls shen-cl,shen-go
-python3 bifrost.py --json          # machine-readable result blob
-
-# Optional pytest wrapper (same corpus; divergences become xfail):
-pytest
-BIFROST_HEAVY=1 pytest -k yggdrasil
+go run .                           # light cases + matrix; exit !=0 on real FAIL
+go run . --heavy                   # also run the Yggdrasil stage-1 parity case
+go run . --list                    # list discovered impls + cases
+go run . --only int-mul,float-add-imprecise
+go run . --impls shen-cl,shen-go
+go run . --json                    # machine-readable result blob
 ```
 
 `DIVERGE` rows are reported in their own section and **do not** fail the run.
@@ -99,7 +94,7 @@ Only real `FAIL` rows set a non-zero exit code.
 
 ### Install
 
-Bifrost is a single static **Go binary** (no runtime deps), distributed three
+Bifrost is a single static **Go binary** (no runtime deps), distributed two
 ways — pick whichever suits you:
 
 ```bash
@@ -110,9 +105,6 @@ go install github.com/pyrex41/bifrost@latest
 #    the GitHub Releases page (produced by GoReleaser on each v* tag), unpack,
 #    put `bifrost` on your PATH.
 
-# 3. uvx — builds the Go binary on your machine and runs it (needs Go installed):
-uvx --from git+https://github.com/pyrex41/bifrost bifrost --list
-uvx --from . bifrost impls                            # from a local checkout
 ```
 
 The binary embeds `adapters.json` + the corpus, so it is self-contained — but
@@ -121,16 +113,15 @@ with the per-impl env vars (below) or a project-local `adapters.json`;
 resolution order is `$BIFROST_ADAPTERS` → `./adapters.json` → the embedded
 default.
 
-> The Python implementation (`bifrost.py`) remains in the repo as the reference
-> oracle the Go binary is tested against (`bifrost --json` is byte-identical to
-> `python bifrost.py --json` across the corpus); `go test ./...` plus a
-> Windows/Linux/macOS CI matrix guard the binary.
+`go test ./...` covers the corpus, adapter contract, command routing, and
+parameterised Windows/Linux/macOS portability helpers. CI runs that same Go
+suite on all three host families.
 
 ### Reproducible Shen matrix with Nix
 
 Nix is the recommended convenience path for a reproducible multi-port matrix,
-but it is optional. Direct `go run .`, the release binary, `bifrost.py`, and
-every adapter continue to work with ordinary tools from `PATH`.
+but it is optional. Direct `go run .`, the release binary, and every adapter
+continue to work with ordinary tools from `PATH`.
 
 Each Shen port repository owns a small flake exporting its `devShell` and a
 `toolchain` package. Bifrost owns only its own development environment and a
@@ -150,6 +141,7 @@ your shell.
 ```bash
 nix run .#env -- shen-rust -- cargo test
 nix run .#env -- shen-rust shen-erl -- go run . --impls shen-rust,shen-erl
+nix run .#env -- shen-go shen-joy -- go run . bench shen-joy-vs-shen-go
 nix run .#env -- all -- go run .
 ```
 
@@ -167,7 +159,7 @@ direnv allow
 
 The checked-in `.envrc` enters the lightweight default shell whenever the
 Bifrost directory becomes active. Lefthook uses the same environment for
-formatting and syntax checks on commit and the fast Go/Python portability/flake
+formatting and tests on commit and the fast Go portability/flake
 checks before push. The live
 multi-port matrix remains an explicit Bifrost run because it is substantially
 slower:
@@ -187,15 +179,16 @@ diffs them. This checks the real stand-alone deploy path, not just
 load-from-source.
 
 ```bash
-python3 bifrost.py --shake --only recursion-fib-file   # all buildable targets
-python3 bifrost.py --shake --impls shen-lua,ShenScript # just the fast ones
+go run . --shake --only recursion-fib-file             # all buildable targets
+go run . --shake --impls shen-lua,ShenScript           # just the fast ones
 ```
 
 Artifacts map onto their impl column (lisp→`shen-cl`, lua→`shen-lua`,
-go→`shen-go`, erlang→`shen-erl`, rust→`shen-rust`, js→`ShenScript`,
+go→`shen-go`, joy→`shen-joy`, erlang→`shen-erl`, rust→`shen-rust`, js→`ShenScript`,
 julia→`shen-julia`, scheme→`shen-scheme`, swift→`shen-swift`,
-truffle→`shen-truffle`) — all ten ports have a
-Yggdrasil builder. Needs the per-target toolchains
+truffle→`shen-truffle`). The Joy target is a bounded image target, not a full
+Shen implementation: unsupported KLambda exits with capability status 3 and is
+reported as SKIP. Needs the per-target toolchains
 (`sbcl`/`luajit`/`go`/Erlang/`cargo`/`node`/`julia`/`chez`/`swift`/`mvn` + Java) and
 `$BIFROST_YGGDRASIL_DIR` (default `../yggdrasil`); missing toolchains are
 skipped, not failed. This mode is minutes, not seconds: go/rust compile from
@@ -207,9 +200,11 @@ self-contained Chez program; the **swift** target drives the shen-swift
 tree-walking interpreter on the shaken slice in `--shaken` mode (booting a
 ~200-line kernel instead of the full ~2500-line kernel).
 
-`--shake` drives the **Go `yggdrasil` binary** (resolved on `$PATH`, else
-`$YGGDRASIL_BIN`, else `$BIFROST_YGGDRASIL_DIR` / a sibling `../yggdrasil`); no
-Python is involved. The heavy `yggdrasil-shake-parity` case (`--heavy`) likewise
+`--shake` drives the **Go `yggdrasil` binary** (resolved from explicit
+`$BIFROST_YGGDRASIL_BIN`/`$YGGDRASIL_BIN`, then `$PATH`, then
+`$BIFROST_YGGDRASIL_DIR` / a sibling `../yggdrasil`). Bifrost orchestration is
+Go; target-specific build tooling belongs to Yggdrasil. The heavy
+`yggdrasil-shake-parity` case (`--heavy`) likewise
 shakes on each host via the Go yggdrasil and diffs the kernel.kl/manifest md5s.
 
 ## How implementations are located
@@ -227,6 +222,7 @@ Defaults (see [`adapters.json`](adapters.json)):
 |------|--------------|------------------|
 | `shen-cl` | `BIFROST_SHEN_CL` | `…/shen-cl/bin/sbcl/shen` (also `clisp`, `ecl`) |
 | `shen-go` | `BIFROST_SHEN_GO` | `.bin/shen-go` (build: `go build -o .bin/shen-go ./cmd/shen`) |
+| `shen-joy` | `BIFROST_SHEN_JOY` | `…/shen-joy/build/shen-joy` (validated-image target; source/eval/REPL cases SKIP) |
 | `shen-erl` | `BIFROST_SHEN_ERL` | `…/shen-erl/bin/shen-erl` (Erlang/OTP) |
 | `shen-rust` | `BIFROST_SHEN_RUST` | `…/shen-rust/target/release/shen-rust` |
 | `shen-lua` | `BIFROST_SHEN_LUA` | `…/shen-lua/bin/shen` (needs `luajit`; falls back to the luarocks-installed `/usr/local/bin/shen`) |
@@ -237,12 +233,29 @@ Defaults (see [`adapters.json`](adapters.json)):
 | `shen-truffle` | `BIFROST_SHEN_TRUFFLE` | `…/shen-truffle/target/shen-truffle/bin/shen-truffle` (build: `mvn package -DskipTests`) |
 | `shen-c` | `BIFROST_SHEN_C` | `…/shen-c/bin/shen-c` (experimental S42; self-locates, no `$SHEN_C_HOME`) |
 
-Ports listed above target ShenOSKernel **42.0** (runtime `(version)` is `42`).
+The full Shen ports listed above target ShenOSKernel **42.0** (runtime
+`(version)` is `42`); shen-joy identifies itself as a bounded S42-derived
+subset rather than claiming kernel compatibility.
 `shen-c` stays **experimental** and self-locates its kernel (do not set
 `$SHEN_C_HOME`). Run `bifrost impls --versions` to see the live per-port kernel
 version, install state, and which is active. Unfinished `shen-forth`,
 `shen-inets`, `shen-ocaml`, and `shen-odin` have development flakes but are not
 advertised as Bifrost implementations.
+
+## shen-joy vs shen-go benchmark
+
+The `bench shen-joy-vs-shen-go` command measures the shared, first-order
+self-tail-recursive `sum-mid(0, 8000)` kernel. Parsing, image validation, kernel
+boot, and process startup are kept outside both timed regions. It emits a
+Markdown report by default, JSON with `--json`, and can persist the report with
+`--output FILE`. The report includes all samples, revisions, toolchain, machine,
+image checksum, and shen-joy instruction count. It is deliberately a narrow VM
+comparison; it is not a full-Shen score.
+
+```bash
+nix run .#env -- shen-go shen-joy -- go run . bench shen-joy-vs-shen-go \
+  --samples 10 --iterations 500 --benchtime 500ms --output ../shen-joy/docs/benchmark.md
+```
 
 To build shen-go locally into the gitignored `.bin/`:
 
@@ -365,13 +378,12 @@ installed.
 
 ### Windows / Linux / macOS
 
-The `bifrost` tool itself is pure-stdlib Python and runs on all three. The
-plumbing is OS-aware:
+The static Go `bifrost` binary runs on all three. The plumbing is OS-aware:
 
 - **Launcher resolution** — extensionless `default_paths` also match
   `shen.exe` / `shen.cmd` / `shen.bat` on Windows (via `PATHEXT`); a
-  `.bat`/`.cmd`/`.sh` launcher is auto-wrapped (`cmd /c` / `sh`) so it runs
-  through Python's shell-less `subprocess`.
+  `.bat`/`.cmd`/`.sh` launcher is auto-wrapped (`cmd /c` / `sh`) before Go's
+  `os/exec` starts it.
 - **Config** — the global active-impl pin lives in `%APPDATA%\bifrost\impl` on
   Windows, `$XDG_CONFIG_HOME`/`~/.config/bifrost/impl` elsewhere.
 - **Per-OS adapter tweaks** — an adapter may carry an `os_overrides` block
@@ -400,9 +412,9 @@ A project plugs in by dropping a **`bifrost.suite.json`** manifest in its repo
 and running:
 
 ```bash
-python3 /path/to/bifrost/bifrost.py --suite /path/to/project/bifrost.suite.json --heavy
+bifrost --suite /path/to/project/bifrost.suite.json --heavy
 # or, checked out side-by-side:
-python3 ../bifrost/bifrost.py --suite ./bifrost.suite.json --heavy
+go run ../bifrost --suite ./bifrost.suite.json --heavy
 ```
 
 Ports are resolved from Bifrost's own [`adapters.json`](adapters.json) (launcher
@@ -469,17 +481,6 @@ Add `--shake` to run a suite's script-mode entrypoint through the
 [deploy-path parity](#shake-then-run-deploy-path-parity) pipeline: each port's
 *standalone artifact* is built and diffed, not just the load-from-source run.
 
-### Scripting it (importable API)
-
-`bifrost.py` is importable; the manifest path is just sugar over it:
-
-```python
-import bifrost
-suite = bifrost.build_suite_from_manifest("path/to/bifrost.suite.json")
-blob, results, available, skipped, cases = bifrost.run_suite(suite, include_heavy=True)
-print(blob["cases"]["self-suite"]["verdict"])   # PASS / FAIL / DIVERGE
-```
-
 ## Adding a case
 
 1. If the case needs a `.shen` program, drop it in `programs/`. End it with a
@@ -500,7 +501,7 @@ print(blob["cases"]["self-suite"]["verdict"])   # PASS / FAIL / DIVERGE
 
    For an agreement case that is a *documented* difference, add
    `"known_divergence": "some-tag"` and omit the golden.
-3. Run `python3 bifrost.py --only my-case` and confirm the matrix.
+3. Run `go run . --only my-case` and confirm the matrix.
 
 ## Layout
 
@@ -514,9 +515,6 @@ print(blob["cases"]["self-suite"]["verdict"])   # PASS / FAIL / DIVERGE
   matrix.go,runmatrix.go  differential test matrix, --suite, reporting
   shake.go            --shake + yggdrasil-parity (drive the Go yggdrasil)
   *_test.go           cross-platform unit tests (go test ./...)
-bifrost.py          the original Python — kept as the reference oracle
-test_bifrost.py     pytest wrapper over the same corpus (oracle checks)
-pybin/              hatchling wheel that builds+bundles the Go binary for uvx
 adapters.json       per-impl launchers + arg templates + hush flags + install backends
 cases/*.json        data-driven case corpus (Bifrost's own suite)
 programs/*.shen     .shen programs referenced by script-mode cases
@@ -525,7 +523,7 @@ examples/           worked third-party suite manifests (--suite)
 .github/workflows/  go (build/test, win/linux/mac), portability, matrix, release
 ```
 
-Run `python3 bifrost.py --suite PATH/bifrost.suite.json` to drive an external
+Run `bifrost --suite PATH/bifrost.suite.json` to drive an external
 project's suite (see *Using Bifrost from another Shen program* above).
 
 ## CI

@@ -107,6 +107,22 @@
     "_install_note": "git-build clones the pyrex41 fork: it carries the standard launcher CLI (eval/script/--version, runtime kernel 42 / S42.0) that Bifrost drives. Upstream tiancaiamao/shen-go lacks those subcommands, so it cannot be driven by Bifrost."
   },
 
+  "shen-joy": {
+    "env": "BIFROST_SHEN_JOY",
+    "default_paths": [
+      "../shen-joy/build/shen-joy",
+      "../shen-joy/result/bin/shen-joy"
+    ],
+    "eval":    ["{bin}", "unsupported", "eval"],
+    "script":  ["{bin}", "unsupported", "script"],
+    "version": ["{bin}", "--version"],
+    "repl":    ["{bin}", "unsupported", "repl"],
+    "hush_writes_file": false,
+    "status": "bounded-image-target",
+    "kernel": "bounded-s42-subset",
+    "_note": "Device target only. Ordinary Shen source/eval/REPL cases exit 3 (capability SKIP); Bifrost's --shake path uses Yggdrasil's joy builder to create and run a validated image."
+  },
+
   "shen-erl": {
     "env": "BIFROST_SHEN_ERL",
     "default_paths": [

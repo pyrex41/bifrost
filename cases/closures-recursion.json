@@ -40,6 +40,14 @@
       "expect": "output",
       "golden": "done",
       "doc": "tail-recursive countdown of 100000 must not blow the stack on any impl"
+    },
+    {
+      "name": "bounded-tail-sum-file",
+      "mode": "script",
+      "program": "joy-sum.shen",
+      "expect": "output",
+      "golden": "32004000",
+      "doc": "common first-order subset used by shen-go/shen-joy conformance and benchmarking"
     }
   ]
 }

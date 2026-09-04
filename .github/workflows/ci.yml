@@ -17,11 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
       # ---- best-effort build/fetch of the ports CI can manage ----
       # The ports live in sibling repos; CI here clones the ones that build
       # quickly in a hosted runner. Any that are absent are skipped by Bifrost.
@@ -46,7 +41,7 @@ jobs:
           node-version: "20"
 
       - name: Show what Bifrost can see
-        run: python3 bifrost.py --list
+        run: go run . --list
 
       - name: Run the Bifrost matrix (best-effort, skip-and-report missing impls)
         run: |
@@ -54,7 +49,7 @@ jobs:
           # conformance failure: treat as a soft pass so the job stays green
           # while clearly reporting the gap in the log.
           set +e
-          python3 bifrost.py
+          go run .
           rc=$?
           if [ $rc -eq 2 ]; then
             echo "::warning::No Shen implementations available in this CI runner; nothing to diff."

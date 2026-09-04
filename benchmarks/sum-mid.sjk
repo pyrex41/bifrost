@@ -1,0 +1,5 @@
+(program
+  (function sum-mid (Acc N)
+    (if (= N 0) Acc (sum-mid (+ Acc N) (- N 1))))
+  (function main () (sum-mid 0 8000))
+  (entry main))

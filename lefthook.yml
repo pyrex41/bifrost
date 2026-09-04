@@ -4,19 +4,13 @@ pre-commit:
     gofmt:
       glob: "*.go"
       run: test -z "$(gofmt -l {staged_files})"
-    python-syntax:
-      glob: "*.py"
-      run: python3 -m py_compile {staged_files}
-    json-syntax:
-      glob: "*.json"
-      run: for file in {staged_files}; do python3 -m json.tool "$file" >/dev/null || exit 1; done
+    go-test:
+      run: go test ./...
 
 pre-push:
   parallel: true
   commands:
     go:
       run: go test ./...
-    python:
-      run: python3 -m pytest test_portable.py -q
     flake:
       run: nix flake check --no-build

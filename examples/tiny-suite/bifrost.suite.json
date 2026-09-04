@@ -1,6 +1,6 @@
 {
   "name": "tiny-suite",
-  "_doc": "Minimal worked example of a third-party Bifrost suite. Run with: python3 ../../bifrost.py --suite ./bifrost.suite.json",
+  "_doc": "Minimal worked example of a third-party Bifrost suite. Run with: go run ../.. --suite ./bifrost.suite.json",
   "root": ".",
   "cases": [
     {

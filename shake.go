@@ -28,6 +28,7 @@ import (
 // (boot a ~200-line shaken kernel instead of the full ~2500-line kernel).
 var targetToImpl = map[string]string{
 	"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
+	"joy":    "shen-joy",
 	"erlang": "shen-erl", "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
 	"scheme": "shen-scheme", "swift": "shen-swift",
 	"truffle": "shen-truffle",
@@ -36,17 +37,25 @@ var targetToImpl = map[string]string{
 const shakeTargetTimeout = 20 * time.Minute // accommodates the julia sysimage bake
 
 // resolveYggdrasil returns the argv prefix to invoke the Go yggdrasil CLI, or
-// nil. Order: `yggdrasil` on PATH (the installed Go binary) -> $YGGDRASIL_BIN
-// -> a sibling dev build (./.bin or $BIFROST_YGGDRASIL_DIR). The Python wrapper
-// is no longer used — bifrost and yggdrasil are both Go.
+// nil. Order: explicit $BIFROST_YGGDRASIL_BIN/$YGGDRASIL_BIN -> `yggdrasil` on
+// PATH -> a sibling dev build (./.bin or $BIFROST_YGGDRASIL_DIR).
 func resolveYggdrasil() []string {
+	var cands []string
+	for _, key := range []string{"BIFROST_YGGDRASIL_BIN", "YGGDRASIL_BIN"} {
+		if v := os.Getenv(key); v != "" {
+			cands = append(cands, v)
+		}
+	}
+	for _, c := range cands {
+		if _, err := os.Stat(c); err == nil {
+			abs, _ := filepath.Abs(c)
+			return []string{abs}
+		}
+	}
 	if p, err := exec.LookPath("yggdrasil"); err == nil {
 		return []string{p}
 	}
-	var cands []string
-	if v := os.Getenv("YGGDRASIL_BIN"); v != "" {
-		cands = append(cands, v)
-	}
+	cands = nil
 	if d := os.Getenv("BIFROST_YGGDRASIL_DIR"); d != "" {
 		cands = append(cands, filepath.Join(d, ".bin", "yggdrasil"), filepath.Join(d, "yggdrasil"))
 	}
@@ -174,7 +183,7 @@ func yggdrasilRepoDir() string {
 // runYggdrasilParity shakes the program on EACH available host (via the Go
 // yggdrasil CLI's --host) and asserts the produced kernel.kl + manifest are
 // byte-identical across hosts (the user KL differs only by gensym counter, so
-// it is not compared). The Go analogue of the Python parity runner.
+// it is not compared).
 func runYggdrasilParity(c aCase, available map[string]Impl) caseResult {
 	results := map[string]*implResult{}
 	for n := range available {

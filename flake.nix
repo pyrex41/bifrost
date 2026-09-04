@@ -10,8 +10,7 @@
     in {
       packages = forAllSystems (pkgs:
         let
-          python = pkgs.python3.withPackages (packages: [ packages.pytest ]);
-          base = [ pkgs.git pkgs.go python pkgs.uv pkgs.lefthook pkgs.direnv ];
+          base = [ pkgs.git pkgs.go pkgs.lefthook pkgs.direnv ];
         in {
           default = pkgs.buildGoModule {
             pname = "bifrost";
@@ -28,7 +27,7 @@
             # installation which launched this app rather than nesting one.
             runtimeInputs = base;
             text = ''
-              all_ports=(shen-cl shen-go shen-erl shen-rust shen-lua ShenScript shen-scheme shen-julia shen-swift shen-truffle shen-c)
+              all_ports=(shen-cl shen-go shen-joy shen-erl shen-rust shen-lua ShenScript shen-scheme shen-julia shen-swift shen-truffle shen-c)
               selected=()
               while [[ $# -gt 0 && "$1" != "--" ]]; do
                 if [[ "$1" == "all" ]]; then selected=("''${all_ports[@]}"); else selected+=("$1"); fi
@@ -61,11 +60,9 @@
         };
       });
 
-      devShells = forAllSystems (pkgs:
-        let python = pkgs.python3.withPackages (packages: [ packages.pytest ]);
-        in {
+      devShells = forAllSystems (pkgs: {
           default = pkgs.mkShell {
-            packages = [ pkgs.git pkgs.go python pkgs.uv pkgs.lefthook pkgs.direnv ];
+            packages = [ pkgs.git pkgs.go pkgs.lefthook pkgs.direnv ];
             BIFROST_NIX_SHELL = "default";
           };
         });

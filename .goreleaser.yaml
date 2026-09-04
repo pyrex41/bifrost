@@ -1,7 +1,7 @@
 # GoReleaser config — produces release binaries for the no-Go install path.
 # Cut a release by pushing a tag: `git tag v0.2.0 && git push origin v0.2.0`
 # (the release workflow runs this). `go install github.com/pyrex41/bifrost@latest`
-# and the uvx wheel are the other two install paths.
+# is the source-install path.
 version: 2
 
 before:
