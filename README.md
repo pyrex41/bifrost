@@ -1,562 +1,110 @@
 # Bifrost
 
-**A cross-implementation META test harness for the Shen language ports.**
+Bifrost is the **front door for Shen ports**. One CLI runs a program, starts a
+REPL, or checks that every implementation agrees on the same input.
 
-> In Norse myth, *Bifrost* is the burning rainbow bridge between worlds. Here it
-> is the bridge that checks the worlds **agree**: it runs the *same* programs and
-> behaviours across **all** the Shen implementations and asserts they produce
-> the same observable result (differential / conformance testing).
+It is named for the rainbow bridge: it does not *be* a Shen runtime. It talks
+to the ports ([shen-cl](https://github.com/pyrex41/shen-cl),
+[shen-go](https://github.com/pyrex41/shen-go),
+[shen-rust](https://github.com/pyrex41/shen-rust),
+[shen-lua](https://github.com/pyrex41/shen-lua), …) the way a user would, then
+compares what they print.
 
-It sits alongside [Yggdrasil](../yggdrasil) — the two-stage shaker —
-in the same Norse lineage, and drives it for the `--shake` deploy-path checks.
+[Yggdrasil](https://github.com/pyrex41/yggdrasil) is the companion shaker:
+Bifrost can drive it with `--shake` to check stand-alone deploy artifacts, not
+just load-from-source.
 
-Differential testing is its origin, but Bifrost is now three things:
-
-1. **a differential test harness** (this README's first half) — does every port
-   agree on the same input?
-2. **a reusable test framework** — any Shen project drops a
-   [`bifrost.suite.json`](#using-bifrost-from-another-shen-program-suite-manifests)
-   and runs *its own* suite across every port;
-3. **a Roswell-style front door** — [`run`/`eval`/`repl`/`impls`/`use`/`install`/`build`](#bifrost-as-a-shen-front-door-roswell-style)
-   give Shen one CLI across all ports, on Linux, macOS **and Windows**.
-
-The implementation is a single Go binary with no Python runtime or packaging
-dependency.
-
-## The three-way distinction (read this first)
-
-There are **three** different kinds of Shen test suite. Bifrost is the third one
-and is deliberately distinct from the other two:
-
-| Suite | What it tests | Owned by | Example |
-|-------|---------------|----------|---------|
-| **(a) Canonical kernel suite** | Does *this* port implement the Shen *spec* correctly? | The Shen kernel (`tests/`) | `(run "README.shen")` style kernel conformance |
-| **(b) Per-port unit tests** | Does *this* port's internals (reader, writer, GC, FFI…) behave? | Each port repo | `shen-go/cmd/shen/main_test.go` |
-| **(c) Bifrost (this repo)** | Do **all ports agree with each other** on the same input? | This repo | `(+ 0.1 0.2)` → are the answers the same string across ports? |
-
-Bifrost never re-implements (a) or (b). It drives each port's *launcher* exactly
-the way a user would from the shell, captures stdout, normalises launcher
-chatter, and **diffs the ports against each other** (or against a golden value).
-
-## What it covers
-
-The corpus (`cases/*.json`, driven by `programs/*.shen`) includes:
-
-- **Behavioural parity** — arithmetic (incl. floats), list ops, string ops,
-  closures (incl. currying), `fix`, recursion, **tail calls** (a 100 000-deep
-  countdown that must not blow any stack), a small **Prolog** query, and
-  **`trap-error`** catchability.
-- **CLI parity** — `eval -e` prints the value; `(version)` / `--version` carry
-  the runtime kernel version **42** (distribution 42.0); **stdin-EOF causes a clean exit** (no hang) on
-  every impl. Experimental `shen-c` is included with the same kernel version;
-  its adapter stays experimental.
-- **Divergences** — **none open.** Every tracked cross-port difference has
-  converged and is now asserted as a **hard agreement** (a regression is a real
-  FAIL, no longer a documented difference):
-  - `float-formatting` — `(+ 0.1 0.2)` prints the shortest round-trippable
-    `0.30000000000000004` everywhere (was shen-go `0.300000` / shen-lua `0.3`;
-    pyrex41/shen-go#11, pyrex41/shen-lua#24).
-  - `int-div-zero` — `(/ 1 0)` raises a catchable `divide-by-zero` everywhere
-    (was shen-go `maxint`).
-  - `hush-file-write` — under `-q`, `pr` to a **file** stream writes everywhere
-    (`*hush*` gates only stdout; was a zero-byte file on shen-lua/shen-rust).
-  - `load-toplevel-echo` — `(load FILE)` echoes each top-level form's value
-    regardless of fasl-cache state (shen-lua dropped the echo on a warm cache
-    hit; pyrex41/shen-lua#40).
-- **Heavy** (`--heavy`) — **Yggdrasil stage-1 parity**: run
-  `(yggdrasil.shake ["tests/fib.shen"] OUT)` on every host and assert the
-  produced `kernel.kl` + `yggdrasil.manifest` are **byte-identical** across
-  hosts. (User KL differs only by gensym counter, so it is *not* asserted.)
-
-### Expected vs. agreement modes
-
-Each case is one of two modes:
-
-- **`expect: output`** — assert each impl's normalised stdout equals a *golden*
-  value.
-- **`expect: agreement`** — no golden; assert **all available impls produce
-  identical** normalised output. If a case is tagged `known_divergence`, a
-  disagreement is reported as **DIVERGE** (documented) instead of **FAIL**.
-
-## Running it
+## Install
 
 ```bash
-go run .                           # light cases + matrix; exit !=0 on real FAIL
-go run . --heavy                   # also run the Yggdrasil stage-1 parity case
-go run . --list                    # list discovered impls + cases
-go run . --only int-mul,float-add-imprecise
-go run . --impls shen-cl,shen-go
-go run . --json                    # machine-readable result blob
+nix run github:pyrex41/bifrost -- impls
+# or
+go install github.com/pyrex41/bifrost@latest
 ```
 
-`DIVERGE` rows are reported in their own section and **do not** fail the run.
-Only real `FAIL` rows set a non-zero exit code.
-
-### Install
-
-Bifrost is implemented as a static **Go binary**. Nix is the preferred way to
-build Bifrost and manage the language/tool dependencies of every Shen port:
+Nix is the supported way to get **port toolchains**. The Go binary itself is
+just the CLI. Sibling checkouts under one parent (`../shen-go`, `../shen-cl`,
+…) are the default layout; set `BIFROST_PORTS_ROOT` if they live elsewhere.
 
 ```bash
-nix run github:pyrex41/bifrost
-nix build github:pyrex41/bifrost
+nix run .#env -- shen-go -- bifrost repl --impl shen-go
+nix run .#env -- all -- bifrost          # full agreement matrix
 ```
 
-Prebuilt releases and `go install github.com/pyrex41/bifrost@latest` remain
-available for the dependency-free CLI itself. They do not manage port
-toolchains; use `bifrost env` with Nix for that.
-
-The binary embeds `adapters.json` + the corpus. Shen launchers are resolved
-from the selected Nix environment, per-port environment variables, or sibling
-checkouts. Adapter configuration resolves in this order:
-`$BIFROST_ADAPTERS` → `./adapters.json` → the embedded default.
-
-`go test ./...` covers the corpus, adapter contract, command routing, and
-parameterised Windows/Linux/macOS portability helpers. CI runs that same Go
-suite on all three host families.
-
-### Reproducible Shen matrix with Nix
-
-Nix is the supported, preferred port-management path. Go is Bifrost's
-implementation language; it is not the mechanism used to install the many
-language runtimes behind the ports. Direct binaries can still use explicitly
-configured launchers from `PATH`, but that fallback is not the reproducible
-matrix.
-
-Each Shen port repository owns a small flake exporting its `devShell` and a
-`toolchain` package. Bifrost owns only its own development environment and a
-runtime composer that selects those port-owned packages.
+## Everyday use
 
 ```bash
-nix develop                         # Bifrost development only
-nix develop ../shen-rust            # one port, directly
-nix develop ../shen-truffle          # Maven + pinned GraalVM 25.0.2
-nix build                           # build the Bifrost Go binary
-nix run .                           # run the Nix-built Bifrost CLI
-```
-
-Use `bifrost env` for one port, an ad-hoc subset, or the complete supported
-matrix. It validates names against the adapter registry and composes each
-selected sibling repository's pinned `#toolchain`. The `--` separates port
-names from the command; without a command it starts your shell.
-
-```bash
-nix run .#env -- shen-rust -- cargo test
-nix run .#env -- shen-rust shen-erl -- bifrost --impls shen-rust,shen-erl
-nix run .#env -- shen-go shen-joy -- bifrost bench shen-joy-vs-shen-go
-nix run .#env -- all -- bifrost
-
-# Equivalent when a Nix-built or release `bifrost` is already on PATH:
-bifrost env shen-go shen-joy -- bifrost bench shen-joy-vs-shen-go
-```
-
-From a sibling checkout, replace `.` with `../bifrost`. Set
-`BIFROST_PORTS_ROOT` when the port repositories do not share Bifrost's parent
-directory. Port flakes remain independently usable and independently pinned;
-Bifrost composes them without duplicating dependency lists or installing
-language runtimes globally. Shen launchers are still resolved through
-`adapters.json`.
-
-For automatic activation, install direnv once and authorize this checkout:
-
-```bash
-direnv allow
-```
-
-The checked-in `.envrc` enters the lightweight default shell whenever the
-Bifrost directory becomes active. Lefthook uses the same environment for
-formatting and tests on commit and the fast Go portability/flake
-checks before push. The live
-multi-port matrix remains an explicit Bifrost run because it is substantially
-slower:
-
-```bash
-lefthook install
-lefthook run pre-commit
-lefthook run pre-push
-```
-
-### Shake-then-run (deploy-path parity)
-
-`--shake` runs each **script-mode** program through
-[Yggdrasil](../yggdrasil): it tree-shakes the program once, builds a *standalone
-artifact* for every target, runs each artifact, and
-diffs them. This checks the real stand-alone deploy path, not just
-load-from-source.
-
-```bash
-go run . --shake --only recursion-fib-file             # all buildable targets
-go run . --shake --impls shen-lua,ShenScript           # just the fast ones
-```
-
-Artifacts map onto their impl column (lisp→`shen-cl`, lua→`shen-lua`,
-go→`shen-go`, joy→`shen-joy`, erlang→`shen-erl`, rust→`shen-rust`, js→`ShenScript`,
-julia→`shen-julia`, scheme→`shen-scheme`, swift→`shen-swift`,
-truffle→`shen-truffle`). The Joy target is a bounded image target, not a full
-Shen implementation: unsupported KLambda exits with capability status 3 and is
-reported as SKIP. Needs the per-target toolchains
-(`sbcl`/`luajit`/`go`/Erlang/`cargo`/`node`/`julia`/`chez`/`swift`/`mvn` + Java) and
-`$BIFROST_YGGDRASIL_DIR` (default `../yggdrasil`); missing toolchains are
-skipped, not failed. This mode is minutes, not seconds: go/rust compile from
-scratch, and the **julia** target AOT-bakes a per-program sysimage
-(PackageCompiler, ~250MB, several minutes) — the deploy artifact for
-Shen-on-Julia, analogous to the Lisp saved image. The **scheme** target
-compiles the shaken slice with shen-scheme's own `kl->scheme` into a
-self-contained Chez program; the **swift** target drives the shen-swift
-tree-walking interpreter on the shaken slice in `--shaken` mode (booting a
-~200-line kernel instead of the full ~2500-line kernel).
-
-`--shake` drives the **Go `yggdrasil` binary** (resolved from explicit
-`$BIFROST_YGGDRASIL_BIN`/`$YGGDRASIL_BIN`, then `$PATH`, then
-`$BIFROST_YGGDRASIL_DIR` / a sibling `../yggdrasil`). Bifrost orchestration is
-Go; target-specific build tooling belongs to Yggdrasil. The heavy
-`yggdrasil-shake-parity` case (`--heavy`) likewise
-shakes on each host via the Go yggdrasil and diffs the kernel.kl/manifest md5s.
-
-## How implementations are located
-
-Bifrost **auto-detects** each port. For every impl it resolves a launcher path
-in this order, and **skips-with-report** (never errors) any that is missing:
-
-1. the impl's env-var override (e.g. `$BIFROST_SHEN_GO`), if it points at an
-   existing file;
-2. the first existing path in the adapter's `default_paths`.
-
-Defaults (see [`adapters.json`](adapters.json)):
-
-| Impl | Env override | Default launcher |
-|------|--------------|------------------|
-| `shen-cl` | `BIFROST_SHEN_CL` | `…/shen-cl/bin/sbcl/shen` (also `clisp`, `ecl`) |
-| `shen-go` | `BIFROST_SHEN_GO` | `.bin/shen-go` (build: `go build -o .bin/shen-go ./cmd/shen`) |
-| `shen-joy` | `BIFROST_SHEN_JOY` | `…/shen-joy/build/shen-joy` (validated-image target; source/eval/REPL cases SKIP) |
-| `shen-erl` | `BIFROST_SHEN_ERL` | `…/shen-erl/bin/shen-erl` (Erlang/OTP) |
-| `shen-rust` | `BIFROST_SHEN_RUST` | `…/shen-rust/target/release/shen-rust` |
-| `shen-lua` | `BIFROST_SHEN_LUA` | `…/shen-lua/bin/shen` (needs `luajit`; falls back to the luarocks-installed `/usr/local/bin/shen`) |
-| `ShenScript` | `BIFROST_SHENSCRIPT` | `node …/ShenScript/bin/shen.js` |
-| `shen-scheme` | `BIFROST_SHEN_SCHEME` | `…/shen-scheme/_build/bin/shen-scheme` (Chez) |
-| `shen-julia` | `BIFROST_SHEN_JULIA` | `…/shen-julia/bin/shen` (needs `julia`) |
-| `shen-swift` | `BIFROST_SHEN_SWIFT` | `…/shen-swift/.build/release/shen-swift` (needs `swift`) |
-| `shen-truffle` | `BIFROST_SHEN_TRUFFLE` | `…/shen-truffle/target/shen-truffle/bin/shen-truffle` (build: `mvn package -DskipTests`) |
-| `shen-c` | `BIFROST_SHEN_C` | `…/shen-c/bin/shen-c` (experimental S42; self-locates, no `$SHEN_C_HOME`) |
-
-The full Shen ports listed above target ShenOSKernel **42.0** (runtime
-`(version)` is `42`); shen-joy identifies itself as a bounded S42-derived
-subset rather than claiming kernel compatibility.
-`shen-c` stays **experimental** and self-locates its kernel (do not set
-`$SHEN_C_HOME`). Run `bifrost impls --versions` to see the live per-port kernel
-version, install state, and which is active. Unfinished `shen-forth`,
-`shen-inets`, `shen-ocaml`, and `shen-odin` have development flakes but are not
-advertised as Bifrost implementations.
-
-## shen-joy vs shen-go benchmark
-
-The `bench shen-joy-vs-shen-go` command measures the shared, first-order
-self-tail-recursive `sum-mid(0, 8000)` kernel. Parsing, image validation, kernel
-boot, and process startup are kept outside both timed regions. It emits a
-Markdown report by default, JSON with `--json`, and can persist the report with
-`--output FILE`. The report includes all samples, revisions, toolchain, machine,
-image checksum, and shen-joy instruction count. It is deliberately a narrow VM
-comparison; it is not a full-Shen score.
-
-```bash
-nix run .#env -- shen-go shen-joy -- go run . bench shen-joy-vs-shen-go \
-  --samples 10 --iterations 500 --benchtime 500ms --output ../shen-joy/docs/benchmark.md
-```
-
-To build shen-go locally into the gitignored `.bin/`:
-
-```bash
-go build -o .bin/shen-go -C /path/to/shen-go ./cmd/shen
-```
-
-### Launcher quirks Bifrost encodes (real cross-impl differences)
-
-- **shen-cl** *requires* `-q` for clean `eval`/REPL output.
-- **shen-lua** has **no** `--version` flag and **no** `script` subcommand — its
-  file path is `(load FILE)` (which echoes `(fn …)` and a `run time:` banner);
-  Bifrost's normaliser strips that chatter. It also has no clean script value
-  channel, so file-mode programs end with `(do (print …) (nl))`.
-- **shen-lua / shen-rust** must be driven **without** `-q` for normal cases and
-  for the yggdrasil parity case, or `pr` output is silenced (the
-  `hush-file-write` divergence). This is exactly why Bifrost's eval/script
-  templates for those two do **not** pass `-q`.
-
-## Bifrost as a Shen front door (Roswell-style)
-
-Beyond differential testing, Bifrost is the single **front door** for Shen
-across every port — the way [Roswell](https://roswell.github.io/) (`ros`) is for
-Common Lisp. The differential test matrix is still the default (bare `bifrost`);
-these are added as verbs. They reuse the same `adapters.json` port registry, so
-"run my program on shen-go", "which ports do I have", and "install shen-rust"
-all share one source of truth.
-
-```bash
-bifrost run prog.shen [--impl X]   # run a .shen program on the active/chosen port
+bifrost run prog.shen [--impl shen-go]   # run a program
 bifrost eval -e '(+ 2 3)' [--impl X]
-bifrost repl [--impl X]            # interactive REPL (inherits your terminal)
-bifrost impls [--versions]         # list ports: state, kernel (live probe), status, active(*)
-bifrost use IMPL [--project]       # set the active port (global, or ./.bifrost-impl pin)
-bifrost env IMPL [IMPL ...|all] -- COMMAND   # preferred: compose pinned Nix toolchains
-bifrost install IMPL [--method M] [--git URL] [--ref R] [--force] # legacy fallback
-bifrost build prog.shen OUT --target T [--run]   # standalone artifact (delegates to Yggdrasil)
+bifrost repl [--impl X]
+bifrost impls --versions                 # what is installed, which kernel
+bifrost use shen-go                      # default port (or --project)
+bifrost                                  # run this repo's agreement corpus
 ```
 
-### Choosing the implementation
+Which port is used: `--impl` → `./.bifrost-impl` → `~/.config/bifrost/impl` →
+first available (preferring `shen-cl`).
 
-`run`/`eval`/`repl` resolve which port to use in this order (rustup-style — a
-per-command override beats a pin beats the global default):
+Details: [docs/cli.md](docs/cli.md).
 
-1. `--impl X` on the command line,
-2. a project pin file `./.bifrost-impl` (written by `bifrost use X --project`),
-3. the global default `~/.config/bifrost/impl` (written by `bifrost use X`),
-4. otherwise `shen-cl` if present, else the first available port.
+## What Bifrost is *not*
 
-`bifrost impls --versions` probes each port's kernel version **live** (the port
-READMEs' badges drift — e.g. shen-cl's says 41.1 but it reports 41.2), so the
-matrix of who-is-on-what is always accurate.
+| Suite | Question | Owner |
+|-------|----------|--------|
+| Kernel `tests/` | Does *this* port implement the spec? | Each port + Shen kernel |
+| Port unit tests | Do *this* port's internals work? | Each port repo |
+| **Bifrost** | Do **all ports agree** on the same input? | This repo |
 
-### Managing ports with Nix
+Bifrost never re-implements the kernel suite. It launches each port, captures
+stdout, and diffs.
 
-Each supported port repository exports a pinned `#toolchain`. Bifrost composes
-those packages without copying their dependency declarations:
+## Agreement tests
 
 ```bash
-bifrost env shen-go -- bifrost repl --impl shen-go
-bifrost env shen-go shen-joy -- bifrost --impls shen-go,shen-joy
-bifrost env all -- bifrost
+go run .                    # light corpus; FAIL → exit ≠ 0
+go run . --heavy            # also Yggdrasil stage-1 byte-identity
+go run . --only float-add-imprecise
+go run . --impls shen-cl,shen-go
+go run . --json
 ```
 
-Sibling checkouts are found under the parent of the active adapter file. Set
-`BIFROST_PORTS_ROOT` or pass `--root DIR` for another layout. Missing flakes,
-unknown ports, and missing Nix are explicit errors.
+Cases live in `cases/*.json` and `programs/*.shen`. A case is either a golden
+`expect: output` or an `expect: agreement` (all available ports print the same
+normalised string). See [docs/matrix.md](docs/matrix.md).
 
-### Legacy mutable installation
+Any Shen project can reuse this: drop a `bifrost.suite.json` and run
+`bifrost --suite PATH`. See [docs/suites.md](docs/suites.md) and
+[`examples/tiny-suite/`](examples/tiny-suite/).
 
-`bifrost install` is retained for platforms or ports that cannot use Nix. It
-mutates global or checkout-local state and is not the preferred reproducible
-workflow. Each port declares its fallback backend in `adapters.json`:
+## Shared port layout
 
-| method | ports | what runs |
-|---|---|---|
-| `brew` | shen-scheme (and shen-cl via `--method brew`) | `brew install <formula>` |
-| `luarocks` | shen-lua via `--method luarocks` | `luarocks install shen` (rock **0.10.0-1**+ bundles kernel **41.2**; only the old 0.9.0-1 was 41.1) |
-| `git-build` | shen-cl, shen-go, shen-erl, shen-rust, shen-lua, ShenScript, shen-julia, shen-swift, shen-truffle, shen-c | clone (if absent) + the port's `build` recipe (single `argv`, or a `steps` list run in order) |
-
-`install` prechecks the required toolchain (and names the exact missing tool
-rather than failing opaquely — when `--method` overrides the default, the
-precheck follows the *chosen* backend), refuses `experimental` ports unless
-`--force`, is idempotent (skips an already-resolved launcher), and verifies
-the launcher resolves afterward.
-
-Port-specific install notes (see each adapter's `_install_note`):
-
-- **shen-go / ShenScript** — git-build clones the **pyrex41 forks**: they carry
-  the standard launcher CLI (`eval -e` / `script` / `--version`, kernel 41.2)
-  that Bifrost drives. Upstream `tiancaiamao/shen-go` lacks those subcommands
-  (S41.1, no clean stdin-EOF exit), and the published npm `shen-script`
-  package is a library with no `bin/shen.js` launcher, so neither can serve as
-  a Bifrost port. ShenScript's recipe is two steps: `npm install` +
-  `npm run build-kernel` (renders `lib/kernel.js`).
-- **shen-lua** — runs straight from the checkout (`bin/shen`); KLambda is
-  compiled on first boot and cached, so the build step just warms that cache.
-  Needs `luajit` at runtime.
-- **shen-cl** — a fresh clone has no `kernel/` or `compiled/` tree.
-  **Bootstrap once by hand** before `bifrost install shen-cl`:
-  `make fetch` (or `scripts/assemble-tarver-kernel.sh`) and then
-  `make precompile SHEN=<any working Shen launcher, e.g. a built shen-go>` —
-  precompiling the kernel requires an already-working Shen. After that,
-  `bifrost install shen-cl` (which runs `make build-sbcl`) works as usual.
-
-#### Legacy fresh-machine bootstrap (verified on a clean Linux container)
-
-On a machine with none of the ports present, this order works with the fewest
-prerequisites (each port lands at the clone/launcher locations in
-`adapters.json` — the bundled defaults assume sibling checkouts (for example,
-`../shen-go` and `../yggdrasil`). If your ports live elsewhere, point a
-project-local `adapters.json` or `$BIFROST_ADAPTERS` at your own paths first:
-
-1. `bifrost install shen-go` — needs only `git` + `go`; gives you a working
-   41.2 Shen for the shen-cl bootstrap below.
-2. `bifrost install shen-rust` (needs `cargo`), `bifrost install ShenScript`
-   (needs `node`/`npm`), `bifrost install shen-lua` (needs `luajit`).
-3. shen-cl: clone, `make fetch` (kernel sources), `make precompile
-   SHEN=<the shen-go binary from step 1>`, then `bifrost install shen-cl`
-   (needs `sbcl`, e.g. `apt install sbcl`).
-4. `bifrost install shen-scheme --method git-build` (needs `make` + a C
-   compiler + network access to fetch Chez), `bifrost install shen-julia`
-   (needs `julia`), `bifrost install shen-swift` (needs `swift`), and
-   `bifrost install shen-truffle` (needs Maven and GraalVM Java).
-
-Every failure names the exact missing tool, and missing ports are skipped —
-never a hard error — so a partial fleet (e.g. steps 1–3 on a container with
-no Julia/Swift toolchain) still runs the full matrix across whatever is
-installed.
-
-**Forks** (e.g. `pyrex41/shen-cl`) are first-class:
-- to *run* a fork, point the port's env var at your built binary
-  (`$BIFROST_SHEN_CL=/path/to/fork/bin/sbcl/shen`) — no install needed;
-- to *build* a fork, override the git-build source:
-  `bifrost install shen-cl --git https://github.com/me/shen-cl --ref my-branch`
-  (or `$BIFROST_SHEN_CL_GIT` / `$BIFROST_SHEN_CL_REF`). The git-build defaults
-  point at the `pyrex41` forks this workspace tracks.
-
-### Windows / Linux / macOS
-
-The static Go `bifrost` binary runs on all three. The plumbing is OS-aware:
-
-- **Launcher resolution** — extensionless `default_paths` also match
-  `shen.exe` / `shen.cmd` / `shen.bat` on Windows (via `PATHEXT`); a
-  `.bat`/`.cmd`/`.sh` launcher is auto-wrapped (`cmd /c` / `sh`) before Go's
-  `os/exec` starts it.
-- **Config** — the global active-impl pin lives in `%APPDATA%\bifrost\impl` on
-  Windows, `$XDG_CONFIG_HOME`/`~/.config/bifrost/impl` elsewhere.
-- **Per-OS adapter tweaks** — an adapter may carry an `os_overrides` block
-  keyed by `win32`/`darwin`/`linux` (shallow-merged over the adapter) to give a
-  port a platform-specific `default_paths`/`launcher`/template. See the
-  `_os_overrides_example` in [`adapters.json`](adapters.json) — e.g. driving
-  shen-lua on Windows by invoking `luajit` explicitly.
-
-What's *not* in Bifrost's hands is whether a given **port** runs on Windows —
-that's each port's own story. Natively-compiled ports (shen-go, shen-rust,
-shen-cl, shen-scheme) produce a Windows `.exe`; interpreter ports work when
-their runtime is present (`node` for ShenScript, `luajit`, `julia`). As
-everywhere, point `$BIFROST_<IMPL>` at your launcher if auto-detection misses
-it. The `portability` CI job runs the cross-platform plumbing tests on
-`windows-latest` (and Linux/macOS) on every push.
-
-## Using Bifrost from another Shen program (suite manifests)
-
-Bifrost is not only its own corpus — it is a **reusable framework** any Shen
-project can point at its *own* test suite to run it across every supported
-port and assert the ports agree. A project written in Shen (e.g.
-[`../shen-cas`](../shen-cas)) gets cross-implementation conformance for free:
-"does my suite produce the *same* result, and pass, on every supported port?"
-
-A project plugs in by dropping a **`bifrost.suite.json`** manifest in its repo
-and running:
-
-```bash
-bifrost --suite /path/to/project/bifrost.suite.json --heavy
-# or, checked out side-by-side:
-go run ../bifrost --suite ./bifrost.suite.json --heavy
-```
-
-Ports are resolved from Bifrost's own [`adapters.json`](adapters.json) (launcher
-locations are machine-global, not project-specific), so the project supplies
-**only** what is project-specific: where its sources live and how its suite
-reports success.
-
-### Manifest schema
-
-```jsonc
-{
-  "name": "my-project",
-  "root": ".",                       // project root; paths below resolve here.
-                                     //   default = the manifest's own directory
-  "programs_dir": ".",               // where script-mode {file} programs live
-                                     //   (default = root)
-  "default_cwd": ".",                // cwd the launcher runs in, so the suite's
-                                     //   relative (load "src/...") resolves
-                                     //   (default = root)
-  "strip_line_prefixes": ["my loader banner"],  // extra normaliser prefixes:
-                                     //   drop project-specific chatter lines
-  "cases": [                         // inline cases (preferred). Alternatively
-    {                                //   "cases_dir": "bifrost/cases" points at
-      "name": "self-suite",          //   a dir of *.json corpus files.
-      "mode": "script",              // "script" runs a .shen entrypoint
-      "program": "load.shen",        // your loader, which ends by running tests
-      "expect": "agreement",         // all ports must produce identical output
-      "marker": "ALL PASS",          // ...AND each must print this success token
-      "heavy": true,                 // big suite -> use the long timeout
-      "doc": "all ports agree and report ALL PASS"
-    }
-  ]
-}
-```
-
-### How a project's entrypoint should behave
-
-The `"script"` entrypoint (your `load.shen` or equivalent) should:
-
-1. load your sources,
-2. run your checks, printing **deterministic** output (identical across ports —
-   beware gensym counters, hash ordering, and float formatting, which Bifrost
-   will surface as a divergence),
-3. end by printing a **marker** line (e.g. `ALL PASS`) *iff* everything passed.
-
-Bifrost runs it on every available port with the cwd set to your project root,
-normalises launcher chatter (run-time banners, `(fn …)` load echoes, and
-shen-lua's trailing value echo — so your entrypoint may safely return a
-boolean), then asserts:
-
-| `expect` | `marker` | assertion |
-|----------|----------|-----------|
-| `agreement` | set | normalised stdout **byte-identical across all ports** AND the (shared) output contains the marker — *the strongest mode* |
-| `agreement` | — | byte-identical across all ports (pure differential) |
-| `marker` | set | each port prints the marker and exits cleanly; ports need **not** agree (the project's own harness is the sole judge) |
-| `output` | optional | normalised stdout equals `golden` (+ marker if set) |
-
-A worked, runnable example lives in
-[`examples/tiny-suite/`](examples/tiny-suite/) — a tiny self-test that passes
-on every available port. shen-cas ships a real manifest at
-[`../shen-cas/bifrost.suite.json`](../shen-cas/bifrost.suite.json).
-
-Add `--shake` to run a suite's script-mode entrypoint through the
-[deploy-path parity](#shake-then-run-deploy-path-parity) pipeline: each port's
-*standalone artifact* is built and diffed, not just the load-from-source run.
-
-## Adding a case
-
-1. If the case needs a `.shen` program, drop it in `programs/`. End it with a
-   single `(do (print EXPR) (nl))` top-level form so the output normalises
-   cleanly across all impls (shen-lua's `load` echoes values otherwise).
-2. Add an entry to a file under `cases/` (or make a new `*.json`):
-
-   ```json
-   {
-     "name": "my-case",
-     "mode": "eval",            // or "script" (uses "program": "foo.shen")
-     "expr": "(+ 2 3)",         // for eval mode
-     "expect": "output",        // or "agreement"
-     "golden": "5",             // required when expect == output
-     "doc": "what this checks"
-   }
-   ```
-
-   For an agreement case that is a *documented* difference, add
-   `"known_divergence": "some-tag"` and omit the golden.
-3. Run `go run . --only my-case` and confirm the matrix.
-
-## Layout
+Ports today each invent their own tree (`klambda/` at the root, `kernel/`,
+`KLambda/`, StLib in three different places). We are moving them toward one
+shape so Bifrost, Yggdrasil, and a human can find the same files everywhere:
 
 ```
-*.go                the bifrost Go binary (primary):
-  main.go             subcommand router + flag helpers
-  adapters.go         port registry: load / discover / resolve / os_overrides
-  run.go              launch path: build_argv, run, normalize, exec wrapping
-  front.go            verbs: run/eval/repl/impls/use
-  env.go              preferred Nix composition of port-owned toolchains
-  install.go          legacy mutable installers + build delegation
-  matrix.go,runmatrix.go  differential test matrix, --suite, reporting
-  shake.go            --shake + yggdrasil-parity (drive the Go yggdrasil)
-  *_test.go           cross-platform unit tests (go test ./...)
-adapters.json       per-impl launchers + arg templates + hush flags + install backends
-cases/*.json        data-driven case corpus (Bifrost's own suite)
-programs/*.shen     .shen programs referenced by script-mode cases
-examples/           worked third-party suite manifests (--suite)
-.goreleaser.yaml    release-binary build (on v* tags)
-.github/workflows/  go (build/test, win/linux/mac), portability, matrix, release
+<port>/
+  kernel/klambda/     S42 modules + PROVENANCE.md
+  kernel/tests/       official 134-test suite
+  kernel/sources/     optional Shen sources
+  kernel/lib/         StLib and other Tarver libs
+  src/                host-language runtime
+  bin/shen            built launcher (or bin/<backend>/shen)
+  flake.nix           exports #toolchain
 ```
 
-Run `bifrost --suite PATH/bifrost.suite.json` to drive an external
-project's suite (see *Using Bifrost from another Shen program* above).
+This is a **direction**, not a gate yet. Adapters still list explicit
+launcher paths. The contract is in [docs/port-layout.md](docs/port-layout.md).
 
-## CI
+## More
 
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs the matrix
-best-effort. It is fine for CI to build/run only a subset of impls; missing
-impls are **skipped and reported**, not failed.
+| Topic | Doc |
+|-------|-----|
+| Commands, pins, Windows | [docs/cli.md](docs/cli.md) |
+| Nix `env` and flakes | [docs/nix.md](docs/nix.md) |
+| Corpus, `--shake`, adapters | [docs/matrix.md](docs/matrix.md) |
+| `bifrost install` (legacy) | [docs/install.md](docs/install.md) |
+| Third-party suites | [docs/suites.md](docs/suites.md) |
+| Canonical port directories | [docs/port-layout.md](docs/port-layout.md) |
 
-## License
-
-Apache-2.0.
+License: Apache-2.0.
