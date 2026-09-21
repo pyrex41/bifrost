@@ -1,0 +1,44 @@
+{
+  "group": "behavioral",
+  "cases": [
+    {
+      "name": "trap-error-operand-raises",
+      "mode": "eval",
+      "expr": "(trap-error (<-vector (simple-error \"boom\") 1) (/. E 42))",
+      "expect": "output",
+      "golden": "42",
+      "doc": "errors while evaluating trap-error operands are caught; a compiler must not leak ? out of the trap"
+    },
+    {
+      "name": "trap-error-value-uses-exn",
+      "mode": "eval",
+      "expr": "(trap-error (value bifrost-unbound-global-xyzzy) (/. E caught))",
+      "expect": "output",
+      "golden": "caught",
+      "doc": "handler may ignore E; the miss must still be catchable"
+    },
+    {
+      "name": "freeze-thaw",
+      "mode": "eval",
+      "expr": "(thaw (freeze 9))",
+      "expect": "output",
+      "golden": "9"
+    },
+    {
+      "name": "freeze-in-lambda",
+      "mode": "eval",
+      "expr": "(let G (freeze 7) ((/. Y (thaw G)) 0))",
+      "expect": "output",
+      "golden": "7",
+      "doc": "freeze captured by a lambda must remain a real closure, not an unbound inlined local"
+    },
+    {
+      "name": "trap-cps-script",
+      "mode": "script",
+      "program": "trap-cps.shen",
+      "expect": "output",
+      "golden": "true",
+      "doc": "error-to-string plus freeze-in-lambda in one script"
+    }
+  ]
+}

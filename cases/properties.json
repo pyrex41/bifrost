@@ -1,0 +1,13 @@
+{
+  "group": "behavioral",
+  "cases": [
+    {
+      "name": "put-get-property-vector",
+      "mode": "script",
+      "program": "properties.shen",
+      "expect": "output",
+      "golden": "42",
+      "doc": "put then get on *property-vector*; native hash/get/put overrides must agree with the portable store"
+    }
+  ]
+}

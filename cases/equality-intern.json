@@ -1,0 +1,58 @@
+{
+  "group": "behavioral",
+  "cases": [
+    {
+      "name": "eq-int-float",
+      "mode": "eval",
+      "expr": "(= 1 1.0)",
+      "expect": "output",
+      "golden": "true",
+      "doc": "numeric = cross-equates fixnum and integral float"
+    },
+    {
+      "name": "eq-nil",
+      "mode": "eval",
+      "expr": "(= [] [])",
+      "expect": "output",
+      "golden": "true"
+    },
+    {
+      "name": "eq-true-intern-true",
+      "mode": "eval",
+      "expr": "(= true (intern \"true\"))",
+      "expect": "output",
+      "golden": "true",
+      "doc": "intern of the textual name true is Shen-equal to boolean true"
+    },
+    {
+      "name": "eq-false-intern-false",
+      "mode": "eval",
+      "expr": "(= false (intern \"false\"))",
+      "expect": "output",
+      "golden": "true"
+    },
+    {
+      "name": "boolean-intern-true",
+      "mode": "eval",
+      "expr": "(boolean? (intern \"true\"))",
+      "expect": "output",
+      "golden": "true"
+    },
+    {
+      "name": "symbol-intern-true",
+      "mode": "eval",
+      "expr": "(symbol? (intern \"true\"))",
+      "expect": "output",
+      "golden": "false",
+      "doc": "whether intern returns a host bool or the true symbol, symbol? rejects it"
+    },
+    {
+      "name": "hash-agrees-with-equality",
+      "mode": "script",
+      "program": "hash-eq.shen",
+      "expect": "output",
+      "golden": "true",
+      "doc": "equal values (true/intern true, 1/1.0) must hash equal for the same bound — otherwise put/get miss"
+    }
+  ]
+}

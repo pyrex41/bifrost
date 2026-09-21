@@ -1,0 +1,56 @@
+{
+  "group": "behavioral",
+  "cases": [
+    {
+      "name": "tuple-fst",
+      "mode": "eval",
+      "expr": "(fst (@p 1 2))",
+      "expect": "output",
+      "golden": "1"
+    },
+    {
+      "name": "tuple-snd",
+      "mode": "eval",
+      "expr": "(snd (@p 1 2))",
+      "expect": "output",
+      "golden": "2"
+    },
+    {
+      "name": "tuple?",
+      "mode": "eval",
+      "expr": "(tuple? (@p a b))",
+      "expect": "output",
+      "golden": "true"
+    },
+    {
+      "name": "tuple-not-vector",
+      "mode": "eval",
+      "expr": "(vector? (@p 1 2))",
+      "expect": "output",
+      "golden": "false",
+      "doc": "kernel vector? requires a numeric limit in slot 0; tuples are tagged absvectors"
+    },
+    {
+      "name": "vector-limit",
+      "mode": "eval",
+      "expr": "(limit (vector 3))",
+      "expect": "output",
+      "golden": "3"
+    },
+    {
+      "name": "vector-roundtrip",
+      "mode": "eval",
+      "expr": "(<-vector (vector-> (vector 1) 1 9) 1)",
+      "expect": "output",
+      "golden": "9"
+    },
+    {
+      "name": "hdstr",
+      "mode": "eval",
+      "expr": "(hdstr \"abc\")",
+      "expect": "output",
+      "golden": "a",
+      "doc": "eval print unquoted"
+    }
+  ]
+}

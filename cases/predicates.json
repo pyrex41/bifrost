@@ -1,0 +1,107 @@
+{
+  "group": "behavioral",
+  "cases": [
+    {
+      "name": "integer-int",
+      "mode": "eval",
+      "expr": "(integer? 42)",
+      "expect": "output",
+      "golden": "true",
+      "doc": "kernel integer? on a fixnum"
+    },
+    {
+      "name": "integer-float-integral",
+      "mode": "eval",
+      "expr": "(integer? 4.0)",
+      "expect": "output",
+      "golden": "true",
+      "doc": "Shen integrality, not host storage type: 4.0 is an integer"
+    },
+    {
+      "name": "integer-float-frac",
+      "mode": "eval",
+      "expr": "(integer? 4.5)",
+      "expect": "output",
+      "golden": "false"
+    },
+    {
+      "name": "boolean-true",
+      "mode": "eval",
+      "expr": "(boolean? true)",
+      "expect": "output",
+      "golden": "true"
+    },
+    {
+      "name": "boolean-number",
+      "mode": "eval",
+      "expr": "(boolean? 1)",
+      "expect": "output",
+      "golden": "false"
+    },
+    {
+      "name": "symbol-not-boolean",
+      "mode": "eval",
+      "expr": "(symbol? true)",
+      "expect": "output",
+      "golden": "false",
+      "doc": "kernel symbol? rejects booleans even when they intern as symbols"
+    },
+    {
+      "name": "symbol-ident",
+      "mode": "eval",
+      "expr": "(symbol? foo)",
+      "expect": "output",
+      "golden": "true"
+    },
+    {
+      "name": "empty-nil",
+      "mode": "eval",
+      "expr": "(empty? [])",
+      "expect": "output",
+      "golden": "true"
+    },
+    {
+      "name": "empty-cons",
+      "mode": "eval",
+      "expr": "(empty? [1])",
+      "expect": "output",
+      "golden": "false"
+    },
+    {
+      "name": "not-false",
+      "mode": "eval",
+      "expr": "(not false)",
+      "expect": "output",
+      "golden": "true"
+    },
+    {
+      "name": "variable-upper",
+      "mode": "eval",
+      "expr": "(variable? X)",
+      "expect": "output",
+      "golden": "true",
+      "doc": "free uppercase symbol is a Shen variable"
+    },
+    {
+      "name": "variable-lower",
+      "mode": "eval",
+      "expr": "(variable? x)",
+      "expect": "output",
+      "golden": "false"
+    },
+    {
+      "name": "element-yes",
+      "mode": "eval",
+      "expr": "(element? 2 [1 2 3])",
+      "expect": "output",
+      "golden": "true"
+    },
+    {
+      "name": "element-no",
+      "mode": "eval",
+      "expr": "(element? 9 [1 2 3])",
+      "expect": "output",
+      "golden": "false"
+    }
+  ]
+}

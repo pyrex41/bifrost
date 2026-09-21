@@ -20,6 +20,10 @@ every tracked difference is now a hard agreement.
 
 - Arithmetic (including floats), lists, strings, closures, `fix`, recursion,
   a 100 000-deep tail-call countdown, a small Prolog query, `trap-error`.
+- Kernel portables (any S42 port): `integer?`/`symbol?`/`boolean?`/`empty?`/`variable?`/`element?`,
+  `=` of `1`/`1.0` and `true`/`(intern "true")`, hash agreeing with `=`,
+  `@p`/`vector`, `put`/`get` on `*property-vector*`, freeze captured by a
+  lambda, trap-error whose *operand* raises.
 - CLI: `eval -e` prints the value; `(version)` / `--version` is kernel **42**;
   stdin-EOF exits cleanly.
 - Closed divergences (now asserted): `float-formatting`, `int-div-zero`,
