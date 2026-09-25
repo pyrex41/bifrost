@@ -155,7 +155,9 @@ func installGitBuild(name string, cfg Adapter, spec *InstallSpec, git, ref strin
 		return false
 	}
 	repoDir := cfg.Build.Cwd
-	if _, err := os.Stat(filepath.Join(repoDir, ".git")); err != nil {
+	_, statErr := os.Stat(filepath.Join(repoDir, ".git"))
+	existed := statErr == nil
+	if !existed {
 		if git == "" {
 			fmt.Fprintf(os.Stderr, "bifrost: %s not cloned at %s and no git remote known (pass --git URL or set %s_GIT)\n", name, repoDir, envKey)
 			return false
@@ -165,6 +167,12 @@ func installGitBuild(name string, cfg Adapter, spec *InstallSpec, git, ref strin
 		}
 	}
 	if ref != "" {
+		// A clone made before the pinned tag existed does not have it yet:
+		// fetch before the checkout so moving a pin in adapters.json works on
+		// an existing sibling checkout, not only on a fresh clone.
+		if existed && !runStep([]string{"git", "-C", repoDir, "fetch", "--tags", "--quiet", "origin"}, "", nil) {
+			return false
+		}
 		if !runStep([]string{"git", "-C", repoDir, "checkout", ref}, "", nil) {
 			return false
 		}

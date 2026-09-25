@@ -102,9 +102,10 @@
     "install": {
       "method": "git-build",
       "git": "https://github.com/pyrex41/shen-go",
+      "ref": "v1.5.0",
       "needs": ["git", "go"]
     },
-    "_install_note": "git-build clones the pyrex41 fork: it carries the standard launcher CLI (eval/script/--version, runtime kernel 42 / S42.0) that Bifrost drives. Upstream tiancaiamao/shen-go lacks those subcommands, so it cannot be driven by Bifrost."
+    "_install_note": "git-build clones the pyrex41 fork: it carries the standard launcher CLI (eval/script/--version, runtime kernel 42 / S42.0) that Bifrost drives. Upstream tiancaiamao/shen-go lacks those subcommands, so it cannot be driven by Bifrost. ref pins the shen-go release Bifrost is validated against (v1.5.0: audited natives, (fail) = shen.fail!, clean stdout); an existing clone is fetched before the checkout, and `bifrost install shen-go --ref master` (or BIFROST_SHEN_GO_REF=master) tracks master instead."
   },
 
   "shen-joy": {
