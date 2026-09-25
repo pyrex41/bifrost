@@ -19,7 +19,11 @@ verifies the launcher afterward.
 
 - **shen-go / ShenScript** git-build clones the **pyrex41 forks** (standard
   `eval -e` / `script` / `--version` CLI). Upstream `tiancaiamao/shen-go` and
-  the npm `shen-script` package cannot serve as Bifrost ports.
+  the npm `shen-script` package cannot serve as Bifrost ports. shen-go is
+  pinned to the release Bifrost was validated against (`ref` in
+  `adapters.json`, currently `v1.5.0`); an existing `../shen-go` clone is
+  fetched and checked out to that tag. `bifrost install shen-go --ref master`
+  or `BIFROST_SHEN_GO_REF=master` tracks master instead.
 - **shen-lua** runs from the checkout (`bin/shen`); the build step warms the
   KLambda cache. Needs `luajit`.
 - **shen-cl** — a fresh clone has no `kernel/` or `compiled/`. Bootstrap once:
