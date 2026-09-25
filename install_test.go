@@ -48,7 +48,7 @@ func TestInstallGitBuildFetchesPinnedTagOnExistingClone(t *testing.T) {
 	gitRun(t, src, "tag", "v2")
 	want := gitRun(t, src, "rev-parse", "v2")
 
-	cfg := Adapter{Env: "BIFROST_T", Build: &BuildRecipe{Cwd: clone, Argv: []string{"true"}, Out: "unused"}}
+	cfg := Adapter{Env: "BIFROST_T", Build: &BuildRecipe{Cwd: clone, Argv: []string{"git", "--version"}, Out: "unused"}}
 	spec := &InstallSpec{Method: "git-build", Git: src, Ref: "v2"}
 	if !installGitBuild("t", cfg, spec, "", "") {
 		t.Fatal("installGitBuild failed on an existing clone with a pinned tag it had not fetched")
