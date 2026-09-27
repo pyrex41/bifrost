@@ -180,7 +180,7 @@
       "/usr/local/bin/shen"
     ],
     "eval":    ["{bin}", "-e", "{expr}"],
-    "script":  ["{bin}", "{file}"],
+    "script":  ["{bin}", "--hush-load", "{file}"],
     "version": null,
     "repl":    ["{bin}", "-q"],
     "hush_writes_file": false,
@@ -194,9 +194,12 @@
     "install": {
       "method": "git-build",
       "git": "https://github.com/pyrex41/shen-lua",
+      "ref": "v0.11.0",
+      "package": "shen",
+      "version": "0.11.0-1",
       "needs": ["git", "luajit"]
     },
-    "_install_note": "git-build clones the repo; bin/shen runs straight from the checkout (KLambda is compiled on first boot and cached -- the build step just warms that cache). Needs luajit at runtime. Alternative: `--method luarocks` installs the published 'shen' rock to /usr/local/bin/shen; rock 0.10.0-1+ bundles kernel 41.2 (the older 0.9.0-1 was 41.1 -- see pyrex41/shen-lua#38).",
+    "_install_note": "git-build checks out v0.11.0 and runs bin/shen from that checkout (KLambda is compiled on first boot and cached -- the build step just warms that cache). Needs luajit at runtime. `--method luarocks` requests shen 0.11.0-1 (kernel 42) exactly, so it cannot silently install the older kernel 41.2 rock. As of 2026-09-27, LuaRocks publishes only through 0.10.0-1; use git-build until 0.11.0-1 is published.",
     "_version_note": "shen-lua has no --version flag; Bifrost falls back to eval of (version)."
   },
 

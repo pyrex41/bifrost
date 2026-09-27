@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // runStep runs one install/build step with inherited stdio. A bare command
@@ -34,6 +35,13 @@ func runStep(argv []string, cwd string, env map[string]string) bool {
 	return cmd.Run() == nil
 }
 
+// launcherKernelMatches checks the runtime kernel before reusing or accepting
+// a shen-lua launcher; older LuaRocks releases can otherwise masquerade as 42.
+func launcherKernelMatches(bin, kernel string) bool {
+	probe := runInvocation([]string{bin, "-e", "(version)"}, 15*time.Second, false, "")
+	return probe.Rc == 0 && !probe.Timeout && normalize(probe.Out, nil) == kernel
+}
+
 // cmdInstall installs a port via a legacy mutable backend. Reproducible use
 // should prefer cmdEnv and the port-owned Nix flakes.
 func cmdInstall(rest []string, a *Adapters) int {
@@ -60,9 +68,13 @@ func cmdInstall(rest []string, a *Adapters) int {
 		fmt.Fprintln(os.Stderr, "bifrost:", err)
 		return 2
 	}
-	if a.resolveBin(name, cfg) != "" && !*force {
-		fmt.Printf("%s is already installed (%s). Use --force to reinstall.\n", name, a.resolveBin(name, cfg))
-		return 0
+	if existing := a.resolveBin(name, cfg); existing != "" && !*force {
+		current := name != "shen-lua" || cfg.Kernel == "" || launcherKernelMatches(existing, cfg.Kernel)
+		if current {
+			fmt.Printf("%s is already installed (%s). Use --force to reinstall.\n", name, existing)
+			return 0
+		}
+		fmt.Fprintf(os.Stderr, "bifrost: existing shen-lua launcher at %s is not kernel %s; installing a current one\n", existing, cfg.Kernel)
 	}
 	if cfg.Status == "experimental" && !*force {
 		fmt.Fprintf(os.Stderr, "bifrost: %s is experimental and may not boot. Re-run with --force to try anyway.\n", name)
@@ -111,7 +123,11 @@ func cmdInstall(rest []string, a *Adapters) int {
 	case "npm":
 		ok = runStep([]string{"npm", "install", "-g", pkg}, "", nil)
 	case "luarocks":
-		ok = runStep([]string{"luarocks", "install", pkg}, "", nil)
+		argv := []string{"luarocks", "install", pkg}
+		if spec.Version != "" {
+			argv = append(argv, spec.Version)
+		}
+		ok = runStep(argv, "", nil)
 	case "git-build":
 		ok = installGitBuild(name, cfg, spec, *git, *ref)
 	default:
@@ -122,7 +138,8 @@ func cmdInstall(rest []string, a *Adapters) int {
 		fmt.Fprintf(os.Stderr, "bifrost: install of %s failed.\n", name)
 		return 1
 	}
-	if a.resolveBin(name, cfg) == "" {
+	installed := a.resolveBin(name, cfg)
+	if installed == "" {
 		env := cfg.Env
 		if env == "" {
 			env = "BIFROST_?"
@@ -130,7 +147,11 @@ func cmdInstall(rest []string, a *Adapters) int {
 		fmt.Fprintf(os.Stderr, "bifrost: %s installed but launcher still not found; set $%s to its path.\n", name, env)
 		return 1
 	}
-	fmt.Printf("installed %s -> %s\n", name, a.resolveBin(name, cfg))
+	if name == "shen-lua" && cfg.Kernel != "" && !launcherKernelMatches(installed, cfg.Kernel) {
+		fmt.Fprintf(os.Stderr, "bifrost: %s installed at %s but does not report kernel %s; set $%s to the current launcher.\n", name, installed, cfg.Kernel, cfg.Env)
+		return 1
+	}
+	fmt.Printf("installed %s -> %s\n", name, installed)
 	return 0
 }
 

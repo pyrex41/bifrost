@@ -22,7 +22,7 @@
       "mode": "eval",
       "expr": "(trap-error (head []) (lambda E (error-to-string E)))",
       "expect": "agreement",
-      "doc": "the kernel error MESSAGE for (head []) should agree across impls on the same kernel. S41.2 is 'head expects a non-empty list'; S42 sys.kl includes a trailing newline in the kernel string. Combined shen-go (41.2) vs shen-c/shen-forth (42) may FAIL — that is a kernel split, not a quoting bug."
+      "doc": "the kernel error MESSAGE for (head []) should agree across impls on the same kernel. S41.2 is 'head expects a non-empty list'; S42 sys.kl includes a trailing newline in the kernel string. Mixing 41.2 and 42 ports may FAIL because of that kernel split. shen-go now uses kernel 42."
     },
     {
       "name": "int-div-zero",

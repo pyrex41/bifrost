@@ -26,6 +26,7 @@ type BuildRecipe struct {
 type InstallSpec struct {
 	Method  string   `json:"method"`  // brew | npm | luarocks | git-build
 	Package string   `json:"package"` // for brew/npm/luarocks
+	Version string   `json:"version"` // optional pinned LuaRocks version
 	Git     string   `json:"git"`     // for git-build (clone remote)
 	Ref     string   `json:"ref"`     // optional branch/tag
 	Needs   []string `json:"needs"`   // toolchain precheck
