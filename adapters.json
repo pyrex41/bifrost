@@ -10,6 +10,7 @@
     "Path resolution order for each impl's binary:",
     "  1. the env var named in 'env'",
     "  2. the first existing path in 'default_paths'",
+    "  3. for shen-lua, a validated 'shen' command on PATH",
     "If none resolve, the impl is SKIPPED and reported (never a hard error).",
     "",
     "'eval'  : argv template that evaluates {expr} and prints its value to stdout.",
@@ -197,9 +198,10 @@
       "ref": "v0.11.0",
       "package": "shen",
       "version": "0.11.0-1",
+      "lua_version": "5.1",
       "needs": ["git", "luajit"]
     },
-    "_install_note": "git-build checks out v0.11.0 and runs bin/shen from that checkout (KLambda is compiled on first boot and cached -- the build step just warms that cache). Needs luajit at runtime. `--method luarocks` requests shen 0.11.0-1 (kernel 42) exactly, so it cannot silently install the older kernel 41.2 rock. As of 2026-09-27, LuaRocks publishes only through 0.10.0-1; use git-build until 0.11.0-1 is published.",
+    "_install_note": "git-build checks out v0.11.0 and runs bin/shen from that checkout (KLambda is compiled on first boot and cached -- the build step just warms that cache). Needs luajit at runtime. `--method luarocks` installs the published shen 0.11.0-1 (kernel 42) with Lua 5.1, rather than an older kernel 41.2 rock. Bifrost finds its launcher on PATH when it is not under /usr/local/bin/shen.",
     "_version_note": "shen-lua has no --version flag; Bifrost falls back to eval of (version)."
   },
 

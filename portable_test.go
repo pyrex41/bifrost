@@ -5,9 +5,36 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 )
+
+func TestShenLuaPathFallbackValidatesPortAndKernel(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses POSIX launcher scripts")
+	}
+	tmp := t.TempDir()
+	launcher := filepath.Join(tmp, "shen")
+	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
+	a := &Adapters{baseDir: tmp}
+	cfg := Adapter{Kernel: "42"}
+	for _, tc := range []struct {
+		port, kernel, want string
+	}{
+		{"shen-lua", "42", launcher},
+		{"shen-go", "42", ""},
+		{"shen-lua", "41.2", ""},
+	} {
+		script := "#!/bin/sh\ncase \"$2\" in\n  '(port)') printf '%s\\n' '" + tc.port + "' ;;\n  '(version)') printf '%s\\n' '" + tc.kernel + "' ;;\nesac\n"
+		if err := os.WriteFile(launcher, []byte(script), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if got := a.resolveBin("shen-lua", cfg); got != tc.want {
+			t.Errorf("port=%s kernel=%s: launcher = %q, want %q", tc.port, tc.kernel, got, tc.want)
+		}
+	}
+}
 
 func TestWrapExecutableWindows(t *testing.T) {
 	cases := []struct {
