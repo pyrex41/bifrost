@@ -40,8 +40,11 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Build Bifrost
+        run: go build -o "$RUNNER_TEMP/bifrost" .
+
       - name: Show what Bifrost can see
-        run: go run . --list
+        run: "$RUNNER_TEMP/bifrost" --list
 
       - name: Run the Bifrost matrix (best-effort, skip-and-report missing impls)
         run: |
@@ -49,7 +52,7 @@ jobs:
           # conformance failure: treat as a soft pass so the job stays green
           # while clearly reporting the gap in the log.
           set +e
-          go run .
+          "$RUNNER_TEMP/bifrost"
           rc=$?
           if [ $rc -eq 2 ]; then
             echo "::warning::No Shen implementations available in this CI runner; nothing to diff."
