@@ -32,6 +32,7 @@ For each adapter in [`adapters.json`](../adapters.json):
 
 1. the env-var override (e.g. `$BIFROST_SHEN_GO`) if it names an existing file
 2. the first existing path in `default_paths`
+3. for shen-lua, a `shen` command on `PATH` that reports `shen-lua` and kernel 42
 
 Missing ports are **skipped and reported**, never a hard error.
 

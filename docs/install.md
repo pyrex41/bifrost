@@ -8,7 +8,7 @@ Each adapter declares a fallback in `adapters.json`:
 | method | ports | what runs |
 |--------|-------|-----------|
 | `brew` | shen-scheme (shen-cl via `--method brew`) | `brew install <formula>` |
-| `luarocks` | shen-lua via `--method luarocks` | `luarocks install shen 0.11.0-1` |
+| `luarocks` | shen-lua via `--method luarocks` | `luarocks --lua-version=5.1 install shen 0.11.0-1` |
 | `git-build` | the rest | clone (if absent) + the port `build` recipe |
 
 `install` prechecks the toolchain, names the missing tool, refuses
@@ -26,11 +26,10 @@ verifies the launcher afterward.
   or `BIFROST_SHEN_GO_REF=master` tracks master instead.
 - **shen-lua** runs from the checkout (`bin/shen`); the build step warms the
   KLambda cache. Needs `luajit`. The installer pins `v0.11.0` and fetches that
-  tag for an existing checkout. Its kernel 42 rockspec is `0.11.0-1`, but
-  as of 2026-09-27 LuaRocks publishes only through `0.10.0-1` (kernel 41.2),
-  so use the default `git-build` method until the newer rock is published.
-  If an older rock is already on your path, set `BIFROST_SHEN_LUA` to the
-  checkout's `bin/shen` so Bifrost uses kernel 42.
+  tag for an existing checkout. The published `0.11.0-1` source rock provides
+  the same kernel 42 launcher through LuaRocks for Lua 5.1. Bifrost also finds
+  a matching `shen` launcher on `PATH`. Set `BIFROST_SHEN_LUA` to the rock's
+  launcher when a sibling checkout is present and you want to use the rock.
 - **shen-cl** — a fresh clone has no `kernel/` or `compiled/`. Bootstrap once:
 
   ```bash

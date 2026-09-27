@@ -66,6 +66,46 @@ func TestInstallShenLuaReplacesOldKernelLauncher(t *testing.T) {
 	}
 }
 
+func TestInstallShenLuaLuarocksUsesLua51AndPinnedRock(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("uses POSIX launcher scripts")
+	}
+	tmp := t.TempDir()
+	launcher := filepath.Join(tmp, "rock", "shen")
+	if err := os.MkdirAll(filepath.Dir(launcher), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(launcher, []byte("#!/bin/sh\nprintf '42\\n'\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	argsFile := filepath.Join(tmp, "args")
+	luarocks := filepath.Join(tmp, "luarocks")
+	if err := os.WriteFile(luarocks, []byte("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$BIFROST_TEST_ARGS\"\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
+	t.Setenv("BIFROST_TEST_ARGS", argsFile)
+	cfg := Adapter{
+		DefaultPaths: []string{launcher}, Kernel: "42",
+		Install: &InstallSpec{Method: "luarocks", Package: "shen", Version: "0.11.0-1", LuaVersion: "5.1"},
+	}
+	raw, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := &Adapters{raw: map[string]json.RawMessage{"shen-lua": raw}, baseDir: tmp}
+	if code := cmdInstall([]string{"shen-lua", "--force"}, a); code != 0 {
+		t.Fatalf("install exit = %d", code)
+	}
+	got, err := os.ReadFile(argsFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "--lua-version=5.1\ninstall\nshen\n0.11.0-1\n" {
+		t.Fatalf("luarocks argv = %q", got)
+	}
+}
+
 // TestInstallGitBuildFetchesPinnedTagOnExistingClone pins the path a moved
 // adapters.json ref takes on a sibling checkout that predates the tag: the
 // installer must fetch before it checks out, or the pin only works on a fresh

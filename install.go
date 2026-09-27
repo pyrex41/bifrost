@@ -123,7 +123,11 @@ func cmdInstall(rest []string, a *Adapters) int {
 	case "npm":
 		ok = runStep([]string{"npm", "install", "-g", pkg}, "", nil)
 	case "luarocks":
-		argv := []string{"luarocks", "install", pkg}
+		argv := []string{"luarocks"}
+		if spec.LuaVersion != "" {
+			argv = append(argv, "--lua-version="+spec.LuaVersion)
+		}
+		argv = append(argv, "install", pkg)
 		if spec.Version != "" {
 			argv = append(argv, spec.Version)
 		}

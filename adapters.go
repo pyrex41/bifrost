@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // implOrder is the order ports appear in the matrix and in listings.
@@ -24,12 +26,13 @@ type BuildRecipe struct {
 
 // InstallSpec is a port's install backend (asdf/mise style).
 type InstallSpec struct {
-	Method  string   `json:"method"`  // brew | npm | luarocks | git-build
-	Package string   `json:"package"` // for brew/npm/luarocks
-	Version string   `json:"version"` // optional pinned LuaRocks version
-	Git     string   `json:"git"`     // for git-build (clone remote)
-	Ref     string   `json:"ref"`     // optional branch/tag
-	Needs   []string `json:"needs"`   // toolchain precheck
+	Method     string   `json:"method"`      // brew | npm | luarocks | git-build
+	Package    string   `json:"package"`     // for brew/npm/luarocks
+	Version    string   `json:"version"`     // optional pinned LuaRocks version
+	LuaVersion string   `json:"lua_version"` // optional LuaRocks interpreter version
+	Git        string   `json:"git"`         // for git-build (clone remote)
+	Ref        string   `json:"ref"`         // optional branch/tag
+	Needs      []string `json:"needs"`       // toolchain precheck
 }
 
 // Adapter declares how to drive one Shen port. Templates are argv lists with
@@ -145,8 +148,9 @@ func platformKey() string {
 }
 
 // resolveBin finds a port's launcher: $ENV override, then first existing
-// default_path (relative paths against baseDir). On Windows, extensionless
-// candidates also match shen.exe/.cmd/.bat (findExecutablePath).
+// default_path (relative paths against baseDir). For shen-lua, a validated
+// `shen` on PATH is a final fallback for LuaRocks installs outside /usr/local.
+// On Windows, extensionless candidates also match shen.exe/.cmd/.bat.
 func (a *Adapters) resolveBin(name string, cfg Adapter) string {
 	if cfg.Env != "" {
 		if v := os.Getenv(cfg.Env); v != "" {
@@ -164,6 +168,16 @@ func (a *Adapters) resolveBin(name string, cfg Adapter) string {
 		if hit := findExecutablePath(cand); hit != "" {
 			abs, _ := filepath.Abs(hit)
 			return abs
+		}
+	}
+	if name == "shen-lua" {
+		if hit, err := exec.LookPath("shen"); err == nil {
+			port := runInvocation([]string{hit, "-e", "(port)"}, 15*time.Second, false, "")
+			if port.Rc == 0 && !port.Timeout && normalize(port.Out, nil) == "shen-lua" &&
+				(cfg.Kernel == "" || launcherKernelMatches(hit, cfg.Kernel)) {
+				abs, _ := filepath.Abs(hit)
+				return abs
+			}
 		}
 	}
 	return ""
