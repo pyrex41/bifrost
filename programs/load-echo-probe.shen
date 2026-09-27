@@ -6,12 +6,9 @@
 \\                                          "\n" shen.s) (stoutput))) Forms))
 \\ i.e. load PRINTS each toplevel result before returning `loaded`.
 \\
-\\ Canonical impls (shen-cl / shen-rust / shen-go, and shen-lua with a COLD fasl
-\\ cache or SHEN_FASL=off) print:  "PROBE"  then  42  then  (fn p).
-\\ shen-lua on a WARM fasl-cache hit DROPS all three (boot.lua ~796; the
-\\ documented "replayed load does not echo per-form values" degrade). That makes
-\\ (load file) stdout depend on cache state -- a cross-port divergence and an
-\\ intra-port nondeterminism. See cases/divergences.json load-toplevel-echo; pyrex41/shen-lua#40.
+\\ Canonical impls, including shen-lua on both cold and warm fasl-cache paths,
+\\ print: "PROBE" then 42 then (fn p). shen-lua replays the per-form echoes
+\\ on a warm cache hit (pyrex41/shen-lua#41).
 "PROBE"
 (+ 40 2)
 (define p -> ok)

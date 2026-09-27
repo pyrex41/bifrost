@@ -60,7 +60,7 @@ subset. `shen-c` is experimental and self-locates its kernel (do not set
 - **shen-cl** needs `-q` for clean `eval` output. Do not pass `-q` as a bare
   first argument: that is rejected before the REPL starts.
 - **shen-lua** has no `--version` and no `script` subcommand. File mode is
-  `(load FILE)`; Bifrost strips the load chatter.
+  `--hush-load FILE`, which keeps program output and suppresses load echoes.
 - **shen-lua / shen-rust** must be driven **without** `-q` for normal cases, or
   `pr` is silenced.
 
