@@ -44,7 +44,8 @@ jobs:
         run: go build -o "$RUNNER_TEMP/bifrost" .
 
       - name: Show what Bifrost can see
-        run: "$RUNNER_TEMP/bifrost" --list
+        run: |
+          "$RUNNER_TEMP/bifrost" --list
 
       - name: Run the Bifrost matrix (best-effort, skip-and-report missing impls)
         run: |

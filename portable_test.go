@@ -200,8 +200,9 @@ func TestShenCAdapter(t *testing.T) {
 	if !reflect.DeepEqual(evalGot, evalWant) {
 		t.Fatalf("shen-c eval argv = %v, want %v", evalGot, evalWant)
 	}
-	scriptGot := buildArgv(impl, aCase{Mode: "script", Program: "/tmp/p.shen"}, "")
-	scriptWant := []string{"/tmp/shen-c", "script", "/tmp/p.shen"}
+	scriptPath := filepath.Join(t.TempDir(), "p.shen")
+	scriptGot := buildArgv(impl, aCase{Mode: "script", Program: scriptPath}, "")
+	scriptWant := []string{"/tmp/shen-c", "script", scriptPath}
 	if !reflect.DeepEqual(scriptGot, scriptWant) {
 		t.Fatalf("shen-c script argv = %v, want %v", scriptGot, scriptWant)
 	}
