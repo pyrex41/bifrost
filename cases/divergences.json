@@ -5,7 +5,7 @@
       "name": "hush-file-write",
       "mode": "special-hush",
       "expect": "agreement",
-      "doc": "RESOLVED (was a known divergence): under -q (*hush* = true), `pr` to a FILE stream now WRITES on every impl. *hush* only gates stdout, never stderr or an explicit file stream. Driven as `{bin} eval -q -l PROG`. S42 shen-c/shen-forth need host `pr` overrides (stock writer.kl returns without writing whenever *hush* for every stream) and eval -q/-l. Previously shen-lua/shen-rust SILENCED the write (zero-byte file) under -q while shen-cl/shen-go/ShenScript wrote. Hard agreement: every available impl must land in the same bucket (all 'written'); any impl that silences the write is a real FAIL."
+      "doc": "RESOLVED (was a known divergence): under -q (*hush* = true), `pr` to a FILE stream now WRITES on every impl. *hush* only gates stdout, never stderr or an explicit file stream. Driven as `{bin} eval -q -l PROG`. S42 shen-c/shen-forth need host `pr` overrides (stock writer.kl returns without writing whenever *hush* for every stream) and eval -q/-l. Previously shen-lua/shen-rust SILENCED the write (zero-byte file) under -q while shen-cl/shen-go/ShenScript wrote. Hard agreement: every available impl must land in the same bucket (all 'written'); any impl that silences the write is a real FAIL. UPSTREAM shen-scheme 0.50 (tizoc release) uses stock writer.kl, so `-q` SILENCES the file write there (zero bytes) and it FAILS this case by design; the pyrex41 fork reapplies the stdout-only *hush* override on top of 0.50 (pyrex41/shen-scheme#9)."
     },
     {
       "name": "load-toplevel-echo",
@@ -13,8 +13,49 @@
       "expr": "(load \"programs/load-echo-probe.shen\")",
       "cwd": ".",
       "expect": "agreement",
-      "known_divergence": "s42-load-echo-format",
-      "doc": "RESOLVED (was a known divergence): `(load FILE)` now echoes each toplevel form's evaluated value on every impl, cache state notwithstanding. The canonical kernel load (klambda/load.kl -> shen.eval-and-print) PRINTS each toplevel result before returning `loaded` (the echo from `shen eval -l FILE` / `(load FILE)` at the REPL; NOT `script` mode, which is quiet everywhere -- so this case uses eval mode). shen-rust and shen-go always emitted it; shen-lua emitted it on a COLD fasl cache but DROPPED it on a WARM fasl-cache HIT (boot.lua returned `loaded` straight out of fasl_replay without re-running the kernel load), making `(load file)` stdout cache-state dependent -- a cross-port divergence AND an intra-port nondeterminism. Fixed in shen-lua by recording the per-form echo bytes as fasl \"e\" records on the miss and re-pr'ing them on the hit (pyrex41/shen-lua#40, PR #41). The cosmetic `run time:` banner stays dropped on a warm hit by design; the normaliser here strips the whole banner (text line + the blank line its leading newline produces) so that omission is not itself a divergence. Now asserted as a HARD agreement: every available impl must echo `\"PROBE\"` / `42` / `(fn p)` (the last stripped by the normaliser) then `loaded`; any impl that drops the value echo is a real FAIL."
+      "doc": "RESOLVED (was a known divergence): `(load FILE)` now echoes each toplevel form's evaluated value on every impl, cache state notwithstanding. The canonical kernel load (klambda/load.kl -> shen.eval-and-print) PRINTS each toplevel result before returning `loaded` (the echo from `shen eval -l FILE` / `(load FILE)` at the REPL; NOT `script` mode, which is quiet everywhere -- so this case uses eval mode). shen-rust and shen-go always emitted it; shen-lua emitted it on a COLD fasl cache but DROPPED it on a WARM fasl-cache HIT (boot.lua returned `loaded` straight out of fasl_replay without re-running the kernel load), making `(load file)` stdout cache-state dependent -- a cross-port divergence AND an intra-port nondeterminism. Fixed in shen-lua by recording the per-form echo bytes as fasl \"e\" records on the miss and re-pr'ing them on the hit (pyrex41/shen-lua#40, PR #41). The cosmetic `run time:` banner stays dropped on a warm hit by design; the normaliser strips the whole banner (text line + the blank line its leading newline produces; that blank-line drop was documented but missing until the 42.2 move, which left this case tagged as a known divergence) so that omission is not itself a divergence. Now asserted as a HARD agreement: every available impl must echo `\"PROBE\"` / `42` / `(fn p)` (the last stripped by the normaliser) then `loaded`; any impl that drops the value echo is a real FAIL."
+    },
+    {
+      "name": "bigint-2pow53-plus-1",
+      "mode": "eval",
+      "expr": "(+ 9007199254740993 0)",
+      "expect": "agreement",
+      "known_divergence": "platform-integer-precision",
+      "table": {
+        "shen-cl": "9007199254740993",
+        "shen-erl": "9007199254740993",
+        "shen-scheme": "9007199254740993",
+        "shen-julia": "9007199254740993",
+        "shen-c": "9007199254740993",
+        "shen-rust": "9007199254740993",
+        "shen-swift": "9007199254740993",
+        "shen-truffle": "9007199254740993",
+        "shen-go": "9007199254740992",
+        "ShenScript": "9007199254740992",
+        "shen-lua": "9007199254740992"
+      },
+      "doc": "DOCUMENTED DIVERGENCE (Shen leaves number precision to the platform). 2^53+1 is the first integer an IEEE double cannot hold. Ports with exact integers here print 9007199254740993: bignums (shen-cl on SBCL/ECL, shen-erl, shen-scheme) and 64-bit integers (shen-julia, shen-c, shen-rust, shen-swift, shen-truffle). Ports whose only number is a double (shen-go, ShenScript, shen-lua) print 9007199254740992. The table pins each port to its bucket: reported as DIVERGE, but a port that changes bucket FAILS."
+    },
+    {
+      "name": "bigint-2pow63-ordered",
+      "mode": "eval",
+      "expr": "(> (+ 9223372036854775807 1) 9223372036854775807)",
+      "expect": "agreement",
+      "known_divergence": "platform-integer-precision",
+      "table": {
+        "shen-cl": "true",
+        "shen-erl": "true",
+        "shen-scheme": "true",
+        "shen-julia": "false",
+        "shen-c": "false",
+        "shen-rust": "false",
+        "shen-swift": "false",
+        "shen-truffle": "false",
+        "shen-go": "false",
+        "ShenScript": "false",
+        "shen-lua": "false"
+      },
+      "doc": "DOCUMENTED DIVERGENCE (Shen leaves number precision to the platform). (+ (2^63-1) 1) is only greater than 2^63-1 with bignums: shen-cl, shen-erl and shen-scheme print true. Every other port prints false, for one of three reasons: 64-bit wraparound to -2^63 (shen-julia, shen-c); overflow promoted to a double equal to 2^63, which compares as not greater (shen-rust, shen-swift, shen-truffle); or doubles throughout (shen-go, ShenScript, shen-lua). The printed sum also differs by host float formatting (9223372036854775808 / -9223372036854775808 / 9223372036854776000 / 9.223372036854776e+18 / 9.223372036854776E18), which is why the case compares a boolean. The table pins each port to its bucket."
     }
   ]
 }

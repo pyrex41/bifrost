@@ -21,8 +21,9 @@
       "name": "error-message-head",
       "mode": "eval",
       "expr": "(trap-error (head []) (lambda E (error-to-string E)))",
-      "expect": "agreement",
-      "doc": "the kernel error MESSAGE for (head []) should agree across impls on the same kernel. S41.2 is 'head expects a non-empty list'; S42 sys.kl includes a trailing newline in the kernel string. Mixing 41.2 and 42 ports may FAIL because of that kernel split. shen-go now uses kernel 42."
+      "expect": "output",
+      "doc": "HARD AGREEMENT again (was a kernel-split agreement case): every port runs ShenOSKernel 42.2, whose sys.kl message for (head []) is 'head expects a non-empty list' plus a trailing newline (dropped by the normaliser). Pinned as a golden so a port whose native head raises its own host message FAILS. Earlier, mixing Tarver S42.0 and S41.2 ports split on this message.",
+      "golden": "head expects a non-empty list"
     },
     {
       "name": "int-div-zero",

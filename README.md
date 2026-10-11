@@ -48,7 +48,7 @@ go run . --heavy                    # also Yggdrasil stage-1 byte-identity
 ```
 
 ~70 cases in `cases/*.json` + `programs/*.shen`: arithmetic, lists, strings,
-closures, Prolog, trap-error, and S42 kernel behavior any port should share
+closures, Prolog, trap-error, and ShenOSKernel 42.2 behavior any port should share
 (`integer?`, `=`, intern of `"true"`, hash agreeing with `=`, tuples/vectors,
 `put`/`get`, freeze captured by a lambda).
 

@@ -217,7 +217,7 @@ func resultFromInvocation(r runResult, extraPrefixes []string) *implResult {
 		Raw: r.Out, Norm: normalize(r.Out, extraPrefixes),
 		Timeout: r.Timeout, Rc: r.Rc,
 	}
-	if r.Rc == 3 {
+	if r.Rc == 3 || hasCapabilitySkip(result.Norm) {
 		result.Status = "SKIP"
 	}
 	return result
@@ -257,6 +257,11 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 	for name, im := range available {
 		results[name] = runCaseOnImpl(im, c, s, programsDir, heavyTimeout)
 	}
+	return judgeCase(c, results)
+}
+
+// judgeCase decides a case's verdict from its per-impl results.
+func judgeCase(c aCase, results map[string]*implResult) caseResult {
 	res := caseResult{PerImpl: results, Verdict: "PASS"}
 	active := map[string]*implResult{}
 	for name, result := range results {
@@ -350,17 +355,43 @@ func evaluateCase(c aCase, available map[string]Impl, s suite, programsDir strin
 			} else {
 				setAll(active, "PASS")
 			}
+			if isDiv {
+				// Only one bucket among the ports that ran: still pin each
+				// listed port to its documented bucket.
+				for _, n := range sortedKeys(active) {
+					if want, ok := c.Table[n]; ok && active[n].Norm != want {
+						active[n].Status = "FAIL"
+						res.Verdict = "FAIL"
+						res.Detail += fmt.Sprintf("%s=%q left documented bucket %q; ", n, active[n].Norm, want)
+					}
+				}
+			}
 		default:
 			if isDiv {
 				res.Verdict = "DIVERGE"
 				setAll(active, "DIVERGE")
+				// A table pins each listed port to its documented bucket, so
+				// a port that moves bucket is a real FAIL, not more noise.
+				var moved []string
+				for _, n := range sortedKeys(active) {
+					if want, ok := c.Table[n]; ok && active[n].Norm != want {
+						active[n].Status = "FAIL"
+						moved = append(moved, fmt.Sprintf("%s=%q (table %q)", n, active[n].Norm, want))
+					}
+				}
+				if len(moved) > 0 {
+					res.Verdict = "FAIL"
+					res.Detail = "left documented bucket: " + strings.Join(moved, ", ") + "; "
+				}
 			} else {
 				res.Verdict = "FAIL"
 				setAll(active, "FAIL")
 			}
-			res.Detail = bucketDetail(norms)
+			buckets := bucketDetail(norms)
 			if isDiv {
-				res.Detail = fmt.Sprintf("KNOWN DIVERGENCE [%s]: %s", c.KnownDivergence, res.Detail)
+				res.Detail += fmt.Sprintf("KNOWN DIVERGENCE [%s]: %s", c.KnownDivergence, buckets)
+			} else {
+				res.Detail = buckets
 			}
 		}
 	case "version":

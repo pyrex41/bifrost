@@ -11,6 +11,8 @@
 # per-Lua-build files, .shen-kernel-cache.<hash>.bin, as of shen-lua#55).
 .shen-kernel-cache*.bin
 .shen-kernel-cache*.bin.tmp
+# shen-lua on 42.2 also caches the standard library alongside it.
+.shen-kernel-cache*.bin.stlib
 
 # Generated KLambda artefacts (e.g. a stray shake/build output in programs/).
 *.kl

@@ -23,7 +23,10 @@ bifrost install IMPL …          # legacy; prefer env + Nix — docs/install.md
 3. `~/.config/bifrost/impl` (`bifrost use X`; on Windows `%APPDATA%\bifrost\impl`)
 4. `shen-cl` if present, else the first available port
 
-`bifrost impls --versions` probes each port's `(version)` live. README badges
+`bifrost impls --versions` probes each port's kernel live. It reads the
+leading token of the standard `--version` banner (`42.2 (port ("Julia"
+"shen-julia") …)`), and falls back to an eval of `(version)` when a banner is
+port-local (shen-c prints `Shen-C 0.2.3`) or absent (shen-lua). README badges
 drift; this does not.
 
 ## How a launcher is found
@@ -32,7 +35,8 @@ For each adapter in [`adapters.json`](../adapters.json):
 
 1. the env-var override (e.g. `$BIFROST_SHEN_GO`) if it names an existing file
 2. the first existing path in `default_paths`
-3. for shen-lua, a `shen` command on `PATH` that reports `shen-lua` and kernel 42
+3. for shen-lua, a `shen` command on `PATH` that reports `shen-lua` and the
+   adapter's kernel (`42.2`)
 
 Missing ports are **skipped and reported**, never a hard error.
 
@@ -51,8 +55,9 @@ Missing ports are **skipped and reported**, never a hard error.
 | `shen-truffle` | `BIFROST_SHEN_TRUFFLE` | `../shen-truffle/target/shen-truffle/bin/shen-truffle` |
 | `shen-c` | `BIFROST_SHEN_C` | `../shen-c/bin/shen-c` (experimental) |
 
-Production ports target ShenOSKernel **42**. `shen-joy` is a bounded S42-derived
-subset. `shen-c` is experimental and self-locates its kernel (do not set
+Production ports target ShenOSKernel **42.2** (community `shen-sources` tag
+`shen-42.2`, the kernel of upstream shen-scheme 0.50). `shen-joy` is a bounded
+first-order subset defined against 42.2. `shen-c` is experimental and self-locates its kernel (do not set
 `$SHEN_C_HOME`). Unfinished `shen-forth`, `shen-inets`, `shen-ocaml`, and
 `shen-odin` have flakes but are not Bifrost implementations.
 

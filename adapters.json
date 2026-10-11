@@ -30,7 +30,13 @@
     "Per-OS specifics go in an optional 'os_overrides' block per adapter,",
     "keyed by sys.platform ('win32'/'darwin'/'linux'); the matching block is",
     "shallow-merged over the adapter. See _os_overrides_example below. As",
-    "always, $BIFROST_<IMPL> overrides the launcher path on any OS."
+    "always, $BIFROST_<IMPL> overrides the launcher path on any OS.",
+    "",
+    "KERNEL: every production port targets the community ShenOSKernel 42.2",
+    "(Shen-Language/shen-sources tag shen-42.2, commit 73507e06, the kernel of",
+    "upstream shen-scheme 0.50), adopted wholesale in place of Tarver's S42.0",
+    "(pyrex41/bifrost#26). Until each port's kernel-42.2 PR merges to its default",
+    "branch, git-build installs it with `bifrost install <impl> --ref kernel-42.2`."
   ],
 
   "_os_overrides_example": {
@@ -64,7 +70,7 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "kernel": "42",
+    "kernel": "42.2",
     "build": {
       "cwd": "../shen-cl",
       "argv": ["make", "build-sbcl"],
@@ -76,7 +82,7 @@
       "git": "https://github.com/pyrex41/shen-cl",
       "needs": ["git", "make", "sbcl"]
     },
-    "_install_note": "Default method git-build (so a fork can be built). git remote / ref overridable via --git/--ref or $BIFROST_SHEN_CL_GIT / _REF; default is the pyrex41 fork. `--method brew` uses the 'shen-cl' Homebrew formula instead. The launcher itself can point at any prebuilt fork binary via $BIFROST_SHEN_CL. BOOTSTRAP: a fresh clone has no kernel/ or compiled/ tree, so before `make build-sbcl` you must run `make fetch` (or scripts/assemble-tarver-kernel.sh) and then `make precompile SHEN=<path to any working Shen launcher, e.g. a built shen-go>` -- precompiling the kernel requires an already-working Shen. `bifrost install shen-cl` runs only the final build step, so on a first-ever install do the fetch+precompile once by hand (see the shen-cl README).",
+    "_install_note": "Default method git-build (so a fork can be built). git remote / ref overridable via --git/--ref or $BIFROST_SHEN_CL_GIT / _REF; default is the pyrex41 fork. `--method brew` uses a 'shen-cl' Homebrew formula instead (not the corpus-validated fork; check its kernel with `bifrost impls --versions`). The launcher itself can point at any prebuilt fork binary via $BIFROST_SHEN_CL. BOOTSTRAP: a fresh clone has no kernel/ or compiled/ tree, so before `make build-sbcl` you must run `make fetch` (scripts/fetch-kernel.sh: downloads ShenOSKernel-42.2.tar.gz from Shen-Language/shen-sources tag shen-42.2 and verifies its SHA-256) and then `make precompile SHEN=<path to any working Shen launcher, e.g. a built shen-go>` -- precompiling the kernel requires an already-working Shen. `bifrost install shen-cl` runs only the final build step, so on a first-ever install do the fetch+precompile once by hand (see the shen-cl README).",
     "_repl_note": "Bare {bin} (no args) enters the REPL. Do NOT pass -q here: -q is only valid after the eval/script subcommand; as a bare first arg shen-cl rejects it ('Invalid argument: -q') and exits before the REPL starts — which made the stdin-eof case pass spuriously without ever testing EOF."
   },
 
@@ -99,14 +105,14 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "kernel": "42",
+    "kernel": "42.2",
     "install": {
       "method": "git-build",
       "git": "https://github.com/pyrex41/shen-go",
       "ref": "v1.5.0",
       "needs": ["git", "go"]
     },
-    "_install_note": "git-build clones the pyrex41 fork: it carries the standard launcher CLI (eval/script/--version, runtime kernel 42 / S42.0) that Bifrost drives. Upstream tiancaiamao/shen-go lacks those subcommands, so it cannot be driven by Bifrost. ref pins the shen-go release Bifrost is validated against (v1.5.0: audited natives, (fail) = shen.fail!, clean stdout); an existing clone is fetched before the checkout, and `bifrost install shen-go --ref master` (or BIFROST_SHEN_GO_REF=master) tracks master instead."
+    "_install_note": "git-build clones the pyrex41 fork: it carries the standard launcher CLI (eval/script/--version) that Bifrost drives. Upstream tiancaiamao/shen-go lacks those subcommands, so it cannot be driven by Bifrost. ref pins a shen-go release; an existing clone is fetched before the checkout, and `bifrost install shen-go --ref master` (or BIFROST_SHEN_GO_REF=master) tracks master instead. TODO(kernel 42.2): v1.5.0 still vendors Tarver S42.0 (runtime kernel 42). No shen-go release on ShenOSKernel 42.2 exists yet (pyrex41/shen-go#62, branch kernel-42.2); until one is tagged, install the 42.2 kernel with `--ref kernel-42.2` (or master once #62 merges), then move this pin to the new tag."
   },
 
   "shen-joy": {
@@ -121,8 +127,8 @@
     "repl":    ["{bin}", "unsupported", "repl"],
     "hush_writes_file": false,
     "status": "bounded-image-target",
-    "kernel": "bounded-s42-subset",
-    "_note": "Device target only. Ordinary Shen source/eval/REPL cases exit 3 (capability SKIP); Bifrost's --shake path uses Yggdrasil's joy builder to create and run a validated image."
+    "kernel": "bounded-42.2-subset",
+    "_note": "Device target only: a bounded first-order subset defined against ShenOSKernel 42.2 (shen-joy docs/shen-to-joy.md; differential reference shen-scheme 0.50). Ordinary Shen source/eval/REPL cases exit 3 (capability SKIP). Bifrost's --shake path uses Yggdrasil's joy builder to create and run a validated image: the one corpus program inside the subset is programs/joy-sum.shen (case bounded-tail-sum-file, the same program as Yggdrasil's tests/joy-sum.shen), which must print 32004000. tests/fib.shen and the other script programs fall outside the subset and are capability SKIPs (exit 3) on joy, so the --heavy fib.shen parity case never includes it."
   },
 
   "shen-erl": {
@@ -141,13 +147,13 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "kernel": "42",
+    "kernel": "42.2",
     "install": {
       "method": "git-build",
       "git": "https://github.com/pyrex41/shen-erl",
-      "needs": ["git", "make", "erl", "erlc", "cc", "curl", "unzip", "tar", "shasum"]
+      "needs": ["git", "make", "erl", "erlc", "cc", "curl", "tar", "shasum"]
     },
-    "_install_note": "git-build clones the maintained S42.0 fork and compiles the Erlang runtime plus KLambda kernel. The launcher infers its ebin directory from its own location; $SHEN_ERL_ROOTDIR remains an optional override."
+    "_install_note": "git-build clones the maintained pyrex41 fork and compiles the Erlang runtime plus KLambda kernel. scripts/fetch-kernel.sh downloads ShenOSKernel-42.2.tar.gz (Shen-Language/shen-sources tag shen-42.2, SHA-256 pinned) with curl and unpacks it with tar; unzip is no longer needed. Until pyrex41/shen-erl#5 merges, the default branch still builds Tarver S42.0: pass `--ref kernel-42.2` for 42.2. The launcher infers its ebin directory from its own location; $SHEN_ERL_ROOTDIR remains an optional override. Bignum integers (exact above 2^63)."
   },
 
   "shen-rust": {
@@ -166,12 +172,13 @@
     "repl":    ["{bin}"],
     "hush_writes_file": false,
     "status": "production",
-    "kernel": "42",
+    "kernel": "42.2",
     "install": {
       "method": "git-build",
       "git": "https://github.com/pyrex41/shen-rust",
       "needs": ["git", "cargo"]
-    }
+    },
+    "_note": "ShenOSKernel 42.2 booted through init.kl/shen.initialise; bundles extension-namespaces (the namespace-externals-expression case runs here). 64-bit integers that overflow to doubles (exact to 2^63). Release build needs several GB of disk under target/."
   },
 
   "shen-lua": {
@@ -186,7 +193,7 @@
     "repl":    ["{bin}", "-q"],
     "hush_writes_file": false,
     "status": "production",
-    "kernel": "42",
+    "kernel": "42.2",
     "build": {
       "cwd": "../shen-lua",
       "argv": ["bin/shen", "-e", "(version)"],
@@ -201,7 +208,7 @@
       "lua_version": "5.1",
       "needs": ["git", "luajit"]
     },
-    "_install_note": "git-build checks out v0.11.0 and runs bin/shen from that checkout (KLambda is compiled on first boot and cached -- the build step just warms that cache). Needs luajit at runtime. `--method luarocks` installs the published shen 0.11.0-1 (kernel 42) with Lua 5.1, rather than an older kernel 41.2 rock. Bifrost finds its launcher on PATH when it is not under /usr/local/bin/shen.",
+    "_install_note": "git-build checks out the pinned ref and runs bin/shen from that checkout (KLambda is compiled on first boot and cached -- the build step just warms that cache). Needs luajit at runtime. `--method luarocks` installs the pinned rock with Lua 5.1. Bifrost finds its launcher on PATH when it is not under /usr/local/bin/shen, but only if it reports this adapter's kernel. TODO(kernel 42.2): v0.11.0 / rock 0.11.0-1 (and v0.11.1) still ship Tarver S42.0 (kernel 42), so with kernel 42.2 here an install of the pins is reported as not current. No shen-lua release on ShenOSKernel 42.2 exists yet (pyrex41/shen-lua#81, branch kernel-42.2); until one is tagged and published, use `bifrost install shen-lua --ref kernel-42.2` (git-build), then move ref/version to the new release.",
     "_version_note": "shen-lua has no --version flag; Bifrost falls back to eval of (version)."
   },
 
@@ -217,7 +224,7 @@
     "repl":    ["node", "{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "kernel": "42",
+    "kernel": "42.2",
     "build": {
       "cwd": "../ShenScript",
       "steps": [
@@ -242,7 +249,12 @@
     ],
     "build": {
       "cwd": "../shen-scheme",
-      "argv": ["make", "all"],
+      "steps": [
+        ["make", "fetch-kernel"],
+        ["make", "fetch-prebuilt"],
+        ["make", "precompile-with-prebuilt"],
+        ["make", "all"]
+      ],
       "out": "_build/bin/shen-scheme"
     },
     "eval":    ["{bin}", "eval", "-e", "{expr}"],
@@ -251,15 +263,15 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "kernel": "42",
+    "kernel": "42.2",
     "install": {
-      "method": "brew",
+      "method": "git-build",
       "package": "shen-scheme",
       "git": "https://github.com/pyrex41/shen-scheme",
-      "needs": ["brew"]
+      "needs": ["git", "make", "cc", "curl", "tar"]
     },
-    "_install_note": "Homebrew formula 'shen-scheme' (also GitHub release binaries). git-build alternative: --method git-build (needs make + a C compiler; auto-fetches Chez 10.3).",
-    "_note": "Chez Scheme port by tizoc (Bruno Deferrari). Binary finds its boot file (lib/shen-scheme/shen.boot) relative to the executable, so cwd-independent. -q maps to --quiet -> (set *hush* true), which silences stdout (so it is NOT passed for normal eval/script cases); file-stream pr still writes under -q. Converged with the 41.2 reference ports on all bifrost cases (kernel 41.2; clean stdin-EOF exit; hush gates stdout only)."
+    "_install_note": "Default git-build of the pyrex41 fork: tizoc/shen-scheme v0.50 (ShenOSKernel 42.2) merged, plus the two fork fixes the corpus asserts (stdin-EOF exit, *hush* gates stdout only). The build steps are the upstream CI recipe: make fetch-kernel (ShenOSKernel-42.2.tar.gz, SHA-256 1d022730...78d8), make fetch-prebuilt (tizoc v0.26 binary, only to precompile the kernel), make precompile-with-prebuilt, make all (downloads and builds Chez 10.3.0; several minutes). Until pyrex41/shen-scheme#9 merges, the fork's default branch is still 0.45 / Tarver S42.0: pass `--ref kernel-42.2`. UPSTREAM 0.50 (tizoc release binaries, the 42.2 reference) runs the same kernel; point $BIFROST_SHEN_SCHEME at its bin/shen-scheme to compare it. It differs from the fork only in hush-file-write (-q silences file writes) and stdin-eof-clean-exit (REPL loops at EOF), and FAILS those two cases by design. `--method brew` is NOT a 42.2 path: homebrew-core has no shen-scheme formula and the Shen-Language/homebrew-shen tap ships shen-scheme 0.17.",
+    "_note": "Chez Scheme port by tizoc (Bruno Deferrari), 0.50 on ShenOSKernel 42.2. There is no shen.boot any more: the launcher loads petite.boot + scheme.boot and lib/shen-scheme/shen-scheme/runtime.so from the lib/shen-scheme directory next to bin/ (override with $SHEN_SCHEME_HOME), so it is cwd-independent. -q maps to --quiet -> (set *hush* true), which silences stdout (so it is NOT passed for normal eval/script cases); in the fork, file-stream pr still writes under -q. Bundles extension-namespaces (the namespace-externals-expression case runs here). Bignum integers."
   },
 
   "shen-julia": {
@@ -273,7 +285,7 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "kernel": "42",
+    "kernel": "42.2",
     "build": {
       "cwd": "../shen-julia",
       "argv": ["julia", "--project=.", "-e", "using Pkg; Pkg.instantiate()"],
@@ -284,8 +296,8 @@
       "git": "https://github.com/pyrex41/shen-julia",
       "needs": ["git", "julia"]
     },
-    "_install_note": "git-build: clone + Pkg.instantiate (deps). No sysimage by default (~12s boot); build one with `julia --project=. bin/build_sysimage.jl` and point $SHEN_JULIA_SYSIMAGE at it to cut startup.",
-    "_note": "Julia port (shen-julia), 41.2 kernel. The bin/shen wrapper drives the kernel's standard launcher (shen.x.launcher.main from extension-launcher.kl) -- same CLI surface as shen-go/shen-rust/ShenScript. Boots ~12s per invocation (no sysimage yet; set $SHEN_JULIA_SYSIMAGE to a prebuilt ShenJulia.sys to cut that); well within the 60s timeout. Do NOT pass -q for normal eval/script cases: -q sets *hush* which silences stdout (the value would not print). A host-side pr override makes *hush* gate ONLY stdout, never an explicit file stream, so it converges with the hardened hush-file-write case (writes). REPL exits cleanly on stdin EOF via a host-side readline loop."
+    "_install_note": "git-build: clone + Pkg.instantiate (deps). The first run precompiles the package (minutes); afterwards start-up is ~5 s without a sysimage. Build one with `julia --project=. bin/build_sysimage.jl` and point $SHEN_JULIA_SYSIMAGE at it to cut that further. Until pyrex41/shen-julia#11 merges, pass `--ref kernel-42.2` for the 42.2 kernel.",
+    "_note": "Julia port (shen-julia), ShenOSKernel 42.2 booted through init.kl/shen.initialise. --version prints `42.2 (port (\"Julia\" \"shen-julia\") implementation (...))`. The bin/shen wrapper drives the kernel's standard launcher (shen.x.launcher.main from extension-launcher.kl) -- same CLI surface as shen-go/shen-rust/ShenScript. Boots ~5 s per invocation without a sysimage (set $SHEN_JULIA_SYSIMAGE to a prebuilt ShenJulia.sys to cut that); well within the 60s timeout. Int64 integers wrap at 2^63. Known port gaps (also on its Tarver S42.0 main branch): the native integer? is false for integral floats such as 4.0 and hash of 1 and 1.0 differ, so integer-float-integral and hash-agrees-with-equality FAIL. Do NOT pass -q for normal eval/script cases: -q sets *hush* which silences stdout (the value would not print). A host-side pr override makes *hush* gate ONLY stdout, never an explicit file stream, so it converges with the hardened hush-file-write case (writes). REPL exits cleanly on stdin EOF via a host-side readline loop."
   },
   "shen-swift": {
     "env": "BIFROST_SHEN_SWIFT",
@@ -298,7 +310,7 @@
     "repl": ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "kernel": "42",
+    "kernel": "42.2",
     "build": {
       "cwd": "../shen-swift",
       "argv": ["swift", "build", "-c", "release"],
@@ -309,8 +321,8 @@
       "git": "https://github.com/pyrex41/shen-swift",
       "needs": ["swift"]
     },
-    "_install_note": "git-build: clone + `swift build -c release` (Swift 6+ toolchain; macOS or Linux with the open-source toolchain). Self-contained -- the 41.2 .kl kernel ships inside the SwiftPM resource bundle, no separate kernel checkout needed.",
-    "_note": "Swift port (shen-swift), 41.2 kernel, built from scratch as a tree-walking KLambda interpreter targeting iOS as well as macOS (no JIT/codegen -- runs inside the iOS sandbox). Drives the kernel's standard launcher (shen.x.launcher.main from extension-launcher.kl) -- same CLI surface as shen-go/shen-rust/shen-julia/ShenScript. Boots the kernel (~1-2.7s release) on every invocation; passes the 41.2 kernel test suite 35/35 groups. A host-side pr override makes *hush* gate ONLY stdout, never an explicit file stream, so -q silences the printed value but file writes still happen (hush_writes_file=true) -- this also lets shen-swift host yggdrasil shakes, which run under -q. -q is NOT passed for normal eval/script cases (it would suppress the value). REPL exits cleanly on stdin EOF (getchar -> exit)."
+    "_install_note": "git-build: clone + `swift build -c release` (Swift 6+ toolchain; macOS or Linux with the open-source toolchain). Self-contained -- the ShenOSKernel 42.2 .kl kernel ships inside the SwiftPM resource bundle, no separate kernel checkout needed. The 42.2 port is on branch kernel-42.2 (not yet on the default branch): pass `--ref kernel-42.2` once it is pushed.",
+    "_note": "Swift port (shen-swift) on ShenOSKernel 42.2, a tree-walking KLambda interpreter built from scratch that targets iOS as well as macOS (no JIT/codegen -- runs inside the iOS sandbox). Boot loads the 16 kernel modules and calls (shen.initialise), about 0.5 s per invocation in a release build; passes the 42.2 kernel test suite 143/143. Its launcher is native Swift that mirrors extension-launcher.kl (same CLI surface as shen-go/shen-rust/shen-julia/ShenScript; --stdlib loads stlib.kl). A host-side pr override makes *hush* gate ONLY stdout, never an explicit file stream: -q silences eval -e output but file writes still happen (hush_writes_file=true), which also lets shen-swift host yggdrasil shakes under -q. -q is NOT passed for normal eval/script cases. 64-bit integers that overflow to doubles. REPL exits cleanly on stdin EOF (getchar -> exit)."
   },
   "shen-truffle": {
     "env": "BIFROST_SHEN_TRUFFLE",
@@ -324,7 +336,7 @@
     "repl": ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "kernel": "42",
+    "kernel": "42.2",
     "build": {
       "cwd": "../shen-truffle",
       "argv": ["mvn", "package", "-DskipTests"],
@@ -335,7 +347,8 @@
       "git": "https://github.com/pyrex41/shen-truffle",
       "needs": ["git", "mvn", "java"]
     },
-    "_install_note": "git-build clones shen-truffle and runs `mvn package -DskipTests`; the relocatable launcher is target/shen-truffle/bin/shen-truffle. Set $BIFROST_SHEN_TRUFFLE to override the path."
+    "_install_note": "git-build clones shen-truffle and runs `mvn package -DskipTests`; the relocatable launcher is target/shen-truffle/bin/shen-truffle. Set $BIFROST_SHEN_TRUFFLE to override the path. The 42.2 port is pyrex41/shen-truffle#6 (branch kernel-42.2): pass `--ref kernel-42.2` until it merges.",
+    "_note": "Truffle/GraalVM port on ShenOSKernel 42.2. The launcher runs $JAVA_HOME/bin/java (else java on PATH) with --sun-misc-unsafe-memory-access=allow, so it needs JDK 23+ (GraalVM CE 25 in its flake): with an older java the JVM refuses to start. When JAVA_TOOL_OPTIONS / _JAVA_OPTIONS / JDK_JAVA_OPTIONS is set (agent proxies, CI images) the JVM prints a 'Picked up ...' line on stderr; Bifrost's normaliser strips that line, so cases still compare Shen output, but unset the variable when running the launcher by hand. 64-bit integers that overflow to doubles."
   },
 
   "shen-c": {
@@ -349,7 +362,7 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "experimental",
-    "kernel": "42",
+    "kernel": "42.2",
     "build": {
       "cwd": "../shen-c",
       "argv": ["make"],
@@ -362,6 +375,6 @@
       "needs": ["git", "make", "cc", "pkg-config"]
     },
     "_install_note": "experimental C port. git-build clones pyrex41/shen-c and runs `make` (C17 + Boehm GC via Nix pkg-config bdw-gc, not Homebrew libgc). The compiled launcher is bin/shen-c; it self-locates the kernel via home_from_executable() looking for shen/src/kl/sys.kl, so Bifrost must not set $SHEN_C_HOME. Point $BIFROST_SHEN_C at bin/shen-c if needed. Install is blocked unless `--force` because status is experimental.",
-    "_note": "S42 C tree-walker (kernel (version) is 42 unquoted on eval; --version banner is Shen-C 0.2.3, not 41.2). CLI: eval -e / eval -q -l / script FILE / --version / bare REPL. Eval print is unquoted (shen.a). Host pr override: *hush* gates stdout only. Boot loads types.kl declare and declarations.kl (shen.build-lambda-table (external shen)); do not skip them. C17 + Nix pkg-config bdw-gc, no Homebrew, no C++ rewrite. Prefer ../shen-c/bin/shen-c (not the rlwrap wrapper). Do not claim corpus green without a live runme.shen log. Go is AOT+interpreter on S41.2; C is a tree-walker on S42 — do not claim C should match Go wall times without a profile."
+    "_note": "C tree-walker on ShenOSKernel 42.2 ((version) is 42.2 unquoted on eval; --version banner stays the port-local Shen-C 0.2.3, so version-banner-contains FAILS and `bifrost impls --versions` falls back to eval of (version)). Known port gaps, all also present on its Tarver S42.0 main branch: script mode echoes each toplevel value like load instead of the launcher's quiet-load (bounded-tail-sum-file, source-form-before-macros FAIL), and (+ 0.1 0.2) prints 0.3 (float-add-imprecise FAIL). Int64 integers wrap at 2^63. CLI: eval -e / eval -q -l / script FILE / --version / bare REPL. Eval print is unquoted (shen.a). Host pr override: *hush* gates stdout only. Boot loads the 16 defun-only 42.2 modules (incl. dict.kl and init.kl), installs the AOT natives and calls (shen.initialise); the Tarver S42 declarations.kl/types.kl top-level boot forms are gone. C17 + Nix pkg-config bdw-gc, no Homebrew, no C++ rewrite. Prefer ../shen-c/bin/shen-c (not the rlwrap wrapper). Do not claim corpus green without a live runme.shen log. Go is AOT+interpreter and C is a tree-walker, both on 42.2 — do not claim C should match Go wall times without a profile."
   }
 }

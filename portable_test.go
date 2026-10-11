@@ -18,13 +18,13 @@ func TestShenLuaPathFallbackValidatesPortAndKernel(t *testing.T) {
 	launcher := filepath.Join(tmp, "shen")
 	t.Setenv("PATH", tmp+string(os.PathListSeparator)+os.Getenv("PATH"))
 	a := &Adapters{baseDir: tmp}
-	cfg := Adapter{Kernel: "42"}
+	cfg := Adapter{Kernel: "42.2"}
 	for _, tc := range []struct {
 		port, kernel, want string
 	}{
-		{"shen-lua", "42", launcher},
-		{"shen-go", "42", ""},
-		{"shen-lua", "41.2", ""},
+		{"shen-lua", "42.2", launcher},
+		{"shen-go", "42.2", ""},
+		{"shen-lua", "42", ""},
 	} {
 		script := "#!/bin/sh\ncase \"$2\" in\n  '(port)') printf '%s\\n' '" + tc.port + "' ;;\n  '(version)') printf '%s\\n' '" + tc.kernel + "' ;;\nesac\n"
 		if err := os.WriteFile(launcher, []byte(script), 0o755); err != nil {
@@ -163,7 +163,7 @@ func TestShenTruffleAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Env != "BIFROST_SHEN_TRUFFLE" || cfg.Kernel != "42" || cfg.Status != "production" {
+	if cfg.Env != "BIFROST_SHEN_TRUFFLE" || cfg.Kernel != "42.2" || cfg.Status != "production" {
 		t.Fatalf("unexpected shen-truffle adapter: %#v", cfg)
 	}
 	got := buildArgv(Impl{Name: "shen-truffle", Cfg: cfg, Bin: "/tmp/shen-truffle"}, aCase{Mode: "eval", Expr: "(+ 1 2)"}, "")
@@ -215,7 +215,7 @@ func TestShenCAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Env != "BIFROST_SHEN_C" || cfg.Status != "experimental" || cfg.Kernel != "42" {
+	if cfg.Env != "BIFROST_SHEN_C" || cfg.Status != "experimental" || cfg.Kernel != "42.2" {
 		t.Fatalf("unexpected shen-c adapter: %#v", cfg)
 	}
 	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-c/bin/shen-c" {
@@ -334,5 +334,73 @@ func TestRouterRecognisesSubcommands(t *testing.T) {
 	}
 	if subcommands["--list"] || subcommands["--suite"] {
 		t.Error("test-matrix flags must not be treated as subcommands")
+	}
+}
+
+func TestParseKernelVersion(t *testing.T) {
+	for _, tc := range []struct {
+		out, want string
+		ok        bool
+	}{
+		{"42.2 (port (\"Julia\" \"shen-julia\") implementation (\"1.13.1\" \"0.1\"))\n\n", "42.2", true},
+		{"42.2 (port (\"Common Lisp\" \"3.0.3\") implementation (\"SBCL\" \"2.6.7\"))\n", "42.2", true},
+		{"42.2\n", "42.2", true},
+		{"\"42.2\"\n", "42.2", true},
+		{"42\n", "42", true},
+		{"Shen-C 0.2.3\n", "", false},
+		{"", "", false},
+	} {
+		got, ok := parseKernelVersion(tc.out)
+		if got != tc.want || ok != tc.ok {
+			t.Errorf("parseKernelVersion(%q) = %q, %v; want %q, %v", tc.out, got, ok, tc.want, tc.ok)
+		}
+	}
+}
+
+func TestNormalizeDropsRunTimeBannerBlankAndJVMNotice(t *testing.T) {
+	julia := "\"PROBE\"\n42\n(fn p)\n\nrun time: 2.88 secs\nloaded\n"
+	lua := "\"PROBE\"\n42\n(fn p)\nloaded\n"
+	if a, b := normalize(julia, nil), normalize(lua, nil); a != b {
+		t.Fatalf("run-time banner blank line not dropped: %q vs %q", a, b)
+	}
+	jvm := "Picked up JAVA_TOOL_OPTIONS: -Dfoo=bar\n42\n"
+	if got := normalize(jvm, nil); got != "42" {
+		t.Fatalf("JVM notice not stripped: %q", got)
+	}
+}
+
+func TestCapabilitySkipMarker(t *testing.T) {
+	r := resultFromInvocation(runResult{Out: "BIFROST-SKIP: namespaces extension not booted\n"}, nil)
+	if r.Status != "SKIP" {
+		t.Fatalf("status = %q, want SKIP", r.Status)
+	}
+	r = resultFromInvocation(runResult{Out: "[42 2]\n"}, nil)
+	if r.Status != "" {
+		t.Fatalf("status = %q, want unset", r.Status)
+	}
+}
+
+func TestKnownDivergenceTablePinsBuckets(t *testing.T) {
+	c := aCase{Expect: "agreement", KnownDivergence: "x", Table: map[string]string{"a": "1", "b": "2"}}
+	mk := func(norms map[string]string) map[string]*implResult {
+		m := map[string]*implResult{}
+		for n, v := range norms {
+			m[n] = &implResult{Norm: v}
+		}
+		return m
+	}
+	for _, tc := range []struct {
+		norms map[string]string
+		want  string
+	}{
+		{map[string]string{"a": "1", "b": "2"}, "DIVERGE"},
+		{map[string]string{"a": "1", "b": "2", "c": "3"}, "DIVERGE"},
+		{map[string]string{"a": "2", "b": "2"}, "FAIL"},
+		{map[string]string{"a": "1", "b": "1"}, "FAIL"},
+		{map[string]string{"a": "1"}, "PASS"},
+	} {
+		if got := judgeCase(c, mk(tc.norms)).Verdict; got != tc.want {
+			t.Errorf("%v: verdict %s, want %s", tc.norms, got, tc.want)
+		}
 	}
 }
