@@ -72,3 +72,24 @@ See [docs/suites.md](docs/suites.md).
 (`bifrost --shake` for stand-alone deploy artifacts).
 
 License: Apache-2.0.
+
+
+### Experimental Shen-Koka host
+
+The `shen-koka` adapter uses the port's real launcher through
+`BIFROST_SHEN_KOKA`. Stage-1 Yggdrasil comparisons select `--eval-style script`
+for this port; use the integration version of Yggdrasil that supports that mode.
+The pristine S42 writer suppresses explicit file output under `*hush*`, so the
+usual quiet host invocation cannot emit artifacts.
+
+Heavy cases retain their five-minute default per-host budget. Slower interpreter
+hosts can use an explicit positive duration, for example:
+
+```sh
+bifrost -heavy -heavy-timeout 15m -only yggdrasil-shake-parity \
+  -impls shen-lua,shen-go,shen-koka -json
+```
+
+A longer budget does not turn missing, failed, or skipped cells into passes. The
+port's full Shen distribution and strict 17-case seed checks remain separate
+qualification gates.

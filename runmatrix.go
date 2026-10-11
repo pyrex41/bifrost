@@ -88,7 +88,7 @@ func materializeEmbedded(efs fs.FS, dir string) (string, error) {
 }
 
 // executeCases runs every case across the available impls.
-func executeCases(cases []aCase, available map[string]Impl, s suite, programsDir string, shake bool) map[string]caseResult {
+func executeCases(cases []aCase, available map[string]Impl, s suite, programsDir string, shake bool, heavyTimeout time.Duration) map[string]caseResult {
 	out := map[string]caseResult{}
 	for _, c := range cases {
 		fmt.Fprintf(os.Stderr, "running %-28s ... ", c.Name)
@@ -98,11 +98,11 @@ func executeCases(cases []aCase, available map[string]Impl, s suite, programsDir
 		case c.Mode == "special-hush":
 			res = runHushDivergence(c, available)
 		case c.Expect == "yggdrasil-parity":
-			res = runYggdrasilParity(c, available)
+			res = runYggdrasilParity(c, available, heavyTimeout)
 		case shake && c.Mode == "script":
 			res = runShakeCase(c, available, s, programsDir)
 		default:
-			res = evaluateCase(c, available, s, programsDir, timeoutHeavy)
+			res = evaluateCase(c, available, s, programsDir, heavyTimeout)
 		}
 		out[c.Name] = res
 		fmt.Fprintf(os.Stderr, "%s (%.1fs)\n", res.Verdict, time.Since(t0).Seconds())
@@ -222,6 +222,7 @@ func sortedSkip(m map[string]string) []string {
 func runMatrix(args []string) int {
 	fs := newFlagSet("bifrost")
 	heavy := fs.Bool("heavy", false, "include heavy (yggdrasil) cases")
+	heavyTimeout := fs.Duration("heavy-timeout", timeoutHeavy, "per-host timeout for heavy cases (e.g. 15m)")
 	only := fs.String("only", "", "run only these cases (comma-separated)")
 	implsFlag := fs.String("impls", "", "comma-separated subset of impls to drive")
 	list := fs.Bool("list", false, "list impls + cases and exit")
@@ -229,6 +230,11 @@ func runMatrix(args []string) int {
 	suitePath := fs.String("suite", "", "run a project's bifrost.suite.json instead of the corpus")
 	shake := fs.Bool("shake", false, "diff standalone artifacts per target (deploy-path parity)")
 	if err := fs.Parse(args); err != nil {
+		return 2
+	}
+
+	if *heavyTimeout <= 0 {
+		fmt.Fprintln(os.Stderr, "bifrost: heavy-timeout must be positive")
 		return 2
 	}
 
@@ -316,7 +322,7 @@ func runMatrix(args []string) int {
 		fmt.Fprintln(os.Stderr, "bifrost:", err)
 		return 2
 	}
-	results := executeCases(cases, available, s, programsDir, *shake)
+	results := executeCases(cases, available, s, programsDir, *shake, *heavyTimeout)
 
 	if *jsonOut {
 		printJSON(available, skipped, results)

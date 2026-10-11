@@ -185,7 +185,7 @@ func yggdrasilRepoDir() string {
 // yggdrasil CLI's --host) and asserts the produced kernel.kl + manifest are
 // byte-identical across hosts (the user KL differs only by gensym counter, so
 // it is not compared).
-func runYggdrasilParity(c aCase, available map[string]Impl) caseResult {
+func runYggdrasilParity(c aCase, available map[string]Impl, heavyTimeout time.Duration) caseResult {
 	results := map[string]*implResult{}
 	for n := range available {
 		results[n] = &implResult{Status: "SKIP"}
@@ -229,7 +229,10 @@ func runYggdrasilParity(c aCase, available map[string]Impl) caseResult {
 		if name == "shen-lua" {
 			argv = append(argv, "--eval-style", "positional")
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), timeoutHeavy)
+		if name == "shen-koka" {
+			argv = append(argv, "--eval-style", "script")
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), heavyTimeout)
 		cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
