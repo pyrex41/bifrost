@@ -336,3 +336,53 @@ func TestRouterRecognisesSubcommands(t *testing.T) {
 		t.Error("test-matrix flags must not be treated as subcommands")
 	}
 }
+
+func TestShenKokaAdapter(t *testing.T) {
+	a, err := loadAdapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := a.effectiveForPlatform("shen-koka", "linux")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Env != "BIFROST_SHEN_KOKA" || cfg.Status != "experimental" || cfg.Kernel != "42" {
+		t.Fatalf("unexpected shen-koka adapter: %#v", cfg)
+	}
+	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-koka/bin/shen-koka" {
+		t.Fatalf("shen-koka default_paths = %v, want [../shen-koka/bin/shen-koka] only", cfg.DefaultPaths)
+	}
+	impl := Impl{Name: "shen-koka", Cfg: cfg, Bin: "/tmp/shen-koka"}
+	evalGot := buildArgv(impl, aCase{Mode: "eval", Expr: "(+ 1 2)"}, "")
+	evalWant := []string{"/tmp/shen-koka", "eval", "-e", "(+ 1 2)"}
+	if !reflect.DeepEqual(evalGot, evalWant) {
+		t.Fatalf("shen-koka eval argv = %v, want %v", evalGot, evalWant)
+	}
+	scriptPath := filepath.Join(t.TempDir(), "p.shen")
+	scriptGot := buildArgv(impl, aCase{Mode: "script", Program: scriptPath}, "")
+	scriptWant := []string{"/tmp/shen-koka", "script", scriptPath}
+	if !reflect.DeepEqual(scriptGot, scriptWant) {
+		t.Fatalf("shen-koka script argv = %v, want %v", scriptGot, scriptWant)
+	}
+	versionGot := buildArgv(impl, aCase{Mode: "version"}, "")
+	versionWant := []string{"/tmp/shen-koka", "--version"}
+	if !reflect.DeepEqual(versionGot, versionWant) {
+		t.Fatalf("shen-koka version argv = %v, want %v", versionGot, versionWant)
+	}
+	replGot := buildArgv(impl, aCase{Mode: "repl-eof"}, "")
+	replWant := []string{"/tmp/shen-koka"}
+	if !reflect.DeepEqual(replGot, replWant) {
+		t.Fatalf("shen-koka repl argv = %v, want %v", replGot, replWant)
+	}
+	found := false
+	for _, name := range implOrder {
+		if name == "shen-koka" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatal("implOrder omits shen-koka")
+	}
+}
+

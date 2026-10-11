@@ -13,7 +13,7 @@ import (
 
 // implOrder is the order ports appear in the matrix and in listings.
 var implOrder = []string{
-	"shen-cl", "shen-go", "shen-joy", "shen-erl", "shen-rust", "shen-lua", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle", "shen-c",
+	"shen-cl", "shen-go", "shen-joy", "shen-erl", "shen-rust", "shen-lua", "shen-koka", "ShenScript", "shen-scheme", "shen-julia", "shen-swift", "shen-truffle", "shen-c",
 }
 
 // BuildRecipe is a port's source-build step (git-build install + yggdrasil host).

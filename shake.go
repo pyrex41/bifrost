@@ -27,6 +27,7 @@ import (
 // `swift` target drives the shen-swift tree-walking interpreter on the slice
 // (boot a ~200-line shaken kernel instead of the full ~2500-line kernel).
 var targetToImpl = map[string]string{
+	"koka": "shen-koka",
 	"lisp": "shen-cl", "lua": "shen-lua", "go": "shen-go",
 	"joy":    "shen-joy",
 	"erlang": "shen-erl", "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
