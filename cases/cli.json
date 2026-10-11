@@ -10,25 +10,25 @@
       "doc": "CLI parity: 'eval -e EXPR' prints the value of EXPR to stdout"
     },
     {
-      "name": "version-expr-42",
+      "name": "version-expr-42.2",
       "mode": "eval",
       "expr": "(version)",
       "expect": "output",
-      "golden": "42",
-      "doc": "CLI parity: (version) returns runtime kernel version 42 uniformly (works on every impl, incl. shen-lua which has no --version flag)"
+      "golden": "42.2",
+      "doc": "CLI parity: (version) returns the runtime kernel version, ShenOSKernel 42.2 (set in init.kl), uniformly on every port (incl. shen-lua, which has no --version flag). Eval print is unquoted, so shen-c's 42.2 matches. Was version-expr-42 (Tarver S42.0) until every port moved to the community 42.2 kernel (pyrex41/bifrost#26)."
     },
     {
       "name": "version-banner-contains",
       "mode": "version",
       "expect": "version",
-      "contains": "42",
-      "doc": "CLI parity: the --version banner contains runtime kernel version 42. shen-lua has no --version flag, so Bifrost falls back to eval of (version). The experimental shen-c banner is port-local; this case uses kernels/adapters that emit 42."
+      "contains": "42.2",
+      "doc": "CLI parity: the --version banner contains the runtime kernel version 42.2. The standard launcher banner (extension-launcher.kl) leads with it, e.g. `42.2 (port (\"Julia\" \"shen-julia\") implementation (...))`. shen-lua has no --version flag, so Bifrost falls back to eval of (version). KNOWN PORT GAP: experimental shen-c prints a port-local `Shen-C 0.2.3` banner and FAILS here (it already did on Tarver S42.0); `bifrost impls --versions` falls back to eval of (version) for it."
     },
     {
       "name": "stdin-eof-clean-exit",
       "mode": "repl-eof",
       "expect": "clean-exit",
-      "doc": "DELIBERATE IMPROVEMENT OVER CANONICAL (not a spec conformance): starting the REPL and closing stdin (EOF) exits cleanly on every maintained impl. Canonical Shen LOOPS FOREVER here — the kernel shen.loop catches the reader's EOF error, prints it, and recurses (e.g. official shen-cl emits ~26MB of 'NIL is not of type CHARACTER' in 8s). All ports here detect EOF at the input layer and exit 0; this case guards that they keep doing so. (Earlier this passed spuriously for shen-cl because its repl adapter used a bare -q, which shen-cl rejects as an invalid arg and exits before the REPL even starts — now fixed to bare {bin}.)"
+      "doc": "DELIBERATE IMPROVEMENT OVER CANONICAL (not a spec conformance): starting the REPL and closing stdin (EOF) exits cleanly on every maintained impl. Canonical Shen LOOPS FOREVER here — the kernel shen.loop catches the reader's EOF error, prints it, and recurses (e.g. official shen-cl emits ~26MB of 'NIL is not of type CHARACTER' in 8s). All ports here detect EOF at the input layer and exit 0; this case guards that they keep doing so. (Earlier this passed spuriously for shen-cl because its repl adapter used a bare -q, which shen-cl rejects as an invalid arg and exits before the REPL even starts — now fixed to bare {bin}.) UPSTREAM shen-scheme 0.50 (tizoc release, the 42.2 reference) keeps the canonical loop and FAILS here by design (~5 MB/s of EOF errors until the timeout; Bifrost caps captured output at 8 MB). The pyrex41 shen-scheme fork reapplies its EOF exit on top of 0.50 (pyrex41/shen-scheme#9, `make test-repl-eof`)."
     }
   ]
 }

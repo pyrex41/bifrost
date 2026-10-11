@@ -67,26 +67,46 @@ func resolveActiveImpl(a *Adapters, override string) (string, string) {
 	return "", "default"
 }
 
-// Port banners put the Shen kernel version first (for S42 this is the integer
-// `42`), followed by implementation/port versions. Capture either an integer
-// or dotted version and use the first token so `--versions` reports the runtime
-// kernel rather than the port release (e.g. shen-cl's 3.0.3).
-var versionRe = regexp.MustCompile(`\b(\d+(?:\.\d+)?)\b`)
+// Standard launcher banners (extension-launcher.kl's version-string) put the
+// kernel version first, e.g. `42.2 (port ("Julia" "shen-julia") ...)`, followed
+// by the port and implementation versions. kernelVersionRe takes only that
+// leading token (dotted, optionally quoted as an eval of (version) may print
+// it), so `--versions` reports the runtime kernel rather than a port release
+// such as shen-cl's 3.0.3.
+var kernelVersionRe = regexp.MustCompile(`^"?(\d+(?:\.\d+)*)"?(?:\s|$)`)
+
+// parseKernelVersion returns the leading kernel version of a banner or of an
+// eval of (version), after normalisation.
+func parseKernelVersion(out string) (string, bool) {
+	m := kernelVersionRe.FindStringSubmatch(strings.TrimSpace(normalize(out, nil)))
+	if m == nil {
+		return "", false
+	}
+	return m[1], true
+}
 
 // probeKernelVersion runs a port's version probe live (README badges drift).
+// A port-local --version banner that does not lead with the kernel version
+// (shen-c prints `Shen-C 0.2.3`) falls back to an eval of (version).
 func probeKernelVersion(impl Impl) string {
-	var c aCase
+	var probes []aCase
 	if impl.Cfg.Version != nil {
-		c = aCase{Mode: "version"}
-	} else {
-		c = aCase{Mode: "eval", Expr: "(version)"}
+		probes = append(probes, aCase{Mode: "version"})
 	}
-	r := runInvocation(buildArgv(impl, c, ""), 30e9, false, "")
-	if r.Timeout {
+	probes = append(probes, aCase{Mode: "eval", Expr: "(version)"})
+	timedOut := false
+	for _, c := range probes {
+		r := runInvocation(buildArgv(impl, c, ""), 30e9, false, "")
+		if r.Timeout {
+			timedOut = true
+			continue
+		}
+		if v, ok := parseKernelVersion(r.Out); ok {
+			return v
+		}
+	}
+	if timedOut {
 		return "timeout"
-	}
-	if m := versionRe.FindStringSubmatch(r.Out); m != nil {
-		return m[1]
 	}
 	return "?"
 }

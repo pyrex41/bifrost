@@ -1,0 +1,39 @@
+{
+  "group": "kernel-42.2",
+  "cases": [
+    {
+      "name": "lineread-eof-no-newline",
+      "mode": "eval",
+      "cwd": ".",
+      "expr": "(let S (open \"programs/eof-lineread.txt\" in) L1 (lineread S) L2 (lineread S) (do (close S) [L1 L2]))",
+      "expect": "output",
+      "golden": "[[hello [+ 1 2]] [last line no newline]]",
+      "doc": "42.1 reader fix: lineread returns the final line of a stream that ends at EOF WITHOUT a trailing newline (programs/eof-lineread.txt has none). Driven through a file stream, not REPL stdin: upstream shen-scheme 0.50's REPL loops at stdin EOF, so a stdin probe would test the REPL rather than the reader."
+    },
+    {
+      "name": "read-eof-no-newline",
+      "mode": "eval",
+      "cwd": ".",
+      "expr": "(let S (open \"programs/eof-read.txt\" in) A (read S) B (read S) (do (close S) [A B]))",
+      "expect": "output",
+      "golden": "[[+ 40 2] 42]",
+      "doc": "42.1 reader fix: read returns a final token that is terminated only by EOF (programs/eof-read.txt is `(+ 40 2) 42` with no trailing newline), so the bare 42 is not lost or left waiting for more input. File stream, not REPL stdin (see lineread-eof-no-newline)."
+    },
+    {
+      "name": "source-form-before-macros",
+      "mode": "script",
+      "program": "source-form-order.shen",
+      "expect": "output",
+      "golden": "[(@p handler-then-macro 1) (@p handler-then-macro 2)]",
+      "doc": "42.1 source-form handlers run BEFORE ordinary macros, and macros still expand what a handler produces. bifrost-probe has both a handler (-> bifrost-probe2) and a macro rule (-> macro-first); the forms come from read-from-string after registration (a script is read whole before it runs, so the handler cannot apply to its own file). A port that does not boot shen.register-source-form prints the BIFROST-SKIP capability marker (capability SKIP)."
+    },
+    {
+      "name": "namespace-externals-expression",
+      "mode": "script",
+      "program": "namespace-externals-expr.shen",
+      "expect": "output",
+      "golden": "[42 2]",
+      "doc": "42.2 namespaces: (externals EXPR) EVALUATES EXPR to a symbol list (here a call, (bifrost-ns-vocab)); 42.1 took only a literal list. bifrost-ns-ext stays global and local becomes bifrost.demo.local. Only ports that boot the experimental extension-namespaces.kl run it (shen-scheme, shen-rust at the time of writing); ports where (shen.x.namespaces.initialise) is unavailable print the BIFROST-SKIP capability marker (capability SKIP)."
+    }
+  ]
+}

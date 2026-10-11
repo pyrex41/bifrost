@@ -17,8 +17,8 @@ this tree, those paths become defaults instead of special cases.
   flake.nix                 exports #toolchain (and usually #devShell)
   Makefile / language build file
   kernel/
-    klambda/                S42 .kl modules, load order as install.lsp
-      PROVENANCE.md         tag, hash, which Tarver/community tree
+    klambda/                ShenOSKernel 42.2 .kl modules; boot ends with (shen.initialise)
+      PROVENANCE.md         tag, commit, SHA-256, lineage choice
       core.kl
       …
     tests/                  official kernel suite (runme.shen, harness.shen, …)
@@ -70,7 +70,7 @@ launcher**.
 
 A port is “layout-clean” when:
 
-- `kernel/klambda/PROVENANCE.md` names the exact S42 (or later) drop
+- `kernel/klambda/PROVENANCE.md` names the exact kernel drop (ShenOSKernel 42.2: tag `shen-42.2`, commit, tarball SHA-256)
 - `kernel/tests/runme.shen` is the official suite, unmodified
 - the launcher is `bin/shen` or `bin/<backend>/shen`
 - `flake.nix` exports `#toolchain`

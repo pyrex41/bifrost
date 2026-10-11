@@ -118,6 +118,16 @@ func normalize(text string, extraPrefixes []string) string {
 		s := strings.TrimRight(ln, " \t")
 		stripped := strings.TrimSpace(s)
 		if strings.HasPrefix(stripped, "run time:") {
+			// The kernel prints the banner with a leading newline, so drop
+			// the blank line it produces too: a port that omits the banner
+			// (e.g. shen-lua on a warm fasl-cache hit) must not differ by
+			// that blank line alone.
+			if len(out) > 0 && strings.TrimSpace(out[len(out)-1]) == "" {
+				out = out[:len(out)-1]
+			}
+			continue
+		}
+		if isJVMOptionsNotice(stripped) {
 			continue
 		}
 		if strings.HasPrefix(stripped, "(fn ") && strings.HasSuffix(stripped, ")") {
@@ -166,6 +176,65 @@ func normalize(text string, extraPrefixes []string) string {
 	return strings.Join(collapsed, "\n")
 }
 
+// isJVMOptionsNotice matches the line a JVM writes to stderr whenever
+// JAVA_TOOL_OPTIONS, _JAVA_OPTIONS or JDK_JAVA_OPTIONS is set (agent proxies
+// and CI images set them). It is host chrome, not Shen output, so a JVM-hosted
+// port such as shen-truffle is compared without it.
+func isJVMOptionsNotice(line string) bool {
+	for _, v := range []string{"JAVA_TOOL_OPTIONS", "_JAVA_OPTIONS", "JDK_JAVA_OPTIONS"} {
+		if strings.HasPrefix(line, "Picked up "+v+":") || strings.HasPrefix(line, "NOTE: Picked up "+v+":") {
+			return true
+		}
+	}
+	return false
+}
+
+// capabilitySkipMarker is printed by a corpus program when the port does not
+// boot an optional kernel facility (e.g. the namespaces extension). Shen has
+// no portable exit primitive, so this line is the in-language equivalent of a
+// launcher exiting 3: the (impl, case) cell becomes a capability SKIP.
+const capabilitySkipMarker = "BIFROST-SKIP:"
+
+func hasCapabilitySkip(norm string) bool {
+	for _, ln := range strings.Split(norm, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(ln), capabilitySkipMarker) {
+			return true
+		}
+	}
+	return false
+}
+
+// maxCapture bounds what one invocation may buffer. A port whose REPL loops
+// at stdin EOF (canonical Shen, upstream shen-scheme 0.50) prints megabytes
+// per second until the timeout; keeping the head is enough to report it.
+const maxCapture = 8 << 20
+
+type cappedBuffer struct {
+	buf       bytes.Buffer
+	truncated bool
+}
+
+func (c *cappedBuffer) Write(p []byte) (int, error) {
+	if room := maxCapture - c.buf.Len(); room > 0 {
+		if len(p) > room {
+			c.buf.Write(p[:room])
+			c.truncated = true
+		} else {
+			c.buf.Write(p)
+		}
+	} else if len(p) > 0 {
+		c.truncated = true
+	}
+	return len(p), nil
+}
+
+func (c *cappedBuffer) String() string {
+	if c.truncated {
+		return c.buf.String() + "\n[bifrost: output truncated]\n"
+	}
+	return c.buf.String()
+}
+
 // runResult captures the portable process outcome used by the matrix.
 type runResult struct {
 	Rc      int // -1 if unknown/timeout
@@ -187,7 +256,7 @@ func runInvocation(argv []string, timeout time.Duration, stdinEOF bool, cwd stri
 	if stdinEOF {
 		cmd.Stdin = strings.NewReader("")
 	} // else nil -> null device
-	var buf bytes.Buffer
+	var buf cappedBuffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 	err := cmd.Run()
