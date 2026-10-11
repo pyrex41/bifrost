@@ -1,0 +1,3 @@
+# The EOF reader cases need these files to end WITHOUT a newline, byte for byte
+# (no CRLF or final-newline normalisation on checkout).
+programs/eof-*.txt -text
