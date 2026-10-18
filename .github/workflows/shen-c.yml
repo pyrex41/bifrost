@@ -7,9 +7,16 @@ on:
 
 jobs:
   adapter:
+    timeout-minutes: 15
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            cc: clang-18
+            ar: llvm-ar-18
+          - os: macos-latest
+            cc: clang
+            ar: ar
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +34,9 @@ jobs:
       - name: Build released native RC CLI
         env:
           PKG_CONFIG: /nonexistent/no-boehm-or-pkg-config
-        run: make -C shen-c -j2
+          CC: ${{ matrix.cc }}
+          AR: ${{ matrix.ar }}
+        run: make -C shen-c CC="$CC" AR="$AR" -j2
       - name: Test adapter and supported live controls
         working-directory: bifrost
         env:
