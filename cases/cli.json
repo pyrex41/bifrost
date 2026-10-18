@@ -15,7 +15,7 @@
       "expr": "(version)",
       "expect": "output",
       "golden": "42.2",
-      "doc": "The community ShenOSKernel 42.2 adapters return 42.2. Exact version checks are selected by adapter kernel; the separately pinned Shen-C 43.1 adapter has its own case.",
+      "doc": "The community ShenOSKernel 42.2 adapters return 42.2. Exact version checks are selected by adapter kernel; 43.1 adapters have their own cases.",
       "kernels": [
         "42.2"
       ]
@@ -45,7 +45,7 @@
       "kernels": [
         "43.1"
       ],
-      "doc": "The Shen-C v0.3.0 adapter declares its bundled S43 kernel as 43.1; reject stale 42.x launchers and port-release numbers."
+      "doc": "The upgraded adapters declare kernel 43.1; reject stale 42.x launchers and port-release numbers."
     },
     {
       "name": "version-probe-43.1",
@@ -55,7 +55,7 @@
       "kernels": [
         "43.1"
       ],
-      "doc": "Check the configured kernel version probe, not Shen-C --version, which identifies the port release."
+      "doc": "Check the configured kernel version probe; some ports use (version) because --version identifies their port release."
     }
   ]
 }
