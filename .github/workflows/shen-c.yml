@@ -32,6 +32,7 @@ jobs:
       - name: Build released native RC CLI
         env:
           CC: clang
+          AR: llvm-ar
           PKG_CONFIG: /nonexistent/no-boehm-or-pkg-config
         run: make -C shen-c -j2
       - name: Test adapter and supported live controls
