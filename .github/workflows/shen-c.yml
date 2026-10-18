@@ -5,8 +5,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   adapter:
+    timeout-minutes: 20
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
@@ -26,6 +31,7 @@ jobs:
           cache: false
       - name: Build released native RC CLI
         env:
+          CC: clang
           PKG_CONFIG: /nonexistent/no-boehm-or-pkg-config
         run: make -C shen-c -j2
       - name: Test adapter and supported live controls
