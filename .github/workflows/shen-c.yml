@@ -29,10 +29,17 @@ jobs:
         with:
           go-version: '1.27.x'
           cache: false
+      - name: Verify native C toolchain
+        run: |
+          command -v clang
+          clang --version
+          command -v ar
+          ar --version || true
       - name: Build released native RC CLI
         env:
           CC: clang
-          AR: llvm-ar
+          AR: ar
+          RC_LTO: '0'
           PKG_CONFIG: /nonexistent/no-boehm-or-pkg-config
         run: make -C shen-c -j2
       - name: Test adapter and supported live controls
