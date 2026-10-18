@@ -107,8 +107,10 @@ green corpus:
   signed Int64 overflow has its own documented catchable-error bucket.
   Source-form and namespace probes report capability SKIP when those
   community extensions are unavailable, rather than proving support.
-- shen-julia: native `integer?` is false for `4.0`, and `hash` of `1` and `1.0`
-  differ (`integer-float-integral`, `hash-agrees-with-equality`).
+- shen-julia: the native numeric contract now accepts integral real floats and
+  hashes numerically equal values identically, including compound keys and
+  signed zero. The remaining Julia divergence is the documented 64-bit integer
+  overflow behavior in `bigint-2pow63-ordered`.
 
 ### Normaliser
 

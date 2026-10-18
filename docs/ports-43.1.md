@@ -24,6 +24,7 @@ adapters build their maintained fork default branches.
 | CL, Erlang (Docker) | 72 | 72 | 0 | 0 | 2 |
 | CL, Swift | 72 | 71 | 1 | 0 | 2 |
 | CL, Truffle | 72 | 71 | 1 | 0 | 2 |
+| CL, Julia (final numeric-fix run) | 72 | 71 | 1 | 0 | 2 |
 | Old CL 42.2 control, 43.1 probes only | 2 | 0 | 0 | 2 expected | 0 |
 
 Divergences are the existing host integer precision buckets. The JSON reporter
