@@ -12,9 +12,9 @@ would, then diffs stdout.
 The official kernel suites stay in each port. Bifrost asks a different
 question: **do the ports agree?**
 
-The Shen-C adapter pins v0.3.0's native RC backend and its bundled kernel
-43.1. Other adapters retain their existing community 42.2 kernels; version
-checks select the declared kernel. See the [integration plan](docs/shen-c-rc-plan.md)
+The maintained adapters target ShenOSKernel 43.1. Shen-C pins v0.3.0's
+native RC backend and its separately maintained kernel lineage. Exact version
+checks select each adapter's declared kernel. See the [43.1 qualification](docs/ports-43.1.md)
 and [matrix gaps](docs/matrix.md#known-port-gaps).
 
 ## Install
@@ -53,7 +53,7 @@ go run . --heavy                    # also Yggdrasil stage-1 byte-identity
 ```
 
 ~70 cases in `cases/*.json` + `programs/*.shen`: arithmetic, lists, strings,
-closures, Prolog, trap-error, and ShenOSKernel 42.2 behavior any port should share
+closures, Prolog, trap-error, and ShenOSKernel 43.1 behavior any port should share
 (`integer?`, `=`, intern of `"true"`, hash agreeing with `=`, tuples/vectors,
 `put`/`get`, freeze captured by a lambda).
 

@@ -19,21 +19,20 @@ host; every other tracked difference is a hard agreement.
 
 ## Kernel
 
-Every production port runs the community **ShenOSKernel 42.2**
-(`Shen-Language/shen-sources` tag `shen-42.2`, commit `73507e06`; the kernel of
-upstream shen-scheme 0.50), adopted wholesale in place of Tarver's S42.0
-(pyrex41/bifrost#26). Cases that used to split by kernel (`error-message-head`)
-are hard agreements again.
+The maintained adapters target community **ShenOSKernel 43.1**
+(`Shen-Language/shen-sources` tag `shen-43.1`, commit `715824a52`), adopted
+wholesale. The bounded Joy target follows that semantic baseline through a
+pinned Shen CL 3.2.0 differential reference; it does not execute a full kernel.
 
-The experimental Shen-C adapter is a separate lineage: v0.3.0 bundles the
-official S43 kernel reported as **43.1**. It uses a native compiled kernel,
-prepared/interpreted loaded code and the independent RC runtime. Its install
-pin and tool needs no longer describe the earlier Boehm backend. Exact version
-cases are kernel-specific; capabilities and ordinary semantic comparisons
-remain checked. This does not migrate other adapters to another kernel.
+The experimental Shen-C adapter pins v0.3.0 and its separately maintained
+S43 kernel reported as **43.1**. It uses a native compiled kernel,
+prepared/interpreted loaded code and an independent RC runtime.
+Exact version cases are kernel-specific. Old 42.2 checks remain available for
+adapters explicitly configured with that kernel, and skip when none match.
 
-[Current Shen-C integration qualification](shen-c-rc-20261018.md) records the
-complete live corpus, explicit skips, remaining failures and native artifacts.
+[43.1 integration qualification](ports-43.1.md) records the exact tested refs,
+executed rows, skips and known divergences. Historical
+[Shen-C evidence](shen-c-rc-20261018.md) is retained separately.
 
 ## Corpus
 
@@ -46,7 +45,7 @@ complete live corpus, explicit skips, remaining failures and native artifacts.
   `@p`/`vector`, `put`/`get` on `*property-vector*`, freeze captured by a
   lambda, trap-error whose *operand* raises, the `(head [])` error message.
 - CLI: `eval -e` prints the value; the configured version probe returns the
-  adapter's declared kernel (**42.2**, or **43.1** for Shen-C). Shen-C's raw
+  adapter's declared kernel (**43.1** for the upgraded adapters). Shen-C's raw
   `--version` identifies its port release, so its probe uses `(version)`.
   stdin-EOF exits cleanly.
 - 42.1/42.2 behaviour (`cases/kernel-42.json`): `read` and `lineread` on a
@@ -108,8 +107,10 @@ green corpus:
   signed Int64 overflow has its own documented catchable-error bucket.
   Source-form and namespace probes report capability SKIP when those
   community extensions are unavailable, rather than proving support.
-- shen-julia: native `integer?` is false for `4.0`, and `hash` of `1` and `1.0`
-  differ (`integer-float-integral`, `hash-agrees-with-equality`).
+- shen-julia: the native numeric contract now accepts integral real floats and
+  hashes numerically equal values identically, including compound keys and
+  signed zero. The remaining Julia divergence is the documented 64-bit integer
+  overflow behavior in `bigint-2pow63-ordered`.
 
 ### Normaliser
 

@@ -1,0 +1,125 @@
+{
+  "date": "2026-10-18",
+  "kernel_commit": "715824a52b55e9c81a9501df8548ff3edd8411f5",
+  "kernel_archive_sha256": "900eedef44f440af78f9395ed06e689ce1604546fc309f5bc7c8bc84cc651920",
+  "classification": "Local cross-port agreement, not canonical suite qualification or CI",
+  "matrices": {
+    "six-ports": {
+      "available": [
+        "shen-cl",
+        "shen-go",
+        "shen-rust",
+        "shen-lua",
+        "ShenScript",
+        "shen-scheme"
+      ],
+      "executed_rows": 72,
+      "verdicts": {
+        "PASS": 70,
+        "DIVERGE": 2
+      },
+      "unmatched_kernel_rows": [
+        "version-banner-contains",
+        "version-expr-42.2"
+      ],
+      "artifact": "six-ports.json.gz",
+      "sha256": "7a714149eed6564a3693d01fb74654f94e9acf55d94270a03d73cf3900defd27"
+    },
+    "swift": {
+      "available": [
+        "shen-cl",
+        "shen-swift"
+      ],
+      "executed_rows": 72,
+      "verdicts": {
+        "PASS": 71,
+        "DIVERGE": 1
+      },
+      "unmatched_kernel_rows": [
+        "version-banner-contains",
+        "version-expr-42.2"
+      ],
+      "artifact": "swift.json.gz",
+      "sha256": "c94c9e0a7ff22433419bfe22ae94984d0acaf7984fcb4a5ce01f5f3c886bd10e"
+    },
+    "truffle": {
+      "available": [
+        "shen-cl",
+        "shen-truffle"
+      ],
+      "executed_rows": 72,
+      "verdicts": {
+        "PASS": 71,
+        "DIVERGE": 1
+      },
+      "unmatched_kernel_rows": [
+        "version-banner-contains",
+        "version-expr-42.2"
+      ],
+      "artifact": "truffle.json.gz",
+      "sha256": "f74c686baa7ee7a435625a45a46d8ece510941c3d695ebd8fbbd82fb127f298c"
+    },
+    "stale-host-control": {
+      "available": [
+        "shen-cl"
+      ],
+      "executed_rows": 2,
+      "verdicts": {
+        "FAIL": 2
+      },
+      "unmatched_kernel_rows": [],
+      "artifact": "stale-host-control.json.gz",
+      "sha256": "1dd914708b19feb2b8cd9542fd46e49217ec43065ce2b464e1ec285429e7147c"
+    },
+    "eight-final": {
+      "available": [
+        "shen-cl",
+        "shen-go",
+        "shen-rust",
+        "shen-lua",
+        "ShenScript",
+        "shen-scheme",
+        "shen-swift",
+        "shen-truffle"
+      ],
+      "executed_rows": 72,
+      "verdicts": {
+        "PASS": 70,
+        "DIVERGE": 2
+      },
+      "unmatched_kernel_rows": [
+        "version-banner-contains",
+        "version-expr-42.2"
+      ],
+      "artifact": "eight-final.json.gz",
+      "sha256": "c465b70709d4154351af634cc76b4948de77faf9b7233b63e783c4f76c5ebe78"
+    },
+    "erlang": {
+      "available": [
+        "shen-cl",
+        "shen-erl"
+      ],
+      "executed_rows": 72,
+      "verdicts": {
+        "PASS": 72
+      },
+      "unmatched_kernel_rows": [
+        "version-banner-contains",
+        "version-expr-42.2"
+      ],
+      "artifact": "erlang.json.gz",
+      "sha256": "cc3b6664082b352f4cfc91af0672a90c8c9dd14241773efbe2bcdd804e391550"
+    }
+  },
+  "tested_commits": {
+    "shen-cl": "d9494dfb4e64000d4213d4725bd8c503cfaacab1",
+    "shen-go": "acba88a3f189f055285a9bdb22901ad688db7cd3",
+    "shen-erl": "dbe7bdf0b780fe8b5c86c4501f04181432528d04",
+    "shen-rust": "d893c8e57bb626832be1f2e6675e2429e063507f",
+    "shen-lua": "176e1037f31f2d59cf69cda412f99096ddc54550",
+    "shen-scheme": "52bec1d094478f29c3a1aa8ff965e22a63083d8d",
+    "shen-swift": "56204461a088ae8fd5e7e74c91a02bcc1a6c1322",
+    "shen-truffle": "ac8d2d85516f41b96e2ec39efb0e0d668560daa4",
+    "ShenScript": "f21f30e1a0d384dde29b39736be7c715bffc10dc"
+  }
+}

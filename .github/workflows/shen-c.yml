@@ -5,9 +5,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   adapter:
-    timeout-minutes: 15
+    timeout-minutes: 20
     strategy:
       matrix:
         include:
@@ -31,11 +35,21 @@ jobs:
         with:
           go-version: '1.27.x'
           cache: false
-      - name: Build released native RC CLI
+      - name: Verify native C toolchain
         env:
-          PKG_CONFIG: /nonexistent/no-boehm-or-pkg-config
           CC: ${{ matrix.cc }}
           AR: ${{ matrix.ar }}
+        run: |
+          command -v "$CC"
+          "$CC" --version
+          command -v "$AR"
+          "$AR" --version || true
+      - name: Build released native RC CLI
+        env:
+          CC: ${{ matrix.cc }}
+          AR: ${{ matrix.ar }}
+          RC_LTO: '0'
+          PKG_CONFIG: /nonexistent/no-boehm-or-pkg-config
         run: make -C shen-c CC="$CC" AR="$AR" -j2
       - name: Test adapter and supported live controls
         working-directory: bifrost
