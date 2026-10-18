@@ -1,0 +1,39 @@
+name: shen-c-native-rc
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  adapter:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: bifrost
+      - uses: actions/checkout@v4
+        with:
+          repository: pyrex41/shen-c
+          ref: 27fe901f2ce42d03cb9890bcc9729b034efb9e68
+          path: shen-c
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.27.x'
+          cache: false
+      - name: Build released native RC CLI
+        env:
+          PKG_CONFIG: /nonexistent/no-boehm-or-pkg-config
+        run: make -C shen-c -j2
+      - name: Test adapter and supported live controls
+        working-directory: bifrost
+        env:
+          BIFROST_SHEN_C: ${{ github.workspace }}/shen-c/bin/shen-c
+        # Full corpus gaps remain recorded in docs/matrix.md. This lane checks
+        # the integration contract and does not claim complete corpus parity.
+        run: |
+          go test -count=1 ./...
+          go run . --impls shen-c --only version-expr-43.1,version-probe-43.1,integer-int,string-concat,tlstr,freeze-thaw,bigint-2pow63-ordered

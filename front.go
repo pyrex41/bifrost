@@ -87,7 +87,7 @@ func parseKernelVersion(out string) (string, bool) {
 
 // probeKernelVersion runs a port's version probe live (README badges drift).
 // A port-local --version banner that does not lead with the kernel version
-// (shen-c prints `Shen-C 0.2.3`) falls back to an eval of (version).
+// (such as `Shen-C RC 0.3.0`) falls back to an eval of (version).
 func probeKernelVersion(impl Impl) string {
 	var probes []aCase
 	if impl.Cfg.Version != nil {

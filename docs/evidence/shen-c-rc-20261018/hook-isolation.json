@@ -1,0 +1,38 @@
+{
+  "command": [
+    "<BIFROST_ROOT>/scratch/shen-c-rc/hook-env.test",
+    "-test.run",
+    "^TestInstall",
+    "-test.v"
+  ],
+  "exit_code": 0,
+  "seconds": 4.019899458,
+  "before": {
+    "real": {
+      "head": "b0dee048f2a011f212988ea151de93bb0b5798f5",
+      "bare": "false",
+      "index_sha256": "caec5e33752236baa66fd284bf53ea0cac4a7a2ad3067cc932e82edd74b9209a"
+    },
+    "guard": {
+      "head": "8cec0b8a11f6f4fb062a61597234c9c546ced1c9",
+      "bare": "false",
+      "index_sha256": "2c8a0ce3ad5686600690d661b2a33944066cad57f0ac853198b19b2c5c276fab"
+    }
+  },
+  "after": {
+    "real": {
+      "head": "b0dee048f2a011f212988ea151de93bb0b5798f5",
+      "bare": "false",
+      "index_sha256": "caec5e33752236baa66fd284bf53ea0cac4a7a2ad3067cc932e82edd74b9209a"
+    },
+    "guard": {
+      "head": "8cec0b8a11f6f4fb062a61597234c9c546ced1c9",
+      "bare": "false",
+      "index_sha256": "2c8a0ce3ad5686600690d661b2a33944066cad57f0ac853198b19b2c5c276fab"
+    }
+  },
+  "pass": true,
+  "log_sha256": "9c35aca8de6677476981f42dac6e7a5bd5f3c884ca4026f16b8353fb08fa90e8",
+  "test_source_sha256": "1bd10b5048c3eb22aadf2e947ce051663924d8c0029966f4f99181430220a958",
+  "original_receipt_sha256": "473aea9015224be7abaa07a9a85ed3f176d42b8b9fe18d313856ce92bb77441f"
+}

@@ -22,7 +22,7 @@
       "mode": "eval",
       "expr": "(trap-error (head []) (lambda E (error-to-string E)))",
       "expect": "output",
-      "doc": "HARD AGREEMENT again (was a kernel-split agreement case): every port runs ShenOSKernel 42.2, whose sys.kl message for (head []) is 'head expects a non-empty list' plus a trailing newline (dropped by the normaliser). Pinned as a golden so a port whose native head raises its own host message FAILS. Earlier, mixing Tarver S42.0 and S41.2 ports split on this message.",
+      "doc": "HARD AGREEMENT again (was a kernel-split agreement case): the community 42.2 kernel (also matched by Shen-C 43.1) has the sys.kl message for (head []) is 'head expects a non-empty list' plus a trailing newline (dropped by the normaliser). Pinned as a golden so a port whose native head raises its own host message FAILS. Earlier, mixing Tarver S42.0 and S41.2 ports split on this message.",
       "golden": "head expects a non-empty list"
     },
     {

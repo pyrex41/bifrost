@@ -9,8 +9,13 @@ It is not a Shen runtime. It launches [shen-cl](https://github.com/pyrex41/shen-
 [shen-lua](https://github.com/pyrex41/shen-lua), and the others the way a user
 would, then diffs stdout.
 
-The official 134 kernel tests stay in each port. Bifrost asks a different
+The official kernel suites stay in each port. Bifrost asks a different
 question: **do the ports agree?**
+
+The Shen-C adapter pins v0.3.0's native RC backend and its bundled kernel
+43.1. Other adapters retain their existing community 42.2 kernels; version
+checks select the declared kernel. See the [integration plan](docs/shen-c-rc-plan.md)
+and [matrix gaps](docs/matrix.md#known-port-gaps).
 
 ## Install
 

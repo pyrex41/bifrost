@@ -1,0 +1,80 @@
+{
+  "scope": "Frozen Bifrost v0.3.0 adapter against the released Shen-C native RC CLI; corpus remains FAIL for two explicit runtime gaps",
+  "command": [
+    "<BIFROST_ROOT>/.bin/bifrost-rc-final",
+    "--impls",
+    "shen-c",
+    "--json"
+  ],
+  "exit": 1,
+  "counts": {
+    "executed_pass": 68,
+    "executed_fail": 2,
+    "capability_skip": 2,
+    "kernel_skip": 2
+  },
+  "failures": {
+    "bounded-tail-sum-file": {
+      "verdict": "FAIL",
+      "detail": "golden=\"32004000\"; mismatches: shen-c=\"32004000\\n\\\"32004000\\n\\\"\"",
+      "impls": {
+        "shen-c": {
+          "status": "FAIL",
+          "norm": "32004000\n\"32004000\n\""
+        }
+      }
+    },
+    "hash-agrees-with-equality": {
+      "verdict": "FAIL",
+      "detail": "golden=\"true\"; mismatches: shen-c=\"false\"",
+      "impls": {
+        "shen-c": {
+          "status": "FAIL",
+          "norm": "false"
+        }
+      }
+    }
+  },
+  "kernel_probe": "43.1",
+  "binary_sha256": "dee2857903f858b36075256623bbc306cd457e385ed71b78ba6e0e7919823ea9",
+  "shen_c_sha256": "3e8eca91b40b929817ab89f323d2f66e04ec309344c1ece98febb39b94db8b1d",
+  "source_sha256": {
+    "embed.go": "fdea75be32af61fe6f2030b2f044d55d9262849fea5d08d49abe4a3e1568d83d",
+    "env.go": "8983798215125210f4b9280b0e4ea8a9964b26a589120aec3935aff82bd96055",
+    "benchmark.go": "519dbd176f40031ca620d84a42bf49037ee66a8a069540d4746d38a083910455",
+    "run.go": "e9d9decddcbdde8516bfcb629823b0ef7c9b74c8a4eb032c1d4704c736a12b64",
+    "matrix.go": "7e3b7a98e32436820559497de1f57702d766476efc6c968e37c6414a6f954ad2",
+    "env_test.go": "32736655a0b5f510f323e5a457b0eb6563fb31276fd009e426e4699daff314d3",
+    "install_test.go": "c441091ecc522e253fdb00cc73116cda35f7bd2b438a93b4f3caba7448d49473",
+    "portable_test.go": "6809d7c21e0fadd2ffb9cc796d153b5a4a729dd67bad849c9b519634e9c4caf6",
+    "shake.go": "498b47234b5314f9b3c3fd1eedc047496ca3ee96127687ed04a4ef0377075d91",
+    "runmatrix.go": "9153983f0f084fb495b12be76e0672c983c0ecc247678dddfc6548ced722dd13",
+    "adapters.go": "bf3a0172985efcd282e2e48a5c25220bc7855cfe040be19f6bff507a391b2235",
+    "benchmark_test.go": "654afc090338f0b48fccf91f0484c4d9ad3c9e3357295c7a96cca1c8be8b3095",
+    "main.go": "eaa4ab3ab248825e02867e4e27dba5e11927495fba08b731c60ad31c9c40ad37",
+    "front.go": "67b5c1c9f82e76ff4a09e4f3bf54b2e3a468fa658fc97f9ff08455ed399417a3",
+    "install.go": "4ea179c1b8bb37942d8762db9cf62f20df2b2c80a53fc558538750ec35ed5966",
+    "adapters.json": "fe8bbebce949b3b28dd1cb1af7a958a7bc8375a3e3da1770d27555420333df14",
+    "cases/closures-recursion.json": "8a66df4c759ac8764693ed1c050fc946358553bb716bc153da4d56004165cb04",
+    "cases/control-more.json": "1b4c4291b7b2fa8faf7a48d010a590c8f0cbd2a36338b63a5f2396d7d134e2a1",
+    "cases/errors.json": "f156d376664e2cb9d31f63c0635bb2012980565b48f0ccc73afbf48c22a60ef2",
+    "cases/predicates.json": "6b739715f3577601b32ab81e9a67e282495ff279f2636da42c41522b84be72ae",
+    "cases/lists-strings.json": "323cf33acb59c084ca936fd481a9889ca4e4b5c6bb60cda212826c56b649a84d",
+    "cases/kernel-42.json": "8f7d4b4c1b0bf9d1c18e8f6f10930a59368801cbd45a49ca587a839edd729016",
+    "cases/properties.json": "402b0c2b319cb30b978823f0232161fa7393817fa61e7ac28ab9380ff7631f2c",
+    "cases/cli.json": "4ad2cb5de3f2e0d8bb982e35fc2eceb45658d692cf90455459c142000566640c",
+    "cases/tuples-vectors.json": "7791ed7ff71ec34a483d093602f51d5480fc59aeba39a8f00b467f5ba4175f75",
+    "cases/equality-intern.json": "b8a4a94f507258abe1ada5bfc9b5dd68761505b3093632ef0b75b279c4764f42",
+    "cases/prolog.json": "48bf2b1908d13fa8af74f7f2209769a4e53477233112f3efccd27971e6c22a14",
+    "cases/yggdrasil.json": "f37e4f7fce6c1a7e041d8f6c5067dc523298ca719779dcc8bb1d566c9a9ad47d",
+    "cases/divergences.json": "f599ba6d894ee5ffe58c244c2aab28e8645ffe404b3ec6bc1af07bdc03271a53",
+    "cases/arithmetic.json": "a89cd01d45bc98e673fae1ec2c3e8a15d47673933300dcdb6148cf1413f22eb7"
+  },
+  "stdout_sha256": "93bb18ca3407c8d61675574477582e03f239b088c877c2c2f7a11272b534b258",
+  "stderr_sha256": "cc535f027c4813c4c0d0d415009dca24924678f63bd5b15269d0ad4dbde351e1",
+  "darwin_nix": {
+    "status": "PASS: package build and seven supported live controls",
+    "store_path": "/nix/store/s7nrcxc1j6bzws5lwwmg40zsn5f2b5nc-bifrost-0.1.0-dev/bin/bifrost",
+    "sha256": "c8bb3d9a55d80fa7be5ec8b70a3799392d8cafc8651ff9dc5fe4e423f715b11f"
+  }
+}

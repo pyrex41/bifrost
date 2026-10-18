@@ -32,6 +32,7 @@ var targetToImpl = map[string]string{
 	"erlang": "shen-erl", "rust": "shen-rust", "js": "ShenScript", "julia": "shen-julia",
 	"scheme": "shen-scheme", "swift": "shen-swift",
 	"truffle": "shen-truffle",
+	"c":       "shen-c",
 }
 
 const shakeTargetTimeout = 20 * time.Minute // accommodates the julia sysimage bake

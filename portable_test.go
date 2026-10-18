@@ -207,6 +207,9 @@ func TestDefaultSuiteCwdIsCheckout(t *testing.T) {
 }
 
 func TestShenCAdapter(t *testing.T) {
+	if targetToImpl["c"] != "shen-c" {
+		t.Fatalf("c shake target maps to %q", targetToImpl["c"])
+	}
 	a, err := loadAdapters()
 	if err != nil {
 		t.Fatal(err)
@@ -215,7 +218,7 @@ func TestShenCAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Env != "BIFROST_SHEN_C" || cfg.Status != "experimental" || cfg.Kernel != "42.2" {
+	if cfg.Env != "BIFROST_SHEN_C" || cfg.Status != "experimental" || cfg.Kernel != "43.1" {
 		t.Fatalf("unexpected shen-c adapter: %#v", cfg)
 	}
 	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-c/bin/shen-c" {
@@ -234,7 +237,7 @@ func TestShenCAdapter(t *testing.T) {
 		t.Fatalf("shen-c script argv = %v, want %v", scriptGot, scriptWant)
 	}
 	versionGot := buildArgv(impl, aCase{Mode: "version"}, "")
-	versionWant := []string{"/tmp/shen-c", "--version"}
+	versionWant := []string{"/tmp/shen-c", "eval", "-e", "(version)"}
 	if !reflect.DeepEqual(versionGot, versionWant) {
 		t.Fatalf("shen-c version argv = %v, want %v", versionGot, versionWant)
 	}
@@ -242,6 +245,9 @@ func TestShenCAdapter(t *testing.T) {
 	replWant := []string{"/tmp/shen-c"}
 	if !reflect.DeepEqual(replGot, replWant) {
 		t.Fatalf("shen-c repl argv = %v, want %v", replGot, replWant)
+	}
+	if cfg.Install == nil || cfg.Install.Ref != "v0.3.0" || strings.Contains(strings.Join(cfg.Install.Needs, " "), "pkg-config") {
+		t.Fatalf("unexpected native RC install recipe: %#v", cfg.Install)
 	}
 	found := false
 	for _, name := range implOrder {

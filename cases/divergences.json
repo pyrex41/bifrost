@@ -39,7 +39,7 @@
     {
       "name": "bigint-2pow63-ordered",
       "mode": "eval",
-      "expr": "(> (+ 9223372036854775807 1) 9223372036854775807)",
+      "expr": "(trap-error (> (+ 9223372036854775807 1) 9223372036854775807) (/. E (error-to-string E)))",
       "expect": "agreement",
       "known_divergence": "platform-integer-precision",
       "table": {
@@ -47,7 +47,7 @@
         "shen-erl": "true",
         "shen-scheme": "true",
         "shen-julia": "false",
-        "shen-c": "false",
+        "shen-c": "Integer overflow",
         "shen-rust": "false",
         "shen-swift": "false",
         "shen-truffle": "false",
@@ -55,7 +55,7 @@
         "ShenScript": "false",
         "shen-lua": "false"
       },
-      "doc": "DOCUMENTED DIVERGENCE (Shen leaves number precision to the platform). (+ (2^63-1) 1) is only greater than 2^63-1 with bignums: shen-cl, shen-erl and shen-scheme print true. Every other port prints false, for one of three reasons: 64-bit wraparound to -2^63 (shen-julia, shen-c); overflow promoted to a double equal to 2^63, which compares as not greater (shen-rust, shen-swift, shen-truffle); or doubles throughout (shen-go, ShenScript, shen-lua). The printed sum also differs by host float formatting (9223372036854775808 / -9223372036854775808 / 9223372036854776000 / 9.223372036854776e+18 / 9.223372036854776E18), which is why the case compares a boolean. The table pins each port to its bucket."
+      "doc": "DOCUMENTED DIVERGENCE (Shen leaves number precision to the platform). Bignum ports shen-cl/shen-erl/shen-scheme return true. Shen-C v0.3.0 raises a catchable signed-64-bit overflow error, pinned here to Integer overflow. Shen-julia wraps and returns false; shen-rust/shen-swift/shen-truffle promote to a rounded double and return false; shen-go/ShenScript/shen-lua use doubles and return false. The handler exposes the exact error text, so an unrelated error does not match the documented bucket."
     }
   ]
 }

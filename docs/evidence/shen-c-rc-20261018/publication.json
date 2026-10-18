@@ -1,0 +1,83 @@
+{
+  "scope": "Portable source-bound receipts and complete corpus transcripts; known failures remain failures. Binaries and original logs remain local.",
+  "files": [
+    {
+      "raw_path": "scratch/shen-c-rc/assessment.json",
+      "raw_sha256": "ad0efa07fe2debfb39355145f80ec3c475cb1f63389ef0d60d86456b5394f1f9",
+      "published_path": "assessment.json",
+      "published_sha256": "c07081aa74eb046490de0ade84d5ba13f4cb00c9438f724b45f3aafc635bd1a8"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/followup.json",
+      "raw_sha256": "b456b5904e995bf3c4b442aeb7d335dcb5c941fffa8f4c9ff2d0265e15c0c88c",
+      "published_path": "followup.json",
+      "published_sha256": "4e517bc659a4070ffcc038675977472af0ef404f0aef3aac32b16a521826dd21"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/corpus-final.json",
+      "raw_sha256": "5daaa3f35ee852a9bb2358ae592518a45d7508fdc6f37ffb6bfdc9ebe2f92379",
+      "published_path": "corpus-final.json",
+      "published_sha256": "5daaa3f35ee852a9bb2358ae592518a45d7508fdc6f37ffb6bfdc9ebe2f92379"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/corpus-final.log",
+      "raw_sha256": "93bb18ca3407c8d61675574477582e03f239b088c877c2c2f7a11272b534b258",
+      "published_path": "corpus-final.log.gz",
+      "published_sha256": "b0168897fec6548f671a07ff3dcefe50e524f65bc7f2fa2ed871da5a2bc5a420"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/corpus-final.err",
+      "raw_sha256": "cc535f027c4813c4c0d0d415009dca24924678f63bd5b15269d0ad4dbde351e1",
+      "published_path": "corpus-final.err.gz",
+      "published_sha256": "12cf181b163337e354c0c35d33b689c3d0228b3dea44d90691043757db97d0b1"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/before.json",
+      "raw_sha256": "d3558efc9f902cb89e270c4c8eee883ebaef1c5b0f84148eb9c9bc405ff89841",
+      "published_path": "before-transcript.log.gz",
+      "published_sha256": "7324328a0a341f633d89333864b3e2c0746d066a83bf3e9c98c4b1a7e23e658c"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/after.json",
+      "raw_sha256": "93bb18ca3407c8d61675574477582e03f239b088c877c2c2f7a11272b534b258",
+      "published_path": "after-transcript.log.gz",
+      "published_sha256": "b0168897fec6548f671a07ff3dcefe50e524f65bc7f2fa2ed871da5a2bc5a420"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/artifacts-final.json",
+      "raw_sha256": "7307ef427ca57a5077f464769c8cabd1dfb56d9a158c598d2d1fafba7bd3fa14",
+      "published_path": "artifacts-final-transcript.log.gz",
+      "published_sha256": "7b0bae031a5c977b57baa2334bdb4f4c78e38c240ce5de387ef2973c0e2d728d"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/artifacts-final.err",
+      "raw_sha256": "1205593ddaba3948b554f8d374084a9b06e74520fbf4c4e561efc4c90ecc6dd4",
+      "published_path": "artifacts-final.err.gz",
+      "published_sha256": "3221f8718bdb61233a406d6e0d62f596a14dc787d2cf98a1735e846dc670f678"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/go-test-final.log",
+      "raw_sha256": "db05365e7d760a8be42e588a4b1a65f507c8a48078f52d38ccc056afe14eac2d",
+      "published_path": "go-test-final.log.gz",
+      "published_sha256": "2b6776c0e39f6c42321c466e435321004e27e175e3d8d96470ae6cd2a18a808a"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/nix-build.log",
+      "raw_sha256": "b28bdf7630199c2d968c00a26e47fa7629bb5111340cfdb4d0e5dd89f4d43b39",
+      "published_path": "nix-build.log.gz",
+      "published_sha256": "7832c4ad0cfaeaaddd3d9d62a11b8392cb8711386c936fd1dc7a774977d79746"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/nix-controls.log",
+      "raw_sha256": "c3ab6465e7dddd88afdfa08e6a7d8e80cc59437bf3f94dea9b15a8a0e49750fe",
+      "published_path": "nix-controls.log.gz",
+      "published_sha256": "1dde92570a050d4b35b4b07078305031b4afad1ca2fbbb712f9005cc08e5adff"
+    },
+    {
+      "raw_path": "scratch/shen-c-rc/nix-controls.err",
+      "raw_sha256": "a9dcc8a2de4942539b989465695d1e751edcc06919906f12c08048c1a69f1f7a",
+      "published_path": "nix-controls.err.gz",
+      "published_sha256": "3ba91302756ff00a05da10d6a3c8be80dec711475b8d04538edb6cff141010fc"
+    }
+  ]
+}

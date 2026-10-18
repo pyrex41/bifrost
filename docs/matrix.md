@@ -25,6 +25,16 @@ upstream shen-scheme 0.50), adopted wholesale in place of Tarver's S42.0
 (pyrex41/bifrost#26). Cases that used to split by kernel (`error-message-head`)
 are hard agreements again.
 
+The experimental Shen-C adapter is a separate lineage: v0.3.0 bundles the
+official S43 kernel reported as **43.1**. It uses a native compiled kernel,
+prepared/interpreted loaded code and the independent RC runtime. Its install
+pin and tool needs no longer describe the earlier Boehm backend. Exact version
+cases are kernel-specific; capabilities and ordinary semantic comparisons
+remain checked. This does not migrate other adapters to another kernel.
+
+[Current Shen-C integration qualification](shen-c-rc-20261018.md) records the
+complete live corpus, explicit skips, remaining failures and native artifacts.
+
 ## Corpus
 
 `cases/*.json` driven by `programs/*.shen`:
@@ -35,8 +45,10 @@ are hard agreements again.
   `=` of `1`/`1.0` and `true`/`(intern "true")`, hash agreeing with `=`,
   `@p`/`vector`, `put`/`get` on `*property-vector*`, freeze captured by a
   lambda, trap-error whose *operand* raises, the `(head [])` error message.
-- CLI: `eval -e` prints the value; `(version)` / `--version` is kernel
-  **42.2**; stdin-EOF exits cleanly.
+- CLI: `eval -e` prints the value; the configured version probe returns the
+  adapter's declared kernel (**42.2**, or **43.1** for Shen-C). Shen-C's raw
+  `--version` identifies its port release, so its probe uses `(version)`.
+  stdin-EOF exits cleanly.
 - 42.1/42.2 behaviour (`cases/kernel-42.json`): `read` and `lineread` on a
   file that ends without a trailing newline; source-form handlers running
   before ordinary macros; namespace `externals` given an expression.
@@ -69,11 +81,11 @@ buckets instead of asserting agreement:
 | case | expression | buckets |
 |------|------------|---------|
 | `bigint-2pow53-plus-1` | `(+ 9007199254740993 0)` | `9007199254740993`: shen-cl, shen-erl, shen-scheme (bignums); shen-julia, shen-c, shen-rust, shen-swift, shen-truffle (64-bit integers). `9007199254740992`: shen-go, ShenScript, shen-lua (IEEE doubles only) |
-| `bigint-2pow63-ordered` | `(> (+ 9223372036854775807 1) 9223372036854775807)` | `true`: shen-cl, shen-erl, shen-scheme (bignums). `false`: shen-julia, shen-c (wrap to -2^63); shen-rust, shen-swift, shen-truffle (overflow to a double equal to 2^63); shen-go, ShenScript, shen-lua (doubles) |
+| `bigint-2pow63-ordered` | Compare `(2^63−1)+1` with `2^63−1`, catching and exposing an error | `true`: shen-cl, shen-erl, shen-scheme (bignums). `Integer overflow`: Shen-C v0.3.0 (catchable Int64 overflow). `false`: shen-julia (wrap); shen-rust, shen-swift, shen-truffle (rounded double); shen-go, ShenScript, shen-lua (doubles) |
 
 The printed 2^63 sum also differs by host float formatting
 (`9223372036854776000`, `9.223372036854776e+18`, `9.223372036854776E18`), so
-the second case compares a boolean.
+the second case compares a boolean or exact caught error text.
 
 ### Upstream shen-scheme 0.50 reference
 
@@ -86,13 +98,16 @@ pyrex41 fork (the default `shen-scheme` install) reapplies both fixes on top of
 
 ### Known port gaps
 
-These FAILs are port bugs, not intended differences; each was already present
-on the port's Tarver S42.0 main branch:
+These FAILs remain visible in the corpus; adapter support does not imply a
+green corpus:
 
-- shen-c (experimental): `version-banner-contains` (port-local `Shen-C 0.2.3`
-  banner), `float-add-imprecise` (prints `0.3`), and script mode echoing each
-  toplevel value like `load` instead of the launcher's quiet load
-  (`bounded-tail-sum-file`, `source-form-before-macros`).
+- Shen-C v0.3.0 (experimental adapter): `bounded-tail-sum-file` echoes a
+  returned string after the program's own output, and
+  `hash-agrees-with-equality` returns false for equal integer/float values.
+  The old floating-format gap is resolved. Kernel version probing now passes;
+  signed Int64 overflow has its own documented catchable-error bucket.
+  Source-form and namespace probes report capability SKIP when those
+  community extensions are unavailable, rather than proving support.
 - shen-julia: native `integer?` is false for `4.0`, and `hash` of `1` and `1.0`
   differ (`integer-float-integral`, `hash-agrees-with-equality`).
 

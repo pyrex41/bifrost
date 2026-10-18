@@ -15,20 +15,47 @@
       "expr": "(version)",
       "expect": "output",
       "golden": "42.2",
-      "doc": "CLI parity: (version) returns the runtime kernel version, ShenOSKernel 42.2 (set in init.kl), uniformly on every port (incl. shen-lua, which has no --version flag). Eval print is unquoted, so shen-c's 42.2 matches. Was version-expr-42 (Tarver S42.0) until every port moved to the community 42.2 kernel (pyrex41/bifrost#26)."
+      "doc": "The community ShenOSKernel 42.2 adapters return 42.2. Exact version checks are selected by adapter kernel; the separately pinned Shen-C 43.1 adapter has its own case.",
+      "kernels": [
+        "42.2"
+      ]
     },
     {
       "name": "version-banner-contains",
       "mode": "version",
       "expect": "version",
       "contains": "42.2",
-      "doc": "CLI parity: the --version banner contains the runtime kernel version 42.2. The standard launcher banner (extension-launcher.kl) leads with it, e.g. `42.2 (port (\"Julia\" \"shen-julia\") implementation (...))`. shen-lua has no --version flag, so Bifrost falls back to eval of (version). KNOWN PORT GAP: experimental shen-c prints a port-local `Shen-C 0.2.3` banner and FAILS here (it already did on Tarver S42.0); `bifrost impls --versions` falls back to eval of (version) for it."
+      "doc": "The configured version probe contains the declared community kernel version 42.2. Ports whose --version reports only the port release may probe (version) instead.",
+      "kernels": [
+        "42.2"
+      ]
     },
     {
       "name": "stdin-eof-clean-exit",
       "mode": "repl-eof",
       "expect": "clean-exit",
-      "doc": "DELIBERATE IMPROVEMENT OVER CANONICAL (not a spec conformance): starting the REPL and closing stdin (EOF) exits cleanly on every maintained impl. Canonical Shen LOOPS FOREVER here — the kernel shen.loop catches the reader's EOF error, prints it, and recurses (e.g. official shen-cl emits ~26MB of 'NIL is not of type CHARACTER' in 8s). All ports here detect EOF at the input layer and exit 0; this case guards that they keep doing so. (Earlier this passed spuriously for shen-cl because its repl adapter used a bare -q, which shen-cl rejects as an invalid arg and exits before the REPL even starts — now fixed to bare {bin}.) UPSTREAM shen-scheme 0.50 (tizoc release, the 42.2 reference) keeps the canonical loop and FAILS here by design (~5 MB/s of EOF errors until the timeout; Bifrost caps captured output at 8 MB). The pyrex41 shen-scheme fork reapplies its EOF exit on top of 0.50 (pyrex41/shen-scheme#9, `make test-repl-eof`)."
+      "doc": "DELIBERATE IMPROVEMENT OVER CANONICAL (not a spec conformance): starting the REPL and closing stdin (EOF) exits cleanly on every maintained impl. Canonical Shen LOOPS FOREVER here \u2014 the kernel shen.loop catches the reader's EOF error, prints it, and recurses (e.g. official shen-cl emits ~26MB of 'NIL is not of type CHARACTER' in 8s). All ports here detect EOF at the input layer and exit 0; this case guards that they keep doing so. (Earlier this passed spuriously for shen-cl because its repl adapter used a bare -q, which shen-cl rejects as an invalid arg and exits before the REPL even starts \u2014 now fixed to bare {bin}.) UPSTREAM shen-scheme 0.50 (tizoc release, the 42.2 reference) keeps the canonical loop and FAILS here by design (~5 MB/s of EOF errors until the timeout; Bifrost caps captured output at 8 MB). The pyrex41 shen-scheme fork reapplies its EOF exit on top of 0.50 (pyrex41/shen-scheme#9, `make test-repl-eof`)."
+    },
+    {
+      "name": "version-expr-43.1",
+      "mode": "eval",
+      "expr": "(version)",
+      "expect": "output",
+      "golden": "43.1",
+      "kernels": [
+        "43.1"
+      ],
+      "doc": "The Shen-C v0.3.0 adapter declares its bundled S43 kernel as 43.1; reject stale 42.x launchers and port-release numbers."
+    },
+    {
+      "name": "version-probe-43.1",
+      "mode": "version",
+      "expect": "version",
+      "contains": "43.1",
+      "kernels": [
+        "43.1"
+      ],
+      "doc": "Check the configured kernel version probe, not Shen-C --version, which identifies the port release."
     }
   ]
 }
