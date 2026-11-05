@@ -12,10 +12,11 @@ would, then diffs stdout.
 The official kernel suites stay in each port. Bifrost asks a different
 question: **do the ports agree?**
 
-The maintained adapters target ShenOSKernel 43.1. Shen-C pins v0.3.0's
-native RC backend and its separately maintained kernel lineage. Exact version
-checks select each adapter's declared kernel. See the [43.1 qualification](docs/ports-43.1.md)
-and [matrix gaps](docs/matrix.md#known-port-gaps).
+The maintained adapters target ShenOSKernel 43.1, and
+[Shen/JIT](https://github.com/tizoc/shen-jit) 43.2. Shen-C pins v0.3.0's native RC
+backend and its separately maintained kernel lineage. Exact version checks select
+each adapter's declared kernel. See the [43.1 qualification](docs/ports-43.1.md),
+[Shen/JIT](docs/shen-jit.md) and [matrix gaps](docs/matrix.md#known-port-gaps).
 
 ## Install
 
@@ -74,6 +75,7 @@ See [docs/suites.md](docs/suites.md).
 | Canonical port tree | [docs/port-layout.md](docs/port-layout.md) |
 
 [Yggdrasil](https://github.com/pyrex41/yggdrasil) is the companion shaker
-(`bifrost --shake` for stand-alone deploy artifacts).
+(`bifrost --shake` for stand-alone deploy artifacts). It shakes on kernel 43.2, so
+its stage-1 host is Shen/JIT.
 
 License: Apache-2.0.

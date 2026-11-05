@@ -33,6 +33,7 @@ var targetToImpl = map[string]string{
 	"scheme": "shen-scheme", "swift": "shen-swift",
 	"truffle": "shen-truffle",
 	"c":       "shen-c",
+	"jit":     "shen-jit",
 }
 
 const shakeTargetTimeout = 20 * time.Minute // accommodates the julia sysimage bake

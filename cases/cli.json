@@ -56,6 +56,27 @@
         "43.1"
       ],
       "doc": "Check the configured kernel version probe; some ports use (version) because --version identifies their port release."
+    },
+    {
+      "name": "version-expr-43.2",
+      "mode": "eval",
+      "expr": "(version)",
+      "expect": "output",
+      "golden": "43.2",
+      "kernels": [
+        "43.2"
+      ],
+      "doc": "Adapters declaring kernel 43.2 report exactly that, rejecting a stale launcher or a port-release number."
+    },
+    {
+      "name": "version-probe-43.2",
+      "mode": "version",
+      "expect": "version",
+      "contains": "43.2",
+      "kernels": [
+        "43.2"
+      ],
+      "doc": "Check the configured kernel version probe for adapters declaring kernel 43.2."
     }
   ]
 }

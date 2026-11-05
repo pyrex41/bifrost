@@ -79,8 +79,8 @@ buckets instead of asserting agreement:
 
 | case | expression | buckets |
 |------|------------|---------|
-| `bigint-2pow53-plus-1` | `(+ 9007199254740993 0)` | `9007199254740993`: shen-cl, shen-erl, shen-scheme (bignums); shen-julia, shen-c, shen-rust, shen-swift, shen-truffle (64-bit integers). `9007199254740992`: shen-go, ShenScript, shen-lua (IEEE doubles only) |
-| `bigint-2pow63-ordered` | Compare `(2^63−1)+1` with `2^63−1`, catching and exposing an error | `true`: shen-cl, shen-erl, shen-scheme (bignums). `Integer overflow`: Shen-C v0.3.0 (catchable Int64 overflow). `false`: shen-julia (wrap); shen-rust, shen-swift, shen-truffle (rounded double); shen-go, ShenScript, shen-lua (doubles) |
+| `bigint-2pow53-plus-1` | `(+ 9007199254740993 0)` | `9007199254740993`: shen-cl, shen-erl, shen-scheme (bignums); shen-julia, shen-c, shen-rust, shen-swift, shen-truffle, shen-jit (64-bit integers). `9007199254740992`: shen-go, ShenScript, shen-lua (IEEE doubles only) |
+| `bigint-2pow63-ordered` | Compare `(2^63−1)+1` with `2^63−1`, catching and exposing an error | `true`: shen-cl, shen-erl, shen-scheme (bignums). `Integer overflow`: Shen-C v0.3.0 (catchable Int64 overflow). `false`: shen-julia (wrap); shen-rust, shen-swift, shen-truffle, shen-jit (rounded double); shen-go, ShenScript, shen-lua (doubles) |
 
 The printed 2^63 sum also differs by host float formatting
 (`9223372036854776000`, `9.223372036854776e+18`, `9.223372036854776E18`), so
@@ -107,6 +107,9 @@ green corpus:
   signed Int64 overflow has its own documented catchable-error bucket.
   Source-form and namespace probes report capability SKIP when those
   community extensions are unavailable, rather than proving support.
+- shen-jit: `hush-file-write` is a documented divergence, as it keeps the kernel's
+  `writer.kl`, whose `pr` drops writes to files under `-q` too. Its table pins every
+  other port to `written`, so a port that starts dropping them still FAILs.
 - shen-julia: the native numeric contract now accepts integral real floats and
   hashes numerically equal values identically, including compound keys and
   signed zero. The remaining Julia divergence is the documented 64-bit integer
@@ -126,7 +129,8 @@ stand-alone artifact per target, run, diff. Missing toolchains SKIP.
 
 Artifacts map: lisp→`shen-cl`, lua→`shen-lua`, go→`shen-go`, joy→`shen-joy`,
 erlang→`shen-erl`, rust→`shen-rust`, js→`ShenScript`, julia→`shen-julia`,
-scheme→`shen-scheme`, swift→`shen-swift`, truffle→`shen-truffle`. Joy is a
+scheme→`shen-scheme`, swift→`shen-swift`, truffle→`shen-truffle`, c→`shen-c`,
+jit→`shen-jit`. Joy is a
 bounded image: unsupported KLambda exits 3 and is SKIP. The one corpus program
 inside its subset is `programs/joy-sum.shen` (`bounded-tail-sum-file`, the same
 program as Yggdrasil's `tests/joy-sum.shen`): its joy artifact must print

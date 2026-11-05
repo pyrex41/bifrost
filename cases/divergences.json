@@ -5,7 +5,22 @@
       "name": "hush-file-write",
       "mode": "special-hush",
       "expect": "agreement",
-      "doc": "RESOLVED (was a known divergence): under -q (*hush* = true), `pr` to a FILE stream now WRITES on every impl. *hush* only gates stdout, never stderr or an explicit file stream. Driven as `{bin} eval -q -l PROG`. S42 shen-c/shen-forth need host `pr` overrides (stock writer.kl returns without writing whenever *hush* for every stream) and eval -q/-l. Previously shen-lua/shen-rust SILENCED the write (zero-byte file) under -q while shen-cl/shen-go/ShenScript wrote. Hard agreement: every available impl must land in the same bucket (all 'written'); any impl that silences the write is a real FAIL. UPSTREAM shen-scheme 0.50 (tizoc release) uses stock writer.kl, so `-q` SILENCES the file write there (zero bytes) and it FAILS this case by design; the pyrex41 fork reapplies the stdout-only *hush* override on top of 0.50 (pyrex41/shen-scheme#9)."
+      "known_divergence": "kernel-hush-silences-files",
+      "table": {
+        "shen-cl": "written",
+        "shen-go": "written",
+        "shen-erl": "written",
+        "shen-rust": "written",
+        "shen-lua": "written",
+        "ShenScript": "written",
+        "shen-scheme": "written",
+        "shen-julia": "written",
+        "shen-swift": "written",
+        "shen-truffle": "written",
+        "shen-c": "written",
+        "shen-jit": "empty"
+      },
+      "doc": "DOCUMENTED DIVERGENCE on shen-jit alone: it keeps the kernel's writer.kl, whose pr drops every write under *hush*, files included. Otherwise resolved: under -q (*hush* = true), `pr` to a FILE stream WRITES on every maintained fork. *hush* only gates stdout, never stderr or an explicit file stream. Driven as `{bin} eval -q -l PROG`. S42 shen-c/shen-forth need host `pr` overrides (stock writer.kl returns without writing whenever *hush* for every stream) and eval -q/-l. Previously shen-lua/shen-rust SILENCED the write (zero-byte file) under -q while shen-cl/shen-go/ShenScript wrote. Hard agreement: every available impl must land in the same bucket (all 'written'); any impl that silences the write is a real FAIL. UPSTREAM shen-scheme 0.50 (tizoc release) uses stock writer.kl, so `-q` SILENCES the file write there (zero bytes) and it FAILS this case by design; the pyrex41 fork reapplies the stdout-only *hush* override on top of 0.50 (pyrex41/shen-scheme#9)."
     },
     {
       "name": "load-toplevel-echo",
@@ -30,6 +45,7 @@
         "shen-rust": "9007199254740993",
         "shen-swift": "9007199254740993",
         "shen-truffle": "9007199254740993",
+        "shen-jit": "9007199254740993",
         "shen-go": "9007199254740992",
         "ShenScript": "9007199254740992",
         "shen-lua": "9007199254740992"
@@ -51,6 +67,7 @@
         "shen-rust": "false",
         "shen-swift": "false",
         "shen-truffle": "false",
+        "shen-jit": "false",
         "shen-go": "false",
         "ShenScript": "false",
         "shen-lua": "false"

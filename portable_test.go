@@ -206,6 +206,41 @@ func TestDefaultSuiteCwdIsCheckout(t *testing.T) {
 	}
 }
 
+func TestShenJitAdapter(t *testing.T) {
+	if targetToImpl["jit"] != "shen-jit" {
+		t.Fatalf("jit shake target maps to %q", targetToImpl["jit"])
+	}
+	a, err := loadAdapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := a.effectiveForPlatform("shen-jit", "darwin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Env != "BIFROST_SHEN_JIT" || cfg.Kernel != "43.2" || cfg.Status != "production" {
+		t.Fatalf("unexpected shen-jit adapter: %#v", cfg)
+	}
+	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-jit/build/shen-jit" {
+		t.Fatalf("shen-jit default_paths = %v", cfg.DefaultPaths)
+	}
+	// Its pr is the kernel's, so -q silences files too; Bifrost must not pass it.
+	if cfg.HushWritesFile {
+		t.Fatal("shen-jit uses the kernel's pr: hush_writes_file must be false")
+	}
+	for _, argv := range [][]string{cfg.Eval, cfg.Script, cfg.Repl} {
+		for _, arg := range argv {
+			if arg == "-q" {
+				t.Fatalf("shen-jit argv %v passes -q", argv)
+			}
+		}
+	}
+	if cfg.Install == nil || cfg.Install.Method != "git-build" || cfg.Install.Ref != "v0.2" ||
+		cfg.Install.Git != "https://github.com/tizoc/shen-jit" {
+		t.Fatalf("unexpected shen-jit install: %#v", cfg.Install)
+	}
+}
+
 func TestShenCAdapter(t *testing.T) {
 	if targetToImpl["c"] != "shen-c" {
 		t.Fatalf("c shake target maps to %q", targetToImpl["c"])

@@ -54,6 +54,7 @@ Missing ports are **skipped and reported**, never a hard error.
 | `shen-swift` | `BIFROST_SHEN_SWIFT` | `../shen-swift/.build/release/shen-swift` |
 | `shen-truffle` | `BIFROST_SHEN_TRUFFLE` | `../shen-truffle/target/shen-truffle/bin/shen-truffle` |
 | `shen-c` | `BIFROST_SHEN_C` | `../shen-c/bin/shen-c` (experimental) |
+| `shen-jit` | `BIFROST_SHEN_JIT` | `../shen-jit/build/shen-jit` |
 
 Production ports target ShenOSKernel **42.2** (community `shen-sources` tag
 `shen-42.2`, the kernel of upstream shen-scheme 0.50). `shen-joy` is a bounded
@@ -82,4 +83,4 @@ port's story.
 
 Delegates to Yggdrasil: shake `prog.shen` and emit a stand-alone artifact for
 `--target` (`lisp`, `lua`, `go`, `joy`, `erlang`, `rust`, `js`, `julia`,
-`scheme`, `swift`, `truffle`). `--run` then executes it.
+`scheme`, `swift`, `truffle`, `c`, `jit`). `--run` then executes it.
