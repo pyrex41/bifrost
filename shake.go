@@ -33,6 +33,7 @@ var targetToImpl = map[string]string{
 	"scheme": "shen-scheme", "swift": "shen-swift",
 	"truffle": "shen-truffle",
 	"c":       "shen-c",
+	"jit":     "shen-jit",
 }
 
 const shakeTargetTimeout = 20 * time.Minute // accommodates the julia sysimage bake
@@ -186,7 +187,12 @@ func yggdrasilRepoDir() string {
 // byte-identical across hosts (the user KL differs only by gensym counter, so
 // it is not compared).
 func runYggdrasilParity(c aCase, available map[string]Impl) caseResult {
+	// A host on another kernel is refused by the shaker, by design.
+	available = availableForCase(c, available)
 	results := map[string]*implResult{}
+	if len(available) == 0 {
+		return caseResult{PerImpl: results, Verdict: "PASS", Detail: "skipped: no matching kernels"}
+	}
 	for n := range available {
 		results[n] = &implResult{Status: "SKIP"}
 	}
@@ -269,6 +275,10 @@ func runYggdrasilParity(c aCase, available map[string]Impl) caseResult {
 	for _, d := range digs {
 		sample = d
 		break
+	}
+	if len(digs) == 1 {
+		return caseResult{PerImpl: results, Verdict: "PASS",
+			Detail: fmt.Sprintf("one host on this kernel, so nothing was compared (kernel md5 %s, manifest md5 %s)", sample.kernel[:8], sample.manifest[:8])}
 	}
 	return caseResult{PerImpl: results, Verdict: "PASS",
 		Detail: fmt.Sprintf("kernel.kl + yggdrasil.manifest BYTE-IDENTICAL across %d hosts (kernel md5 %s, manifest md5 %s)", len(digs), sample.kernel[:8], sample.manifest[:8])}

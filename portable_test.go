@@ -206,6 +206,41 @@ func TestDefaultSuiteCwdIsCheckout(t *testing.T) {
 	}
 }
 
+func TestShenJitAdapter(t *testing.T) {
+	if targetToImpl["jit"] != "shen-jit" {
+		t.Fatalf("jit shake target maps to %q", targetToImpl["jit"])
+	}
+	a, err := loadAdapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := a.effectiveForPlatform("shen-jit", "darwin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Env != "BIFROST_SHEN_JIT" || cfg.Kernel != "43.2" || cfg.Status != "production" {
+		t.Fatalf("unexpected shen-jit adapter: %#v", cfg)
+	}
+	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-jit/build/shen-jit" {
+		t.Fatalf("shen-jit default_paths = %v", cfg.DefaultPaths)
+	}
+	// Its pr is the kernel's, so -q silences files too; Bifrost must not pass it.
+	if cfg.HushWritesFile {
+		t.Fatal("shen-jit uses the kernel's pr: hush_writes_file must be false")
+	}
+	for _, argv := range [][]string{cfg.Eval, cfg.Script, cfg.Repl} {
+		for _, arg := range argv {
+			if arg == "-q" {
+				t.Fatalf("shen-jit argv %v passes -q", argv)
+			}
+		}
+	}
+	if cfg.Install == nil || cfg.Install.Method != "git-build" || cfg.Install.Ref != "109f34711647c9d0ee405935f7c96220a271fec6" ||
+		cfg.Install.Git != "https://github.com/tizoc/shen-jit" {
+		t.Fatalf("unexpected shen-jit install: %#v", cfg.Install)
+	}
+}
+
 func TestShenCAdapter(t *testing.T) {
 	if targetToImpl["c"] != "shen-c" {
 		t.Fatalf("c shake target maps to %q", targetToImpl["c"])
@@ -407,6 +442,62 @@ func TestKnownDivergenceTablePinsBuckets(t *testing.T) {
 	} {
 		if got := judgeCase(c, mk(tc.norms)).Verdict; got != tc.want {
 			t.Errorf("%v: verdict %s, want %s", tc.norms, got, tc.want)
+		}
+	}
+}
+
+// The shaker refuses a host on another kernel, so a parity case limited to 43.2
+// must not run one and report its refusal as a failure.
+func TestYggdrasilParityHonoursKernels(t *testing.T) {
+	a, err := loadAdapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := a.effectiveForPlatform("shen-go", "darwin")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if adapterKernel(Impl{Cfg: cfg}) == "43.2" {
+		t.Skip("shen-go has moved to 43.2; this case needs a port that has not")
+	}
+	c := aCase{Name: "t", Expect: "yggdrasil-parity", Kernels: []string{"43.2"}}
+	res := runYggdrasilParity(c, map[string]Impl{"shen-go": {Cfg: cfg}})
+	if res.Verdict != "PASS" || !strings.Contains(res.Detail, "no matching kernels") {
+		t.Fatalf("a 43.1 host was not filtered out: %+v", res)
+	}
+}
+
+// Every adapter has a row in the hush table, as one without is a FAIL.
+func TestHushTableCoversEveryAdapter(t *testing.T) {
+	a, err := loadAdapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile("cases/divergences.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var file struct {
+		Cases []aCase `json:"cases"`
+	}
+	if err := json.Unmarshal(raw, &file); err != nil {
+		t.Fatal(err)
+	}
+	var table map[string]string
+	for _, c := range file.Cases {
+		if c.Name == "hush-file-write" {
+			table = c.Table
+		}
+	}
+	if table == nil {
+		t.Fatal("hush-file-write case is gone")
+	}
+	for _, n := range implOrder {
+		if _, err := a.effectiveForPlatform(n, "darwin"); err != nil {
+			continue
+		}
+		if _, ok := table[n]; !ok {
+			t.Errorf("%s has no row in the hush table", n)
 		}
 	}
 }

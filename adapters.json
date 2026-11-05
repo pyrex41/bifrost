@@ -400,5 +400,35 @@
     },
     "_install_note": "Native C17 compiler and reference-counted runtime, pinned to v0.3.0. git-build runs make and produces bin/shen-c (also bin/shen-rc and bin/rc-build). Requires a C17 compiler, make and Python 3; no Boehm or pkg-config. Set BIFROST_SHEN_C to a built launcher. Experimental adapter status still requires --force for installation.",
     "_note": "Shen-C v0.3.0 bundles the official S43 kernel reported as 43.1, a separately maintained source lineage from the community 43.1 kernel used by the other adapters. Native compiled kernel plus prepared/interpreted loaded code, exact reference counting with cycle reclamation, and an independent KL-to-C compiler. Public eval/script/repl commands remain available. --version reports the port release, so this adapter probes kernel version using eval -e (version). Signed 64-bit integer overflow raises a catchable error. Live corpus gaps are recorded in docs/matrix.md; do not infer corpus parity from the upstream 136-test suite."
+  },
+  "shen-jit": {
+    "env": "BIFROST_SHEN_JIT",
+    "default_paths": [
+      "../shen-jit/build/shen-jit"
+    ],
+    "build": {
+      "cwd": "../shen-jit",
+      "steps": [
+        ["make", "deps"],
+        ["make"]
+      ],
+      "out": "build/shen-jit"
+    },
+    "eval": ["{bin}", "eval", "-e", "{expr}"],
+    "script": ["{bin}", "script", "{file}"],
+    "version": ["{bin}", "--version"],
+    "repl": ["{bin}"],
+    "hush_writes_file": false,
+    "status": "production",
+    "kernel": "43.2",
+    "install": {
+      "method": "git-build",
+      "package": "shen-jit",
+      "git": "https://github.com/tizoc/shen-jit",
+      "ref": "109f34711647c9d0ee405935f7c96220a271fec6",
+      "needs": ["git", "make", "cc", "curl", "tar"]
+    },
+    "_install_note": "git-build pins upstream release v0.2 by its commit, as a tag can move. make deps fetches the checksummed kernel 43.2 and the earlier Shen/JIT release that builds this one; that release exists for macOS arm64, Linux x86-64 and arm64, and Windows x86-64. A release archive's shen-jit is a single file: set BIFROST_SHEN_JIT to it instead of building.",
+    "_note": "Baseline JIT port by tizoc (Bruno Deferrari), on community ShenOSKernel 43.2 from Shen-Language/shen-sources. --version prints '43.2 (port (\"native\" \"0.2\") implementation (\"shen-jit\" \"0.2\"))'. It uses the kernel's pr, so -q (*hush*) also silences writes to files."
   }
 }
