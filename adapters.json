@@ -425,10 +425,10 @@
       "method": "git-build",
       "package": "shen-jit",
       "git": "https://github.com/tizoc/shen-jit",
-      "ref": "v0.2",
+      "ref": "109f34711647c9d0ee405935f7c96220a271fec6",
       "needs": ["git", "make", "cc", "curl", "tar"]
     },
-    "_install_note": "git-build pins upstream release v0.2. make deps fetches the checksummed kernel 43.2 and the earlier Shen/JIT release that builds this one; that release exists for macOS arm64, Linux x86-64 and arm64, and Windows x86-64. A release archive's shen-jit is a single file: set BIFROST_SHEN_JIT to it instead of building.",
+    "_install_note": "git-build pins upstream release v0.2 by its commit, as a tag can move. make deps fetches the checksummed kernel 43.2 and the earlier Shen/JIT release that builds this one; that release exists for macOS arm64, Linux x86-64 and arm64, and Windows x86-64. A release archive's shen-jit is a single file: set BIFROST_SHEN_JIT to it instead of building.",
     "_note": "Baseline JIT port by tizoc (Bruno Deferrari), on community ShenOSKernel 43.2 from Shen-Language/shen-sources. --version prints '43.2 (port (\"native\" \"0.2\") implementation (\"shen-jit\" \"0.2\"))'. It uses the kernel's pr, so -q (*hush*) also silences writes to files."
   }
 }

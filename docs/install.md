@@ -89,7 +89,7 @@ Defaults assume sibling checkouts. Override with a project `adapters.json` or
    `bifrost install shen-cl` (`sbcl`).
 4. `shen-scheme` (git-build of the fork; `make` + C compiler + `curl`),
    `shen-julia`, `shen-swift`, `shen-truffle`.
-5. `bifrost install shen-jit` (git-build of v0.2; `make` + C compiler + `curl` +
+5. `bifrost install shen-jit` (git-build of v0.2, pinned by commit; `make` + C compiler + `curl` +
    `tar`). A release archive's `shen-jit` is one file: `$BIFROST_SHEN_JIT` can point
    at it instead. It needs nothing from the steps above, and is what Yggdrasil's
    kernel 43.2 needs as a stage-1 host.

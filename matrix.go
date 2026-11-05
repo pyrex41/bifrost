@@ -516,7 +516,8 @@ func runHushDivergence(c aCase, available map[string]Impl) caseResult {
 		verdict := "DIVERGE"
 		for name, r := range results {
 			exp, has := table[name]
-			match := !has || r.Norm == exp
+			// Every port is pinned: one with no row has not said what it does.
+			match := has && r.Norm == exp
 			if match {
 				r.Status = "DIVERGE"
 			} else {

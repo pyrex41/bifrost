@@ -109,7 +109,8 @@ green corpus:
   community extensions are unavailable, rather than proving support.
 - shen-jit: `hush-file-write` is a documented divergence, as it keeps the kernel's
   `writer.kl`, whose `pr` drops writes to files under `-q` too. Its table pins every
-  other port to `written`, so a port that starts dropping them still FAILs.
+  other port, to `written` except shen-joy, which runs no ordinary Shen source and so
+  reads `empty`. A port that leaves its row, or has none, FAILs.
 - shen-julia: the native numeric contract now accepts integral real floats and
   hashes numerically equal values identically, including compound keys and
   signed zero. The remaining Julia divergence is the documented 64-bit integer
