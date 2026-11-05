@@ -16,7 +16,7 @@ is not enough. Use `bifrost install shen-jit`, or set `YGGDRASIL_SHEN_JIT_DIR` t
 checkout or a release's source tarball, then:
 
 ```sh
-bifrost build prog.shen --target jit --run
+bifrost build prog.shen out/ --target jit --run
 ```
 
 `bifrost --shake` and `bifrost build` go through Yggdrasil, whose kernel is also 43.2,

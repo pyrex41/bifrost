@@ -34,3 +34,28 @@ jobs:
           # impls/--list run with zero ports present (all SKIPPED) and exit 0.
           ./bifrost_bin impls
           ./bifrost_bin --list
+
+  # The one lane that runs a real port: the release's source tarball needs only
+  # a C compiler, and shen-jit is the adapter this repo's release is about.
+  shen-jit:
+    runs-on: ubuntu-24.04
+    env:
+      SHEN_JIT_VERSION: "0.2"
+      SHEN_JIT_SHA256: 0ff86d97a86634b3244c154ac1862d4c7a1575d663c618edc80f10b65cfb6937
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23.x"
+      - name: Build Shen/JIT from the pinned tarball
+        run: |
+          name="shen-jit-$SHEN_JIT_VERSION.tar.gz"
+          curl -fsSL --retry 3 -o "$name" "https://github.com/tizoc/shen-jit/releases/download/v$SHEN_JIT_VERSION/$name"
+          echo "$SHEN_JIT_SHA256  $name" | sha256sum -c -
+          mkdir "$RUNNER_TEMP/shen-jit"
+          tar -C "$RUNNER_TEMP/shen-jit" --strip-components=1 -xzf "$name"
+          make -C "$RUNNER_TEMP/shen-jit"
+      - name: Corpus on shen-jit
+        run: |
+          go build -o bifrost_bin .
+          BIFROST_SHEN_JIT="$RUNNER_TEMP/shen-jit/build/shen-jit" ./bifrost_bin --impls shen-jit
