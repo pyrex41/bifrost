@@ -127,8 +127,8 @@
     "repl":    ["{bin}", "unsupported", "repl"],
     "hush_writes_file": false,
     "status": "bounded-image-target",
-    "kernel": "bounded-43.1-subset",
-    "_note": "Device target only: a bounded first-order subset defined against ShenOSKernel 43.1 (shen-joy docs/shen-to-joy.md; differential reference Shen CL 3.2.0). Ordinary Shen source/eval/REPL cases exit 3 (capability SKIP). Bifrost's --shake path uses Yggdrasil's joy builder to create and run a validated image: the one corpus program inside the subset is programs/joy-sum.shen (case bounded-tail-sum-file, the same program as Yggdrasil's tests/joy-sum.shen), which must print 32004000. tests/fib.shen and the other script programs fall outside the subset and are capability SKIPs (exit 3) on joy, so the --heavy fib.shen parity case never includes it."
+    "kernel": "bounded-43.2-subset",
+    "_note": "Device target only: a bounded first-order subset defined against ShenOSKernel 43.2 (shen-joy docs/shen-to-joy.md; differential reference Shen CL 3.2.1). Ordinary Shen source/eval/REPL cases exit 3 (capability SKIP). Bifrost's --shake path uses Yggdrasil's joy builder to create and run a validated image: the one corpus program inside the subset is programs/joy-sum.shen (case bounded-tail-sum-file, the same program as Yggdrasil's tests/joy-sum.shen), which must print 32004000. tests/fib.shen and the other script programs fall outside the subset and are capability SKIPs (exit 3) on joy, so the --heavy fib.shen parity case never includes it."
   },
 
   "shen-erl": {
@@ -263,15 +263,15 @@
     "repl":    ["{bin}"],
     "hush_writes_file": true,
     "status": "production",
-    "kernel": "43.2",
+    "kernel": "43.4",
     "install": {
       "method": "git-build",
       "package": "shen-scheme",
       "git": "https://github.com/pyrex41/shen-scheme",
       "needs": ["git", "make", "cc", "curl", "tar"]
     },
-    "_install_note": "git-build uses the maintained pyrex41 fork on ShenOSKernel 43.2 with stdin EOF exit and stdout-only hush fixes. The build fetches the checksummed kernel, fetches a bootstrap binary, precompiles the kernel, then builds Chez 10.3.0 and the native launcher. Historical upstream 0.50 binaries and Homebrew packages do not provide this kernel.",
-    "_note": "Chez Scheme port by tizoc (Bruno Deferrari), 0.52 on ShenOSKernel 43.2. There is no shen.boot any more: the launcher loads petite.boot + scheme.boot and lib/shen-scheme/shen-scheme/runtime.so from the lib/shen-scheme directory next to bin/ (override with $SHEN_SCHEME_HOME), so it is cwd-independent. -q maps to --quiet -> (set *hush* true), which silences stdout (so it is NOT passed for normal eval/script cases); in the fork, file-stream pr still writes under -q. Bundles extension-namespaces (the namespace-externals-expression case runs here). Bignum integers."
+    "_install_note": "git-build uses the maintained pyrex41 fork: upstream master plus its EOF and hush fixes, on ShenOSKernel 43.4 with stdin EOF exit and stdout-only hush fixes. The build fetches the checksummed kernel, fetches a bootstrap binary, precompiles the kernel, then builds Chez 10.3.0 and the native launcher. Historical upstream 0.50 binaries and Homebrew packages do not provide this kernel.",
+    "_note": "Chez Scheme port by tizoc (Bruno Deferrari), 0.54 on ShenOSKernel 43.4. There is no shen.boot any more: the launcher loads petite.boot + scheme.boot and lib/shen-scheme/shen-scheme/runtime.so from the lib/shen-scheme directory next to bin/ (override with $SHEN_SCHEME_HOME), so it is cwd-independent. -q maps to --quiet -> (set *hush* true), which silences stdout (so it is NOT passed for normal eval/script cases); in the fork, file-stream pr still writes under -q. Bundles extension-namespaces (the namespace-externals-expression case runs here). Bignum integers."
   },
 
   "shen-julia": {
