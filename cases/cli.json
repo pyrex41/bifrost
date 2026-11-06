@@ -77,6 +77,27 @@
         "43.2"
       ],
       "doc": "Check the configured kernel version probe for adapters declaring kernel 43.2."
+    },
+    {
+      "name": "version-expr-43.4",
+      "mode": "eval",
+      "expr": "(version)",
+      "expect": "output",
+      "golden": "43.4",
+      "kernels": [
+        "43.4"
+      ],
+      "doc": "Adapters declaring kernel 43.4 report exactly that, rejecting a stale launcher."
+    },
+    {
+      "name": "version-probe-43.4",
+      "mode": "version",
+      "expect": "version",
+      "contains": "43.4",
+      "kernels": [
+        "43.4"
+      ],
+      "doc": "Check the configured kernel version probe for adapters declaring kernel 43.4."
     }
   ]
 }

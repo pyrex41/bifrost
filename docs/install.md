@@ -56,7 +56,7 @@ current (the adapter's `kernel` is `42.2`).
   bifrost install shen-cl          # make build-sbcl
   ```
 - **shen-scheme** — the default is a git-build of the **pyrex41 fork**: upstream
-  tizoc/shen-scheme v0.50 (kernel 42.2) merged, plus the two fork fixes the
+  tizoc/shen-scheme master (0.54, kernel 43.4) plus the two fork fixes the
   corpus asserts (REPL exits on stdin EOF; `*hush*` gates stdout only, so `-q`
   still writes file streams). The build runs the upstream CI recipe:
   `make fetch-kernel`, `make fetch-prebuilt` (tizoc's v0.26 binary, only used

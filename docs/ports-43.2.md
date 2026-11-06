@@ -1,8 +1,10 @@
 # Shen 43.2 adapter qualification
 
-Every maintained adapter declares community ShenOSKernel 43.2:
-`Shen-Language/shen-sources`, tag `shen-43.2`, commit `e6947f507`. Shen-joy stays on
-`bounded-43.1-subset`, as it does not execute a full kernel. The older
+The maintained adapters declare community ShenOSKernel 43.2:
+`Shen-Language/shen-sources`, tag `shen-43.2`, commit `e6947f507`. Shen-joy declares
+`bounded-43.2-subset`, as it does not execute a full kernel. Shen-scheme has since moved to
+43.4 with upstream 0.54, so it runs the 43.4 version cases and is not a host in
+`yggdrasil-shake-parity`, whose shaker requires 43.2. The result below predates that. The older
 [43.1 record](ports-43.1.md) is kept for that kernel.
 
 ## Result
@@ -31,7 +33,7 @@ prints `0.30000000000000004`. It stays a FAIL until shen-c's float printing is f
 | shen-go | v1.6.0 | `7509c6b` |
 | shen-lua | v0.12.0 | `912596b` |
 | ShenScript | v1.1.0-rc.2 | `6761d05` |
-| shen-scheme | v0.52-pyrex41.6 | `0d9220d` |
+| shen-scheme | v0.52-pyrex41.6, since moved to upstream 0.54 plus two fixes | `0d9220d` |
 | shen-julia | v0.3.0 | `ef5b552` |
 | shen-c | v0.5.0 | `b7ebcea` |
 | shen-rust | none | `ce9037b` |
@@ -39,8 +41,7 @@ prints `0.30000000000000004`. It stays a FAIL until shen-c's float printing is f
 | shen-erl | none | `d8f1c7b` |
 | shen-truffle | none | `1997bd0` |
 
-shen-scheme moved its kernel only: the port is still 0.52, and upstream's v0.53 conflicts
-with the fork's changes. shen-cl's v3.2.1 has no Windows archive, as its 64MB stack default
+shen-cl's v3.2.1 has no Windows archive, as its 64MB stack default
 does not take effect there.
 
 CI does not build the other ports, so
