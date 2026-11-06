@@ -19,18 +19,17 @@ host; every other tracked difference is a hard agreement.
 
 ## Kernel
 
-The maintained adapters target community **ShenOSKernel 43.1**
-(`Shen-Language/shen-sources` tag `shen-43.1`, commit `715824a52`), adopted
+The maintained adapters target community **ShenOSKernel 43.2**
+(`Shen-Language/shen-sources` tag `shen-43.2`, commit `e6947f507`), adopted
 wholesale. The bounded Joy target follows that semantic baseline through a
 pinned Shen CL 3.2.0 differential reference; it does not execute a full kernel.
 
-The experimental Shen-C adapter pins v0.3.0 and its separately maintained
-S43 kernel reported as **43.1**. It uses a native compiled kernel,
-prepared/interpreted loaded code and an independent RC runtime.
+The experimental Shen-C adapter pins v0.5.0, on the same kernel. It uses a native
+compiled kernel, prepared/interpreted loaded code and an independent RC runtime.
 Exact version cases are kernel-specific. Old 42.2 checks remain available for
 adapters explicitly configured with that kernel, and skip when none match.
 
-[43.1 integration qualification](ports-43.1.md) records the exact tested refs,
+[43.2 integration qualification](ports-43.2.md) records the exact tested refs,
 executed rows, skips and known divergences. Historical
 [Shen-C evidence](shen-c-rc-20261018.md) is retained separately.
 
@@ -45,7 +44,7 @@ executed rows, skips and known divergences. Historical
   `@p`/`vector`, `put`/`get` on `*property-vector*`, freeze captured by a
   lambda, trap-error whose *operand* raises, the `(head [])` error message.
 - CLI: `eval -e` prints the value; the configured version probe returns the
-  adapter's declared kernel (**43.1** for the upgraded adapters). Shen-C's raw
+  adapter's declared kernel (**43.2**). Shen-C's raw
   `--version` identifies its port release, so its probe uses `(version)`.
   stdin-EOF exits cleanly.
 - 42.1/42.2 behaviour (`cases/kernel-42.json`): `read` and `lineread` on a
