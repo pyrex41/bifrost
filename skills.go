@@ -65,7 +65,7 @@ func skillDescription(fsys fs.FS, name string) string {
 	sc := bufio.NewScanner(strings.NewReader(string(b)))
 	inFront := false
 	for sc.Scan() {
-		line := sc.Text()
+		line := strings.TrimRight(sc.Text(), "\r")
 		if line == "---" {
 			if inFront {
 				break

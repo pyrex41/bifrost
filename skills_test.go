@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,11 +15,11 @@ func TestEmbeddedSkillsHaveFrontMatter(t *testing.T) {
 		t.Fatal("no embedded skills")
 	}
 	for _, n := range names {
-		b, err := os.ReadFile(filepath.Join("skills", n, "SKILL.md"))
+		b, err := fs.ReadFile(skillsRoot(), n+"/SKILL.md")
 		if err != nil {
 			t.Fatal(err)
 		}
-		s := string(b)
+		s := strings.ReplaceAll(string(b), "\r\n", "\n")
 		if !strings.HasPrefix(s, "---\nname: "+n+"\n") {
 			t.Errorf("%s: SKILL.md must start with front matter naming it %q", n, n)
 		}
@@ -153,5 +154,12 @@ func TestJudgeCheck(t *testing.T) {
 		if pass, _ := judgeCheck(c.mode, c.out); pass != c.pass {
 			t.Errorf("judgeCheck(%s, %q) = %v", c.mode, c.out, pass)
 		}
+	}
+}
+
+func TestSkillDescriptionToleratesCRLF(t *testing.T) {
+	fsys := fstest.MapFS{"s/SKILL.md": {Data: []byte("---\r\nname: s\r\ndescription: d\r\n---\r\n")}}
+	if got := skillDescription(fsys, "s"); got != "d" {
+		t.Errorf("description %q, want d", got)
 	}
 }
