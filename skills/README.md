@@ -1,16 +1,19 @@
 # Shen agent skills
 
-Skills that teach coding agents to write Shen that uses the language: its sequent-calculus types, Prolog,
-typed grammars and macros, rather than Lisp or ML written in Shen syntax. Each skill is a folder with a
-`SKILL.md` in the [Agent Skills](https://agentskills.io) format: YAML front matter (`name`, `description`)
-and plain Markdown. Harnesses that don't read skills can include the Markdown as it is.
+Skills for designing, writing and reviewing Shen programs with functional decomposition, closures,
+sequent-calculus types, Prolog, typed grammars and macros. Each skill is a folder with a `SKILL.md` in
+[Agent Skills](https://agentskills.io) format: YAML front matter (`name`, `description`) and Markdown.
+Harnesses that do not read skills can include the Markdown directly.
 
-| Skill | What it does |
-|---|---|
-| [`shen-thinking`](shen-thinking/SKILL.md) | The entry point: rules over outputs, choosing an engine, where types go, how to prove it |
-| [`shen-types`](shen-types/SKILL.md) | The sequent-calculus cookbook and its pitfalls |
-| [`shen-logic-grammars`](shen-logic-grammars/SKILL.md) | `defprolog`, `defcc`, rules as data with an interpreter, macros, and typed boundaries for each |
-| [`shen-review`](shen-review/SKILL.md) | The checklist to run before calling Shen work done |
+The entry files provide decisions and workflows. Linked references contain deeper explanations and
+executable examples; installations include those references.
+
+| Skill | Role | Selected references |
+|---|---|---|
+| [`shen-thinking`](shen-thinking/SKILL.md) | Operations and laws, engine choice, representation, state and proof obligations | [Closures and state](shen-thinking/references/closures-and-state.md); [indexed stacks](shen-thinking/references/indexed-stacks.md) |
+| [`shen-types`](shen-types/SKILL.md) | Concrete rules, refinements, modes and compositional invariants | [Refinements](shen-types/references/refinements.md); [proof search](shen-types/references/proof-search.md); [invariants and abstraction](shen-types/references/invariants-and-abstraction.md) |
+| [`shen-logic-grammars`](shen-logic-grammars/SKILL.md) | Relational search, typed parsing, rule interpreters and macro phases | [Prolog search](shen-logic-grammars/references/prolog-search.md); [typed grammars](shen-logic-grammars/references/typed-grammars.md); [bounded generation](shen-logic-grammars/references/bounded-generation.md); [macros](shen-logic-grammars/references/macros-and-loading.md) |
+| [`shen-review`](shen-review/SKILL.md) | Review questions and evidence required for claimed behavior | Covers the other three skills |
 
 ## Install
 
@@ -30,51 +33,83 @@ bifrost skills install --target raw --dir DIR     # the Markdown files only
 | `opencode` | `~/.config/opencode/skills` | `DIR/.opencode/skills` |
 | `raw` | `--dir DIR`, Markdown only | |
 
-An installed skill is not overwritten unless you pass `--force`, which replaces it whole. Name skills after
-the flags to install only those.
+An installed skill is not overwritten unless you pass `--force`, which replaces it whole. Name skills
+after the flags to install only those. Install the complete set to preserve links between skills.
 
-## Every example is checked
+## Executable examples
 
-The complaint these skills answer is plausible Shen that dodges the type system, so their examples are not
-trusted either. `bifrost skills check [--impl PORT] [--dir skills]` runs every `shen` code block on a real
-port under `(tc +)`:
+```bash
+bifrost skills check --impl shen-jit --dir skills
+```
 
-- The blocks of one Markdown file build on each other, like a literate program. Each is loaded as a file
-  of its own, after the earlier ones, because a datatype is compiled when its file is read.
-- An HTML comment on the line before a fence changes what is expected:
-  - `<!-- reject -->`: the checker must refuse the block with a type error. These show a rule being
-    enforced.
-  - `<!-- untyped -->`: loaded under `(tc -)`, as `defprolog`, macros and a `defcc` without a type must
-    be. Later blocks are typechecked again.
-  - `<!-- skip -->`: not checked (a fragment, or the bad example of a pair).
-  - `<!-- fresh -->`: checked, but without the earlier blocks.
+The checker runs every `shen` fence in every Markdown file inside the selected skills, including their
+references. Each check starts a fresh port process. Earlier accepted blocks in the **same Markdown file**
+are loaded first, then the block under test. Files do not implicitly import examples from other files.
 
-CI runs it on Shen/JIT. Run it on any port you change these skills for.
+Typed blocks load with `(tc +)` enabled before `load`. Earlier definitions in one loaded block can be
+used by later definitions and proof-time side conditions in that block. Helpers needed during read-time
+macro expansion must already be loaded before reading the file; those are different phases.
 
-## Where they come from
+An HTML comment immediately before a fence changes its treatment:
 
-The skills were drafted from a review of the programs that accompany Mark Tarver's *The Book of Shen*,
-4th edition (<https://shenlanguage.org/TBoS/index.html>), by three reviewers each writing in the manner of
-a well-known programmer. None of those people wrote or endorsed this text:
+| Annotation | Meaning |
+|---|---|
+| `<!-- reject: wrong-client -->` | Must produce a type error whose first diagnostic line contains the literal, case-sensitive text `wrong-client` |
+| `<!-- reject -->` | Must produce a type error; retained for examples without a more specific diagnostic expectation |
+| `<!-- untyped -->` | Load deliberately under `(tc -)`; restore `(tc +)` for later blocks |
+| `<!-- skip -->` | Do not execute this fragment; explain why it is incomplete or illustrative |
+| `<!-- fresh -->` | Start a new accumulation of accepted blocks within this file |
 
-- **Tarver's lens**: a type is a set of objects defined by rules; write the specification as datatypes and
-  let the checker prove the program obeys it.
-- **Peter Norvig's lens**: problem, then representation, then rules; pick the engine the rules are already
-  written in, and build the small interpreter that makes the solution obvious.
-- **Rich Hickey's lens**: put the rules in a value; Shen's datatypes are open predicates over existing data,
-  closer to a spec than to ML types; type shapes everywhere, invariants only at boundaries.
+Rejected blocks are never carried into later checks. A timed-out or unsuccessfully exited port fails the
+check even if it printed a success marker. Named rejection expectations help distinguish the intended
+client's failure from an unrelated type error; keep each negative case small and pair it with a valid use.
 
-They disagreed about how much to type. The skills keep the disagreement and resolve it by the problem:
-fixed rules you want proved go in datatypes; rules that change, are many or arrive at run time go in data
-with a boundary type; relations and grammars go to Prolog and `defcc`. In every case the rules appear
-once and the output is derived.
+**Acceptance alone does not check a result's value.** Examples assert expected values with `if` or a
+small assertion function that raises an error on mismatch. Use such assertions for behavioral laws,
+aliasing, parser results and generator extensions. Distinguish sampled tests from universal proofs.
 
-The skills cite the book's sections and use their own examples; none of the book's code is copied here.
-The reviews also checked those programs on kernel 43.4. None is broken by the kernel; a few need files
-or definitions from other sections, and two (10.1 and 10.3) show the macro pitfalls described in
-`shen-logic-grammars`.
+CI runs the suite on its pinned Shen/JIT release. Run on the ports affected by a change; one successful
+port run does not establish portability across all implementations. To typecheck a separate file:
 
-## Adding to them
+```bash
+bifrost eval -e '(do (tc +) (load "prog.shen"))'
+```
 
-Keep each skill to one job, cite TBoS sections for the patterns, and make every claim about the checker a
-block that `bifrost skills check` runs, with a `reject` block where you say something is refused.
+Putting `(tc +)` inside that file or merely running it as a script is not evidence that the load was
+checked. State deliberate untyped representation and declaration boundaries explicitly.
+
+## Sources and scope
+
+The main reference is Mark Tarver's [*The Book of Shen*, online fifth edition](https://shenlanguage.org/TBoS/index.html).
+The skills use the following parts together:
+
+| Topic | Book location |
+|---|---|
+| Functional decomposition and higher-order programming | Chapters 6 and 16 |
+| Assignment, vectors and state | Chapters 7–8 |
+| Macros and packages | Chapter 10 |
+| Grammar execution and its limits | Chapter 13 |
+| Types, sequents, concrete datatypes and proof control | Chapters 17–20 |
+| Abstract operations, laws and algebraic transformations | Chapter 21 |
+| Typed grammars and semantic functions | Chapter 22 |
+| Prolog and its implementation | Chapters 25 and 27 |
+
+Companion program filenames sometimes retain older section numbering. Follow the displayed chapter or
+section heading and the linked code together. The [Shen language reference](https://shenlanguage.org/SD/Primitives.html)
+supplies details of current language operations. The closure material also draws on Doug Hoyte's
+[*Let Over Lambda*, chapter 2](https://letoverlambda.com/index.cl/guest/chap2.html), adapted to Shen's
+semantics rather than treating Common Lisp mechanisms as interchangeable.
+
+The design principle is to state useful invariants and explain how operations preserve them. A boundary
+check, a checked transformation and an asserted interface perform different jobs. An operation axiom
+over untyped code can constrain clients without proving the implementation. Keep that trust visible.
+
+## Adding to the skills
+
+Keep each entry focused on decisions and point directly to deeper references. Give references over 100
+lines a table of contents. Use typed executable examples where possible; explain deliberate untyped
+blocks and every skipped fragment. Add named negative cases for claimed exclusions, assert the results
+that matter, and check extension behavior when the program presents several views of the same facts.
+
+Preserve existing skill names and installation paths. Run the checker and the relevant Go tests after
+editing. Record the actual port/kernel and remaining assumptions when reporting a change.
