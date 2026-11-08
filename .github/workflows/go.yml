@@ -59,3 +59,5 @@ jobs:
         run: |
           go build -o bifrost_bin .
           BIFROST_SHEN_JIT="$RUNNER_TEMP/shen-jit/build/shen-jit" ./bifrost_bin --impls shen-jit
+      - name: Agent skills' Shen examples on shen-jit
+        run: BIFROST_SHEN_JIT="$RUNNER_TEMP/shen-jit/build/shen-jit" ./bifrost_bin skills check --impl shen-jit
