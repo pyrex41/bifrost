@@ -1,7 +1,7 @@
 // Command bifrost is the Go implementation of the Bifrost cross-implementation
 // Shen meta test harness AND the Roswell-style front door for Shen across all
 // ports. The differential test matrix is the default invocation; front-door
-// verbs (run/eval/repl/impls/use/env/install/build) are added as subcommands.
+// verbs (run/eval/repl/impls/use/env/install/build/bench/skills) are added as subcommands.
 //
 // It embeds the adapters.json registry and case corpus, making the binary self-contained for
 // `go install` and release downloads, overridable via $BIFROST_ADAPTERS or a
@@ -65,6 +65,9 @@ func main() {
 }
 
 func run(args []string) int {
+	if len(args) > 0 && args[0] == "skills" { // needs no adapters to list or install
+		return cmdSkills(args[1:])
+	}
 	if len(args) > 0 && subcommands[args[0]] {
 		a, err := loadAdapters()
 		if err != nil {

@@ -12,9 +12,8 @@ would, then diffs stdout.
 The official kernel suites stay in each port. Bifrost asks a different
 question: **do the ports agree?**
 
-The maintained adapters target ShenOSKernel 43.2, including
-[Shen/JIT](https://github.com/tizoc/shen-jit). Exact version checks select each
-adapter's declared kernel. See the [43.2 qualification](docs/ports-43.2.md),
+The maintained adapters target ShenOSKernel 43.2; [Shen/JIT](https://github.com/tizoc/shen-jit)
+and shen-scheme are on 43.4. Exact version checks select each adapter's declared kernel. See the [43.2 qualification](docs/ports-43.2.md),
 [Shen/JIT](docs/shen-jit.md) and [matrix gaps](docs/matrix.md#known-port-gaps).
 
 ## Install
@@ -63,6 +62,22 @@ the same normalised string). Details: [docs/matrix.md](docs/matrix.md).
 Your own project: add `bifrost.suite.json` and run `bifrost --suite PATH`.
 See [docs/suites.md](docs/suites.md).
 
+## Agent skills for writing Shen
+
+Coding agents tend to write Lisp or ML in Shen syntax, or hard-code a rule's outputs instead of
+stating the rule. Bifrost carries skills that teach the other way: sequent-calculus types, Prolog,
+typed grammars, and when each pays. Every Shen example in them is typechecked on a real port.
+
+```bash
+bifrost skills list
+bifrost skills install --target claude          # or codex, pi, opencode, all
+bifrost skills install --target codex --project .
+bifrost skills install --target raw --dir DIR   # Markdown only, for any harness
+bifrost skills check --impl shen-jit            # run the skills' examples under (tc +)
+```
+
+See [skills/README.md](skills/README.md).
+
 ## More
 
 | | |
@@ -72,9 +87,10 @@ See [docs/suites.md](docs/suites.md).
 | Corpus and `--shake` | [docs/matrix.md](docs/matrix.md) |
 | Third-party suites | [docs/suites.md](docs/suites.md) |
 | Canonical port tree | [docs/port-layout.md](docs/port-layout.md) |
+| Agent skills | [skills/README.md](skills/README.md) |
 
 [Yggdrasil](https://github.com/pyrex41/yggdrasil) is the companion shaker
 (`bifrost --shake` for stand-alone deploy artifacts). It shakes on kernel 43.2, so
-its stage-1 host is Shen/JIT.
+its stage-1 host is one of the 43.2 ports.
 
 License: Apache-2.0.

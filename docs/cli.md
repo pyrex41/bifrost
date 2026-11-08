@@ -84,3 +84,19 @@ port's story.
 Delegates to Yggdrasil: shake `prog.shen` and emit a stand-alone artifact for
 `--target` (`lisp`, `lua`, `go`, `joy`, `erlang`, `rust`, `js`, `julia`,
 `scheme`, `swift`, `truffle`, `c`, `jit`). `--run` then executes it.
+
+## `bifrost skills`
+
+Agent skills for writing Shen ride in the binary. `list` names them, and `install` writes them
+where a harness looks for skills:
+
+```sh
+bifrost skills install --target claude|codex|pi|opencode|all [--project DIR] [--force] [--dry-run] [SKILL...]
+bifrost skills install --target raw --dir DIR [--force] [SKILL...]
+bifrost skills check [--impl PORT] [--dir DIR] [-v] [SKILL...]
+```
+
+`--project DIR` installs into a project instead of your home directory, and `raw` writes only the
+Markdown files. An installed skill is replaced only with `--force`. `check` typechecks every
+`shen` block in the skills on a port; [skills/README.md](../skills/README.md) has the target
+paths and the block conventions. Listing and installing need no port.

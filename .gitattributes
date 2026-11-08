@@ -1,3 +1,6 @@
 # The EOF reader cases need these files to end WITHOUT a newline, byte for byte
 # (no CRLF or final-newline normalisation on checkout).
 programs/eof-*.txt -text
+
+# The skills are embedded and installed byte for byte: keep them LF everywhere.
+skills/** text eol=lf
