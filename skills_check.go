@@ -10,28 +10,30 @@ import (
 	"strings"
 )
 
-// A skill's Shen examples are checked, not trusted. Every fenced block tagged
-// `shen` in a skill's Markdown is typechecked under (tc +) on a real port. The
-// blocks of one file accumulate, like a literate program, so a later block may
-// use an earlier one's datatypes and functions. Each block is loaded as a file
-// of its own, after the earlier ones: a datatype is compiled when its file is
-// read, so a side condition may only call functions loaded before it. An HTML
-// comment on the line
-// before the fence changes what is expected of the block:
+// A skill's executable Shen examples run on a real port. By default, a fenced
+// block tagged `shen` is loaded under (tc +). The blocks of one Markdown file
+// accumulate, like a literate program, so a later block may use an earlier
+// one's datatypes and functions. Each block is loaded as a file of its own,
+// after the earlier ones. A side condition may use a helper defined earlier in
+// the same block; helpers invoked during read-time macro expansion must already
+// be available then. An HTML comment on the preceding nonblank line changes
+// what is expected of the block:
 //
-//	<!-- reject -->  the checker must refuse it with a type error; it is not
-//	                 kept for later blocks
-//	<!-- skip -->    not checked (a fragment, or another language's syntax)
-//	<!-- fresh -->   checked, but starts the accumulation again
-//	<!-- untyped --> loaded under (tc -), as defprolog and code without
-//	                 signatures must be; later blocks are typechecked again
+//	<!-- reject -->         must fail with a type error; not kept for later blocks
+//	<!-- reject: reason --> must fail with a type error whose first diagnostic
+//	                        line contains reason (a case-sensitive substring)
+//	<!-- skip -->           not checked (a fragment, or another language's syntax)
+//	<!-- fresh -->          checked, but starts the accumulation again
+//	<!-- untyped -->        loaded under (tc -), as defprolog and code without
+//	                        signatures must be; later blocks are typechecked again
 type shenBlock struct {
-	File    string // path of the Markdown file within the skills tree
-	Line    int    // line of the opening fence
-	Mode    string // "accept", "reject" or "skip"
-	Fresh   bool
-	Untyped bool
-	Code    string
+	File         string // path of the Markdown file within the skills tree
+	Line         int    // line of the opening fence
+	Mode         string // "accept", "reject" or "skip"
+	RejectReason string // required diagnostic substring; empty accepts any type error
+	Fresh        bool
+	Untyped      bool
+	Code         string
 }
 
 // extractShenBlocks returns the shen blocks of one Markdown file, in order.
@@ -59,14 +61,23 @@ func extractShenBlocks(file, text string) ([]shenBlock, error) {
 			}
 			if info == "shen" {
 				b := shenBlock{File: file, Line: start, Mode: "accept", Code: strings.Join(body, "\n") + "\n"}
-				switch prev {
-				case "<!-- reject -->":
+				switch {
+				case prev == "<!-- reject -->":
 					b.Mode = "reject"
-				case "<!-- skip -->":
+				case strings.HasPrefix(prev, "<!-- reject:"):
+					if !strings.HasSuffix(prev, "-->") {
+						return nil, fmt.Errorf("%s:%d: reject annotation must end with -->", file, start)
+					}
+					b.Mode = "reject"
+					b.RejectReason = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(prev, "<!-- reject:"), "-->"))
+					if b.RejectReason == "" {
+						return nil, fmt.Errorf("%s:%d: reject annotation requires a non-empty diagnostic substring", file, start)
+					}
+				case prev == "<!-- skip -->":
 					b.Mode = "skip"
-				case "<!-- fresh -->":
+				case prev == "<!-- fresh -->":
 					b.Fresh = true
-				case "<!-- untyped -->":
+				case prev == "<!-- untyped -->":
 					b.Untyped = true
 				}
 				blocks = append(blocks, b)
@@ -182,19 +193,30 @@ func checkExpr(blocks []shenBlock, files []string) string {
 	return b.String()
 }
 
-// judgeCheck reads a port's output for one program.
-func judgeCheck(mode, out string) (bool, string) {
-	if mode == "reject" {
+// judgeCheck checks the process outcome before interpreting its output. A
+// success marker cannot turn a failed invocation into a successful check.
+func judgeCheck(block shenBlock, result runResult) (bool, string) {
+	if result.Timeout {
+		return false, "timed out"
+	}
+	if result.Rc != 0 {
+		return false, fmt.Sprintf("port did not exit successfully (status %d)", result.Rc)
+	}
+	out := result.Out
+	if block.Mode == "reject" {
 		i := strings.Index(out, markRejected)
 		if i < 0 {
 			if strings.Contains(out, markAccepted) {
-				return false, "accepted, but the block is marked <!-- reject -->"
+				return false, "accepted, but the block expects a type error"
 			}
 			return false, "an earlier block of the file did not load"
 		}
 		why := strings.TrimSpace(firstLine(out[i+len(markRejected):]))
 		if !strings.Contains(why, "type error") {
 			return false, "failed, but not with a type error: " + why
+		}
+		if block.RejectReason != "" && !strings.Contains(why, block.RejectReason) {
+			return false, fmt.Sprintf("type error did not contain %q: %s", block.RejectReason, why)
 		}
 		return true, ""
 	}
@@ -269,10 +291,7 @@ func cmdSkillsCheck(rest []string) int {
 		}
 		expr := checkExpr(blocks, files)
 		r := runInvocation(buildArgv(im, aCase{Mode: "eval", Expr: expr}, ""), timeoutDefault, true, "")
-		pass, why := judgeCheck(p.Block.Mode, r.Out)
-		if r.Timeout {
-			pass, why = false, "timed out"
-		}
+		pass, why := judgeCheck(p.Block, r)
 		where := path.Clean(p.Block.File) + fmt.Sprintf(":%d", p.Block.Line)
 		mode := p.Block.Mode
 		if p.Block.Untyped {

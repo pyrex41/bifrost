@@ -117,13 +117,48 @@ func TestExtractShenBlocks(t *testing.T) {
 	}
 }
 
+func TestExtractShenRejectReason(t *testing.T) {
+	cases := []struct {
+		name, annotation, reason, wantErr string
+	}{
+		{"legacy", "<!-- reject -->", "", ""},
+		{"function", "<!-- reject: wrong-unit -->", "wrong-unit", ""},
+		{"diagnostic phrase", "<!-- reject: rule 2 of wrong -->", "rule 2 of wrong", ""},
+		{"literal punctuation", "<!-- reject: valid? -->", "valid?", ""},
+		{"whitespace", "  <!-- reject:   wrong  -->\r", "wrong", ""},
+		{"empty", "<!-- reject: -->", "", "non-empty diagnostic substring"},
+		{"unclosed", "<!-- reject: wrong", "", "must end with -->"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			md := c.annotation + "\n\n```shen\n(define wrong {number --> string} X -> X)\n```\n"
+			blocks, err := extractShenBlocks("x.md", md)
+			if c.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), "x.md:3:") || !strings.Contains(err.Error(), c.wantErr) {
+					t.Fatalf("error = %v, want x.md:3 and %q", err, c.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(blocks) != 1 || blocks[0].Mode != "reject" || blocks[0].RejectReason != c.reason {
+				t.Fatalf("blocks = %+v, want one reject with reason %q", blocks, c.reason)
+			}
+		})
+	}
+}
+
 func TestSkillProgramsAccumulate(t *testing.T) {
 	fsys := fstest.MapFS{
-		"s/SKILL.md": {Data: []byte("---\nname: s\n---\n```shen\nA\n```\n<!-- reject -->\n```shen\nB\n```\n```shen\nC\n```\n<!-- fresh -->\n```shen\nD\n```\n")},
+		"s/SKILL.md": {Data: []byte("---\nname: s\n---\n```shen\nA\n```\n<!-- reject: broken -->\n```shen\nB\n```\n```shen\nC\n```\n<!-- fresh -->\n```shen\nD\n```\n")},
 	}
 	progs, err := skillPrograms(fsys, []string{"s"})
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(progs) != 4 {
+		t.Fatalf("got %d programs, want 4", len(progs))
 	}
 	got := []string{}
 	for _, p := range progs {
@@ -136,23 +171,64 @@ func TestSkillProgramsAccumulate(t *testing.T) {
 	if strings.Join(got, ",") != "A,AB,AC,D" {
 		t.Errorf("programs %v, want A,AB,AC,D", got)
 	}
+	if progs[1].Block.RejectReason != "broken" {
+		t.Errorf("reject reason = %q, want broken", progs[1].Block.RejectReason)
+	}
 }
 
 func TestJudgeCheck(t *testing.T) {
 	cases := []struct {
-		mode, out string
-		pass      bool
+		name, mode, reason, out string
+		pass                    bool
+		wantWhy                 string
 	}{
-		{"accept", "x\n" + markOK + "\n", true},
-		{"accept", "type error in rule 1 of f\n", false},
-		{"reject", markRejected + " type error in rule 1 of f\n", true},
-		{"reject", markRejected + " f is undefined\n", false},
-		{"reject", markAccepted + "\n", false},
-		{"reject", "type error\n", false},
+		{"accept", "accept", "", "x\n" + markOK + "\n", true, ""},
+		{"missing success marker", "accept", "", "type error in rule 1 of f\n", false, "did not load"},
+		{"generic rejection", "reject", "", markRejected + " type error in rule 1 of f\n", true, ""},
+		{"named rejection", "reject", "wrong", markRejected + " type error in rule 1 of wrong\n", true, ""},
+		{"diagnostic substring", "reject", "rule 2 of wrong", markRejected + " type error in rule 2 of wrong\n", true, ""},
+		{"different failure", "reject", "wrong", markRejected + " type error in rule 1 of unrelated\n", false, "did not contain \"wrong\""},
+		{"not a type error", "reject", "wrong", markRejected + " wrong is undefined\n", false, "not with a type error"},
+		{"reason before diagnostic", "reject", "wrong", "(fn wrong)\n" + markRejected + " type error in rule 1 of unrelated\n", false, "did not contain \"wrong\""},
+		{"reason after diagnostic", "reject", "wrong", markRejected + " type error in rule 1 of unrelated\nwrong\n", false, "did not contain \"wrong\""},
+		{"literal match", "reject", "valid?", markRejected + " type error in rule 1 of valid?\n", true, ""},
+		{"not a regular expression", "reject", "valid?", markRejected + " type error in rule 1 of valid\n", false, "did not contain \"valid?\""},
+		{"case sensitive", "reject", "Wrong", markRejected + " type error in rule 1 of wrong\n", false, "did not contain \"Wrong\""},
+		{"unexpected acceptance", "reject", "wrong", markAccepted + "\n", false, "accepted"},
+		{"earlier failure", "reject", "", "type error\n", false, "an earlier block"},
 	}
 	for _, c := range cases {
-		if pass, _ := judgeCheck(c.mode, c.out); pass != c.pass {
-			t.Errorf("judgeCheck(%s, %q) = %v", c.mode, c.out, pass)
+		t.Run(c.name, func(t *testing.T) {
+			block := shenBlock{Mode: c.mode, RejectReason: c.reason}
+			pass, why := judgeCheck(block, runResult{Out: c.out})
+			if pass != c.pass || (pass && why != "") || !strings.Contains(why, c.wantWhy) {
+				t.Errorf("judgeCheck(%+v, %q) = (%v, %q), want (%v, %q)", block, c.out, pass, why, c.pass, c.wantWhy)
+			}
+		})
+	}
+}
+
+func TestJudgeCheckRequiresSuccessfulInvocation(t *testing.T) {
+	for _, mode := range []string{"accept", "reject"} {
+		// Both forms of success marker must be ignored after a failed process.
+		out := markOK + "\n" + markRejected + " type error in rule 1 of wrong\n"
+		for _, c := range []struct {
+			name    string
+			rc      int
+			timeout bool
+			wantWhy string
+		}{
+			{"nonzero exit", 7, false, "status 7"},
+			{"unknown exit", -1, false, "status -1"},
+			{"timeout", -1, true, "timed out"},
+		} {
+			t.Run(mode+"/"+c.name, func(t *testing.T) {
+				block := shenBlock{Mode: mode, RejectReason: "wrong"}
+				result := runResult{Rc: c.rc, Out: out, Timeout: c.timeout}
+				if pass, why := judgeCheck(block, result); pass || !strings.Contains(why, c.wantWhy) {
+					t.Errorf("judgeCheck(%+v, %+v) = (%v, %q), want failure containing %q", block, result, pass, why, c.wantWhy)
+				}
+			})
 		}
 	}
 }
