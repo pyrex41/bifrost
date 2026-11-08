@@ -12,9 +12,8 @@ would, then diffs stdout.
 The official kernel suites stay in each port. Bifrost asks a different
 question: **do the ports agree?**
 
-The maintained adapters target ShenOSKernel 43.2, including
-[Shen/JIT](https://github.com/tizoc/shen-jit). Exact version checks select each
-adapter's declared kernel. See the [43.2 qualification](docs/ports-43.2.md),
+The maintained adapters target ShenOSKernel 43.2; [Shen/JIT](https://github.com/tizoc/shen-jit)
+and shen-scheme are on 43.4. Exact version checks select each adapter's declared kernel. See the [43.2 qualification](docs/ports-43.2.md),
 [Shen/JIT](docs/shen-jit.md) and [matrix gaps](docs/matrix.md#known-port-gaps).
 
 ## Install
@@ -92,6 +91,6 @@ See [skills/README.md](skills/README.md).
 
 [Yggdrasil](https://github.com/pyrex41/yggdrasil) is the companion shaker
 (`bifrost --shake` for stand-alone deploy artifacts). It shakes on kernel 43.2, so
-its stage-1 host is Shen/JIT.
+its stage-1 host is one of the 43.2 ports.
 
 License: Apache-2.0.

@@ -40,8 +40,8 @@ jobs:
   shen-jit:
     runs-on: ubuntu-24.04
     env:
-      SHEN_JIT_VERSION: "0.2"
-      SHEN_JIT_SHA256: 0ff86d97a86634b3244c154ac1862d4c7a1575d663c618edc80f10b65cfb6937
+      SHEN_JIT_VERSION: "0.5"
+      SHEN_JIT_SHA256: a22e578769b68a5ea2a7c247667cb455c6fc1ab0741c7e9b880e878c6abd230a
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

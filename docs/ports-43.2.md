@@ -28,7 +28,7 @@ prints `0.30000000000000004`. It stays a FAIL until shen-c's float printing is f
 
 | Adapter | Release | Commit |
 |---|---|---|
-| shen-jit | v0.2 | `109f347` |
+| shen-jit | v0.2, since moved to v0.5 on kernel 43.4 | `109f347` |
 | shen-cl | v3.2.1 | `120f387` |
 | shen-go | v1.6.0 | `7509c6b` |
 | shen-lua | v0.12.0 | `912596b` |
