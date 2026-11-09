@@ -92,7 +92,8 @@ Defaults assume sibling checkouts. Override with a project `adapters.json` or
 5. `bifrost install shen-jit` (git-build of v0.5 on kernel 43.4, pinned by commit; `make` + C
    compiler + `curl` + `tar`). A release archive's `shen-jit` is one file: `$BIFROST_SHEN_JIT`
    can point at it instead. It needs nothing from the steps above. It is also Yggdrasil's
-   stage-1 host, as Yggdrasil shakes on kernel 43.4 from its v0.2.0.
+   default stage-1 host; Yggdrasil shakes on kernel 43.4, so any port from steps 1 to 4 can
+   host it too.
 
 Forks: point `$BIFROST_SHEN_CL` at a built binary, or
 `bifrost install shen-cl --git URL --ref BRANCH`.

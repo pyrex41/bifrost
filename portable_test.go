@@ -163,7 +163,7 @@ func TestShenTruffleAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Env != "BIFROST_SHEN_TRUFFLE" || cfg.Kernel != "43.2" || cfg.Status != "production" {
+	if cfg.Env != "BIFROST_SHEN_TRUFFLE" || cfg.Kernel != "43.4" || cfg.Status != "production" {
 		t.Fatalf("unexpected shen-truffle adapter: %#v", cfg)
 	}
 	got := buildArgv(Impl{Name: "shen-truffle", Cfg: cfg, Bin: "/tmp/shen-truffle"}, aCase{Mode: "eval", Expr: "(+ 1 2)"}, "")
@@ -253,7 +253,7 @@ func TestShenCAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Env != "BIFROST_SHEN_C" || cfg.Status != "experimental" || cfg.Kernel != "43.2" {
+	if cfg.Env != "BIFROST_SHEN_C" || cfg.Status != "experimental" || cfg.Kernel != "43.4" {
 		t.Fatalf("unexpected shen-c adapter: %#v", cfg)
 	}
 	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-c/bin/shen-c" {
@@ -281,7 +281,7 @@ func TestShenCAdapter(t *testing.T) {
 	if !reflect.DeepEqual(replGot, replWant) {
 		t.Fatalf("shen-c repl argv = %v, want %v", replGot, replWant)
 	}
-	if cfg.Install == nil || cfg.Install.Ref != "b7ebcea76ff8a850e320fc7d172140aeea2d3221" || strings.Contains(strings.Join(cfg.Install.Needs, " "), "pkg-config") {
+	if cfg.Install == nil || cfg.Install.Ref != "9c6de31a1ccb7201abc7c05f4b7985de1cae937e" || strings.Contains(strings.Join(cfg.Install.Needs, " "), "pkg-config") {
 		t.Fatalf("unexpected native RC install recipe: %#v", cfg.Install)
 	}
 	found := false
