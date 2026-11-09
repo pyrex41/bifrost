@@ -3,8 +3,8 @@
 The maintained adapters declare community ShenOSKernel 43.2:
 `Shen-Language/shen-sources`, tag `shen-43.2`, commit `e6947f507`. Shen-joy declares
 `bounded-43.2-subset`, as it does not execute a full kernel. Shen-scheme has since moved to
-43.4 with upstream 0.54, so it runs the 43.4 version cases and is not a host in
-`yggdrasil-shake-parity`, whose shaker requires 43.2. The result below predates that. The older
+43.4 with upstream 0.54, and Yggdrasil to 43.4 in its v0.2.0, so `yggdrasil-shake-parity`
+now runs on the 43.4 hosts, Shen/JIT and shen-scheme. The result below predates both. The older
 [43.1 record](ports-43.1.md) is kept for that kernel.
 
 ## Result

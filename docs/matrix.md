@@ -53,7 +53,8 @@ executed rows, skips and known divergences. Historical
 - Closed divergences (now asserted): `float-formatting`, `int-div-zero`,
   `hush-file-write`, `load-toplevel-echo`.
 - Documented divergences: integers above 2^53 and 2^63 (see below).
-- `--heavy`: `(yggdrasil.shake ["tests/fib.shen"] OUT)` on every host; the
+- `--heavy`: `(yggdrasil.shake ["tests/fib.shen"] OUT)` on every host on
+  Yggdrasil's kernel (43.4: Shen/JIT and shen-scheme); the
   produced `kernel.kl` + `yggdrasil.manifest` must be byte-identical. User KL
   differs by gensym and is not asserted.
 
