@@ -90,7 +90,7 @@ See [skills/README.md](skills/README.md).
 | Agent skills | [skills/README.md](skills/README.md) |
 
 [Yggdrasil](https://github.com/pyrex41/yggdrasil) is the companion shaker
-(`bifrost --shake` for stand-alone deploy artifacts). It shakes on kernel 43.2, so
-its stage-1 host is one of the 43.2 ports.
+(`bifrost --shake` for stand-alone deploy artifacts). It shakes on kernel 43.4, with
+Shen/JIT as its stage-1 host; the 43.2 ports are build targets.
 
 License: Apache-2.0.
