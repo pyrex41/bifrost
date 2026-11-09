@@ -21,13 +21,14 @@ bifrost build prog.shen out/ --target jit --run
 `bifrost --shake` and `bifrost build` go through Yggdrasil. From its v0.2.0, Yggdrasil's
 kernel is 43.4 and Shen/JIT v0.5 is its default stage-1 host; the shaker refuses a host
 on any other kernel. The `--heavy` `yggdrasil-shake-parity` case therefore runs on the
-adapters declaring 43.4, Shen/JIT and shen-scheme. A program that redefines a function
+adapters declaring 43.4, which since the 43.4 port releases is every full port. A program that redefines a function
 is a capability SKIP on `jit`, as is `--shake` on a machine with no 43.4 host.
 
 ## Results
 
-The [43.2 qualification](ports-43.2.md) has the run across every port, made on v0.2. CI
+The [43.4 qualification](ports-43.4.md) has the run across every port, made on v0.5. CI
 builds v0.5 from its source tarball and runs the corpus and the agent skills' examples on
 it, on Ubuntu 24.04. On 2026-11-09, on macOS arm64 with Yggdrasil v0.2.0,
-`yggdrasil-shake-parity` was byte-identical on Shen/JIT and shen-scheme, and `--shake`
+`yggdrasil-shake-parity` was byte-identical on Shen/JIT and shen-scheme, before the other
+ports moved to 43.4, and `--shake`
 passed on the `jit` and `go` targets.

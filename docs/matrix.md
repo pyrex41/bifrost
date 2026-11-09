@@ -19,17 +19,17 @@ host; every other tracked difference is a hard agreement.
 
 ## Kernel
 
-The maintained adapters target community **ShenOSKernel 43.2**
-(`Shen-Language/shen-sources` tag `shen-43.2`, commit `e6947f507`), adopted
+The maintained adapters target community **ShenOSKernel 43.4**
+(`Shen-Language/shen-sources` tag `shen-43.4`, commit `f34b307b`), adopted
 wholesale. The bounded Joy target follows that semantic baseline through a
-pinned Shen CL 3.2.0 differential reference; it does not execute a full kernel.
+pinned Shen CL 3.3.0 differential reference; it does not execute a full kernel.
 
-The experimental Shen-C adapter pins v0.5.0, on the same kernel. It uses a native
+The experimental Shen-C adapter pins v0.6.0, on the same kernel. It uses a native
 compiled kernel, prepared/interpreted loaded code and an independent RC runtime.
-Exact version cases are kernel-specific. Old 42.2 checks remain available for
-adapters explicitly configured with that kernel, and skip when none match.
+Exact version cases are kernel-specific. Older checks (42.2, 43.1, 43.2) remain available for
+adapters explicitly configured with those kernels, and skip when none match.
 
-[43.2 integration qualification](ports-43.2.md) records the exact tested refs,
+[43.4 integration qualification](ports-43.4.md) records the exact tested refs,
 executed rows, skips and known divergences. Historical
 [Shen-C evidence](shen-c-rc-20261018.md) is retained separately.
 
@@ -44,7 +44,7 @@ executed rows, skips and known divergences. Historical
   `@p`/`vector`, `put`/`get` on `*property-vector*`, freeze captured by a
   lambda, trap-error whose *operand* raises, the `(head [])` error message.
 - CLI: `eval -e` prints the value; the configured version probe returns the
-  adapter's declared kernel (**43.2**). Shen-C's raw
+  adapter's declared kernel (**43.4**). Shen-C's raw
   `--version` identifies its port release, so its probe uses `(version)`.
   stdin-EOF exits cleanly.
 - 42.1/42.2 behaviour (`cases/kernel-42.json`): `read` and `lineread` on a
@@ -54,7 +54,7 @@ executed rows, skips and known divergences. Historical
   `hush-file-write`, `load-toplevel-echo`.
 - Documented divergences: integers above 2^53 and 2^63 (see below).
 - `--heavy`: `(yggdrasil.shake ["tests/fib.shen"] OUT)` on every host on
-  Yggdrasil's kernel (43.4: Shen/JIT and shen-scheme); the
+  Yggdrasil's kernel (43.4, now every full port); the
   produced `kernel.kl` + `yggdrasil.manifest` must be byte-identical. User KL
   differs by gensym and is not asserted.
 
