@@ -55,8 +55,15 @@ shen-go's pin has since moved to v1.8.0 (`4b91705`). On 2026-11-09, `--heavy` wi
 Shen/JIT gave 77 PASS and the same two known divergences, and the shake was byte-identical
 (md5 `4cff4a2a` and `d27cc480`).
 
-shen-rust, shen-swift and shen-truffle were run at their merged 43.4 commits. They cut no
+shen-swift and shen-truffle were run at their merged 43.4 commits. They cut no
 releases, and their adapters build the default branch.
+
+shen-rust was run the same way, then pinned to v0.1.1 (`a653699`). `(port)` and
+`(release)` report `0.1.1`; `*version*` stays `43.4`. The build recipe is unchanged:
+`cargo build --release --bin shen-rust` with default features (`cedar`, `kernel-aot`,
+`interpreter`). On 2026-11-10, Linux x86_64, that release binary passed the corpus
+alone: 77 PASS and the known `hush-file-write` divergence, with shen-rust still in
+the `written` bucket. `bifrost impls --versions` reports kernel `43.4`.
 
 shen-cl's v3.3.0 has no Windows archive, as its 64MB stack default does not take effect
 there. Its macOS arm64 archive was built from the tag outside CI, as GitHub had no macOS
