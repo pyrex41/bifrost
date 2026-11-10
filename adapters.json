@@ -109,10 +109,10 @@
     "install": {
       "method": "git-build",
       "git": "https://github.com/pyrex41/shen-go",
-      "ref": "b50c3011c1f624cba75c1f48dd3741ee4f09d3fb",
+      "ref": "4b9170562518f22f30924467b2390349091462dc",
       "needs": ["git", "go"]
     },
-    "_install_note": "git-build pins release v1.7.0 (ShenOSKernel 43.4) by its commit. Use --ref master to track the fork default branch."
+    "_install_note": "git-build pins release v1.8.0 (ShenOSKernel 43.4) by its commit. Use --ref master to track the fork default branch."
   },
 
   "shen-joy": {
