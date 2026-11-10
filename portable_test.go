@@ -206,6 +206,40 @@ func TestDefaultSuiteCwdIsCheckout(t *testing.T) {
 	}
 }
 
+func TestShenRustAdapter(t *testing.T) {
+	if targetToImpl["rust"] != "shen-rust" {
+		t.Fatalf("rust shake target maps to %q", targetToImpl["rust"])
+	}
+	a, err := loadAdapters()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := a.effectiveForPlatform("shen-rust", "linux")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Env != "BIFROST_SHEN_RUST" || cfg.Kernel != "43.4" || cfg.Status != "production" {
+		t.Fatalf("unexpected shen-rust adapter: %#v", cfg)
+	}
+	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-rust/target/release/shen-rust" {
+		t.Fatalf("shen-rust default_paths = %v", cfg.DefaultPaths)
+	}
+	if cfg.Build == nil || !reflect.DeepEqual(cfg.Build.Argv, []string{"cargo", "build", "--release", "--bin", "shen-rust"}) {
+		t.Fatalf("shen-rust build must keep default features, argv = %#v", cfg.Build)
+	}
+	for _, argv := range [][]string{cfg.Eval, cfg.Script, cfg.Repl} {
+		for _, arg := range argv {
+			if arg == "-q" {
+				t.Fatalf("shen-rust argv %v passes -q", argv)
+			}
+		}
+	}
+	if cfg.Install == nil || cfg.Install.Method != "git-build" || cfg.Install.Ref != "v0.1.1" ||
+		cfg.Install.Git != "https://github.com/pyrex41/shen-rust" {
+		t.Fatalf("unexpected shen-rust install: %#v", cfg.Install)
+	}
+}
+
 func TestShenJitAdapter(t *testing.T) {
 	if targetToImpl["jit"] != "shen-jit" {
 		t.Fatalf("jit shake target maps to %q", targetToImpl["jit"])
