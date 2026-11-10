@@ -201,6 +201,32 @@ both construction and decomposition, and the representation functions themselves
      [20 10 20]))
 ```
 
+### Composition preserving the index
+
+**Problem and judgment:** transform the top element without changing a nonempty history's length.
+Given `F : A --> A` and `S : (list-stack A [succ N])`, establish that the result has the same
+index. The signature supplies the nonempty hypothesis; the `ls-top` and `ls-pop` signatures apply
+because that hypothesis has a successor. Their results provide `A` for `F` and a predecessor stack
+at index `N`. Function application yields another `A`; the checked `ls-push` signature then
+reconstructs the successor. Each premise comes from the caller's hypothesis or a checked operation,
+not merely from the desired conclusion.
+
+```shen
+(define ls-map-top
+  {(A --> A) --> (list-stack A [succ N]) --> (list-stack A [succ N])}
+  F S -> (ls-push (F (ls-top S)) (ls-pop S)))
+
+(stack-check "transformed stack retains history"
+  (= (let S (ls-push 20 (ls-push 10 (ls-empty)))
+          M (ls-map-top (+ 1) S)
+       [(ls-top M) (ls-top (ls-pop M)) (ls-top S)])
+     [21 10 20]))
+```
+
+The index checks shape, not that `F` preserves order, is pure, or obeys any semantic law. The
+behavioral assertion exercises one instance; it is not a proof of transformation laws. Calls to `F` may have
+effects or fail. The reasoning assumes the active datatype rules and checked definitions shown here.
+
 The checker rejects a body that claims to increase the length while returning its input unchanged:
 
 <!-- reject: ls-broken-push -->
@@ -217,6 +243,13 @@ It also rejects invalid clients of the checked representation:
 (define ls-top-empty
   {--> number}
   -> (ls-top (ls-empty)))
+```
+
+<!-- reject: ls-top-after-pop -->
+```shen
+(define ls-top-after-pop
+  {--> number}
+  -> (ls-top (ls-pop (ls-push 10 (ls-empty)))))
 ```
 
 <!-- reject: ls-mixed-elements -->

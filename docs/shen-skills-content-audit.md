@@ -1,0 +1,46 @@
+# Shen skill content audit
+
+Scope: the four Shen skills and their linked references in the candidate cherry-pick on refreshed main. This is a content ledger, not a proof of the checker, the language implementation, or agent transfer. `6b04a83` is not an ancestor of this checkout (`183e71e`); the candidate was cherry-picked, and `git diff --stat 6b04a83 HEAD` showed only upstream files outside the owned skills. The historical 57-block report is not used as evidence. The original pasted review was not found under `/tmp/bifrost-skills-drive`; this ledger covers the corrections in the agreed plan.
+
+## Corrections and executable coverage
+
+“Existing” means already present in the candidate; “added” means this workstream. Executable cases are observations under the active rules and tested runtimes, not universal proofs. Unless noted, paths below are under `skills/`.
+
+| Claim / requested correction | Disposition, location, and evidence |
+|---|---|
+| Quantity units are restricted, not Shen's opaque `unit` | Existing: `shen-types/references/refinements.md`, `scale` with `kg` and named rejection `unknown-measure`; the `measure-unit` side condition is a trusted restriction on syntax, not a runtime test of arbitrary values. |
+| Same-file predicate can be called by later side condition | Existing: `pos?`, `pos`, `double-pos` in refinements execute in file order. This is an observation of this load order, not all macro/read phases. |
+| Heterogeneous and nested tokens | Existing: `typed-grammars.md`, `nested-tokens` assertion, plus parser positive and negative cases. The parser consumes flat tokens, not those nested lists. |
+| Guard without unnecessary refinement; separate evidence for narrowing | Existing: refinements `<digit>`; `unrefined-if` rejection then `pos-or-one` and `<move>` assertions under explicit trusted rules. |
+| Symbols versus callable functions | Existing: refinements `calculate-op` and closure named-function examples. The operator-pattern limitation is scoped to tested patterns; the function typing rule is trusted. No universal claim about all patterns. |
+| Abstract storage and equality | Existing: `invariants-and-abstraction.md` `retain-bag`, `peek-bag` rejection; added `bag-order-observation`, equal sizes but distinct representations. This does not implement or prove multiset equality. |
+| Invalid generation budgets | Existing: `bounded-generation.md` valid generation, negative/fractional error assertions; decreasing depth is checked, and helpers assume validated inputs. |
+| Empty productions | Existing: generator epsilon prefix, suffix, whole production, empty string terminal assertions. Result explosion and duplicate derivations remain possible. |
+| Cyclic Prolog | Existing: `prolog-search.md` `loop-a` simple-path assertion; finite graph and ground course assumptions; this is not unrestricted cyclic transitive closure. |
+| Isolated courses | Existing: `art100` eligible and no-prerequisites assertions, catalog separated from edges. |
+| Ground negation | Existing: `ada-eligible?` grounds courses and prerequisite before negation; the untyped nonground query shows failure-to-prove is not complement enumeration. Closed-world interpretation is an assumption. |
+| Vocabulary extension | Existing: generator `new drink alternative` adds water in source production and asserts the generated result without derived-answer edits. This covers one finite extension, not general completeness or a separate type-level lexicon. |
+| Universal inference-overhead figure | Existing: refinements requests measurement rather than asserting a universal percentage; no benchmark claim. |
+| Genuine union versus tagged alternatives | Existing: `proof-search.md` unwrapped mixed union, `bump-union` rejection, tagged `either->string`; mode limits search, not a semantic negation. |
+| Invariants and trusted boundaries | Existing: `shen-types` workflow, refinements, abstraction and stacks distinguish concrete rules, trusted axioms, checked clients, behavior, and effects. `ls-broken-push`, `raw-bag-update`, and `peek-bag` reject intended clients. |
+| Design progression and recipe structure | Existing entry workflows and review checklist; added explicit problem → judgment → assumptions → rules → implementation → evidence → limitations in `shen-thinking/SKILL.md`. This is a review method, not an executable claim. |
+| Worked derivation and checked composition | Added `indexed-stacks.md` `ls-map-top`: premise availability is traced from the signature and checked operation signatures. Assertion combines push, transform and top/pop. This deliberately preserves a nonempty stack's length and transforms only its top; it is not a general length-indexed recursive map. The index does not establish provenance, order, purity or equations. |
+| Closure state, aliasing, preparation and replay | Existing: `closures-and-state.md` independent factories, alias sharing, explicit replay and stack persistence assertions. Added `snapshot-adder` vs `fresh-adder` assertion demonstrates construction versus invocation timing on a mutable vector. Replay depends on stable inputs and dependencies; function types do not guarantee it. |
+| Stack negative and behavioral checks | Existing: closure empty top/pop, top after pop, wrong element; concrete list empty top, broken push, wrong element; persistence and paired observations. Added `ls-top-after-pop`. These are named intended-definition rejections under the active theories, not proofs of stack laws. |
+| Search, parser, macro operational contracts | Existing: `prolog-search.md`, `typed-grammars.md`, `bounded-generation.md`, `macros-and-loading.md` document modes/cycles, complete consumption/backtracking/progress, finite budgets and expansion/loading/binding/evaluation concerns. Parsing has executable success and rejection cases; macro examples intentionally use untyped helper boundaries. |
+| Concise entry skills and correct check invocation | Existing linked entries and review checklist retained. Broadened the `shen-types/SKILL.md` checker invocation to check all skills. Independent review confirmed that the previous positional selector is supported; the initial rationale for this edit was mistaken. |
+
+## Source checks and unresolved citations
+
+The online fifth-edition index identifies the edition. The book's HTML pages embed scanned JPEGs; fetch the images, not just HTML headings. Visually checked: [19.6 Dynamic Type Checking](https://shenlanguage.org/TBoS/249.html), [21.4 Algebraic Simplification](https://shenlanguage.org/TBoS/282.html), [22.2 Parsing Bytes to Numbers](https://shenlanguage.org/TBoS/293.html), [25.6 Shen Prolog](https://shenlanguage.org/TBoS/364.html). [p.254 of the union discussion](https://shenlanguage.org/TBoS/268.html) shows union rules and looping but does not itself display the section heading; the cited heading and subsequent page were not independently verified in this initial pass. Subsequent independent SOL review checked pp.253–255, corrected the link to `267.html` and confirmed the full heading “Controlling Infinite Loops: Mode Declarations”; see [the consolidated audit](shen-skills-audit.md). Other existing chapter, ShenDoc, Let Over Lambda and numbered-program citations have **not** been fully checked against their displayed text; program filenames alone are not evidence of the online edition's headings. No inference benchmark was performed.
+
+## Runtime and commands
+
+Inspected `adapters.json` and sibling launcher versions; the local default `../shen-jit/build/shen-jit` reports 43.4/native 0.5, but its checkout is `b7f68e2` (20 commits after v0.5), so that run is not treated as proof of the pinned release. Downloaded the official v0.5 macOS arm64 release and `SHA256SUMS` from `https://github.com/tizoc/shen-jit/releases/tag/v0.5`; `shasum -a 256` matched `d57506408c96bc400e06e4daaab16bbbfb5efe9dca667b674366c4db7b4ac7a6`. The adapter pins v0.5 source commit `246e4f9046ae6fdcfee6eb071827577c350ae7c5`; the official binary reports kernel 43.4/native 0.5.
+
+- `BIFROST_SHEN_JIT=/tmp/bifrost-skills-drive/jit-v05/shen-jit-0.5-macos-arm64/shen-jit go run . skills check --impl shen-jit --dir skills`: 61 blocks, 0 failed, including the bag equality observation.
+- `go run . skills check --impl shen-cl --dir skills`: 61 blocks, 0 failed with sibling `shen-cl` 43.1 / Common Lisp 3.2.0 / SBCL 2.6.7; it is a portability observation, not a 43.4 run.
+- `go test ./...` and `go vet ./...` failed while the other workstream was editing `skills_test.go`: imports `bytes`, `fmt`, and `time` were temporarily unused. These are not content-example failures; rerun after integration.
+- An exploratory recursive `ls-map` failed typechecking under the initial indexed encoding; it was replaced with the checked nonempty `ls-map-top`, not presented as a successful general map. Earlier exploratory failure was followed by the successful 60-block runs above.
+
+The checker is concurrently owned and being modified by another workstream; rerun the final suite after integration. Runtime observations do not establish soundness of the active datatype axioms, full correctness of examples, or portability across all ports. Held-out comparative agent trials are owned by the overall evaluation workstream and are not claimed here.

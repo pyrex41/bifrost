@@ -91,7 +91,7 @@ Keep the counterexample focused on the claimed contract:
 
 Each reference is a separate runnable sequence; its blocks build on earlier accepted blocks in that
 file. Blocks marked `reject: NAME` must fail at the named definition. An `untyped` block identifies
-an intentional implementation boundary. Run `bifrost skills check --dir skills shen-types` to validate
+an intentional implementation boundary. Run `bifrost skills check --dir skills --impl shen-jit` to validate
 these conventions and examples.
 
 Use typed `head`/`tail` rather than untyped `hd`/`tl`. Load `defprolog` through an explicit untyped
@@ -102,6 +102,7 @@ common element type instead of assuming every element must have the same primiti
 ## Sources
 
 Use [*The Book of Shen*, fifth edition](https://shenlanguage.org/TBoS/index.html), especially
-chapters 19–22, for the type rules and their operational interpretation. The downloadable program
-filenames retain some older section labels; follow the linked section title when comparing editions.
-Consult the pinned kernel's `types.shen`, `sequent.shen`, and `t-star.shen` for version-specific behavior.
+chapters 19–22, for the type rules and their operational interpretation. Identify sources by displayed
+section title and exact URL; a companion program's numbered filename alone does not establish the
+prose section or edition. Consult the pinned kernel's `types.shen`, `sequent.shen`, and `t-star.shen`
+for version-specific behavior.

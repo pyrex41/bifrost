@@ -107,6 +107,22 @@ The following implementation uses lists, but publishes only the abstract interfa
     (simple-error "abstract bag storage changed"))
 ```
 
+The next observation separates representation equality from a possible bag interpretation: the
+same two elements inserted in opposite order have equal size but unequal list representations. A real
+semantic bag equality must also account for multiplicity; equal size alone is not enough.
+
+```shen
+(define bag-order-observation
+  {--> boolean}
+  -> (let AB (bag-add a (bag-of b))
+          BA (bag-add b (bag-of a))
+       (and (= (bag-size AB) (bag-size BA)) (not (= AB BA)))))
+
+(if (bag-order-observation)
+    true
+    (simple-error "bag representation equality observation changed"))
+```
+
 An abstract value can be stored and passed through polymorphic code. It is the representation-specific
 operation that is unavailable without a suitable rule:
 

@@ -93,6 +93,30 @@ is invoked. Here the input list is reduced to one offset before the reusable fun
 For these immutable numeric inputs both yield the same answers. The placement decides which work is
 done, when it is done, and what is retained. Do not infer a speedup without measuring the relevant port.
 
+The timing difference is observable when the source is mutable. The prepared closure snapshots the
+cell at construction; the other closure reads it at each invocation:
+
+```shen
+(define snapshot-adder
+  {(vector number) --> (number --> number)}
+  Cell -> (let Offset (<-vector Cell 1) (/. X (+ Offset X))))
+
+(define fresh-adder
+  {(vector number) --> (number --> number)}
+  Cell -> (/. X (+ (<-vector Cell 1) X)))
+
+(closure-check "construction versus invocation"
+  (= (let Cell (vector 1)
+          Init (vector-> Cell 1 2)
+          Snapshot (snapshot-adder Cell)
+          Fresh (fresh-adder Cell)
+          Before (Fresh 1)
+          Write (vector-> Cell 1 7)
+       [(Snapshot 1) Before (Fresh 1)])
+     [3 3 8]))
+```
+
+This is an observation of one deliberately mutable dependency, not a general performance claim.
 Before moving preparation across a lambda, check whether it reads mutable state, performs I/O, allocates
 storage callers should not share, or must observe fresh configuration. Capturing a vector retains access
 to that vector; it does not copy or freeze it. A retained policy also does not freeze every global

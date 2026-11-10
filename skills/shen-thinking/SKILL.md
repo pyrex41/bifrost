@@ -16,6 +16,11 @@ policy and consistency checks are explicit; a table can also be the specificatio
 
 ## Workflow
 
+For a substantial recipe, record **problem → judgment → assumptions → rules → implementation →
+evidence → limitations**. A judgment states exactly what the active rules should establish; the
+assumptions include data shape, effects, trusted declarations and runtime. Tests and typechecking
+answer different questions, and neither alone proves termination or all intended laws.
+
 1. **State the operations and laws.** What are the inputs, outputs, legal operations and expected
    equations? Separate output validity from completeness, uniqueness, termination and resource bounds.
    For a stack, start with `top(push(x, s)) = x` and `pop(push(x, s)) = s`.

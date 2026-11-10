@@ -104,6 +104,6 @@ active port. Apply `shen-review` before reporting the resulting program as compl
 
 The [online fifth edition of *The Book of Shen*](https://shenlanguage.org/TBoS/index.html) develops
 macros/packages in Chapter 10, parser execution in Chapter 13, typed grammars in Chapter 22, and
-interpreters/Prolog in Chapters 24–27. Each reference links the relevant prose and programs. Some
-downloaded program filenames retain older section numbers; cite section titles and exact URLs when
-edition numbering differs.
+interpreters/Prolog in Chapters 24–27. Each reference links the relevant prose and programs. Cite
+displayed section titles and exact URLs; a companion program's numbered filename alone does not
+establish the prose section or edition.

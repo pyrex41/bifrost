@@ -66,7 +66,8 @@ See [docs/suites.md](docs/suites.md).
 
 Coding agents tend to write Lisp or ML in Shen syntax, or hard-code a rule's outputs instead of
 stating the rule. Bifrost carries skills that teach the other way: sequent-calculus types, Prolog,
-typed grammars, and when each pays. Every Shen example in them is typechecked on a real port.
+typed grammars, and when each pays. Executable examples are checked on a real port, with explicit
+untyped boundaries and behavioral assertions where typechecking alone is insufficient.
 
 ```bash
 bifrost skills list

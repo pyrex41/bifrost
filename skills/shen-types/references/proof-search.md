@@ -62,8 +62,8 @@ can. Supply the intended type in a signature, as `mixed-values` does, or with an
 Do not expect the checker to invent this union when inferring an unannotated mixed list. Positive
 mode restores unification within its scope; the innermost declaration takes priority.
 
-Source: TBoS [§20.7, Mode Declarations](https://shenlanguage.org/TBoS/268.html), especially
-[p.255](https://shenlanguage.org/TBoS/269.html), and its
+Source: TBoS [§20.7, Controlling Infinite Loops: Mode Declarations](https://shenlanguage.org/TBoS/267.html),
+especially [p.255](https://shenlanguage.org/TBoS/269.html), and its
 [union program](https://shenlanguage.org/TBoS/Programs/20.7.txt). The longer
 [official set example](https://shenlanguage.org/OSM/Sets.html) combines modes, intersection types,
 `(without X)`, and guarded membership to check a relational invariant.

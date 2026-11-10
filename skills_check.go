@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -21,7 +22,7 @@ import (
 //
 //	<!-- reject -->         must fail with a type error; not kept for later blocks
 //	<!-- reject: reason --> must fail with a type error whose first diagnostic
-//	                        line contains reason (a case-sensitive substring)
+//	                        line contains reason (case-sensitive, whole tokens)
 //	<!-- skip -->           not checked (a fragment, or another language's syntax)
 //	<!-- fresh -->          checked, but starts the accumulation again
 //	<!-- untyped -->        loaded under (tc -), as defprolog and code without
@@ -30,7 +31,7 @@ type shenBlock struct {
 	File         string // path of the Markdown file within the skills tree
 	Line         int    // line of the opening fence
 	Mode         string // "accept", "reject" or "skip"
-	RejectReason string // required diagnostic substring; empty accepts any type error
+	RejectReason string // required whole-token diagnostic text; empty accepts any type error
 	Fresh        bool
 	Untyped      bool
 	Code         string
@@ -40,7 +41,7 @@ type shenBlock struct {
 func extractShenBlocks(file, text string) ([]shenBlock, error) {
 	var blocks []shenBlock
 	lines := strings.Split(text, "\n")
-	prev := ""
+	annotation := ""
 	for i := 0; i < len(lines); i++ {
 		line := strings.TrimRight(lines[i], "\r")
 		trimmed := strings.TrimSpace(line)
@@ -59,35 +60,54 @@ func extractShenBlocks(file, text string) ([]shenBlock, error) {
 			if !closed {
 				return nil, fmt.Errorf("%s:%d: unclosed code fence", file, start)
 			}
+			if annotation != "" && info != "shen" {
+				return nil, fmt.Errorf("%s:%d: checker annotation requires a shen fence", file, start)
+			}
 			if info == "shen" {
 				b := shenBlock{File: file, Line: start, Mode: "accept", Code: strings.Join(body, "\n") + "\n"}
 				switch {
-				case prev == "<!-- reject -->":
+				case annotation == "<!-- reject -->":
 					b.Mode = "reject"
-				case strings.HasPrefix(prev, "<!-- reject:"):
-					if !strings.HasSuffix(prev, "-->") {
-						return nil, fmt.Errorf("%s:%d: reject annotation must end with -->", file, start)
-					}
+				case strings.HasPrefix(annotation, "<!-- reject:"):
 					b.Mode = "reject"
-					b.RejectReason = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(prev, "<!-- reject:"), "-->"))
-					if b.RejectReason == "" {
-						return nil, fmt.Errorf("%s:%d: reject annotation requires a non-empty diagnostic substring", file, start)
-					}
-				case prev == "<!-- skip -->":
+					b.RejectReason = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(annotation, "<!-- reject:"), "-->"))
+				case annotation == "<!-- skip -->":
 					b.Mode = "skip"
-				case prev == "<!-- fresh -->":
+				case annotation == "<!-- fresh -->":
 					b.Fresh = true
-				case prev == "<!-- untyped -->":
+				case annotation == "<!-- untyped -->":
 					b.Untyped = true
 				}
 				blocks = append(blocks, b)
 			}
-			prev = ""
+			annotation = ""
 			continue
 		}
 		if trimmed != "" {
-			prev = trimmed
+			// Standalone HTML comments directly before code are checker annotations.
+			// Fail closed on typos, stacked directives and detached directives.
+			if annotation != "" {
+				return nil, fmt.Errorf("%s:%d: checker annotation must precede one fence (cannot stack annotations)", file, i+1)
+			}
+			if strings.HasPrefix(trimmed, "<!--") {
+				switch {
+				case trimmed == "<!-- reject -->", trimmed == "<!-- skip -->", trimmed == "<!-- fresh -->", trimmed == "<!-- untyped -->":
+				case strings.HasPrefix(trimmed, "<!-- reject:"):
+					if !strings.HasSuffix(trimmed, "-->") {
+						return nil, fmt.Errorf("%s:%d: reject annotation must end with -->", file, i+1)
+					}
+					if strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(trimmed, "<!-- reject:"), "-->")) == "" {
+						return nil, fmt.Errorf("%s:%d: reject annotation requires a non-empty diagnostic substring", file, i+1)
+					}
+				default:
+					return nil, fmt.Errorf("%s:%d: unknown checker annotation %q", file, i+1, trimmed)
+				}
+				annotation = trimmed
+			}
 		}
+	}
+	if annotation != "" {
+		return nil, fmt.Errorf("%s:%d: checker annotation has no fence", file, len(lines))
 	}
 	return blocks, nil
 }
@@ -177,7 +197,7 @@ func checkExpr(blocks []shenBlock, files []string) string {
 		if bl.Untyped {
 			return "(do (tc -) (load " + q(f) + ") (tc +))"
 		}
-		return "(load " + q(f) + ")"
+		return "(do (tc +) (load " + q(f) + "))"
 	}
 	var b strings.Builder
 	b.WriteString("(do (tc +) ")
@@ -186,7 +206,22 @@ func checkExpr(blocks []shenBlock, files []string) string {
 		b.WriteString(load(blocks[i], files[i]) + " ")
 	}
 	if blocks[n].Mode == "reject" {
-		fmt.Fprintf(&b, `(trap-error (do %s (output "~%%%s~%%")) (/. E (output "~%%%s ~A~%%" (error-to-string E)))))`, load(blocks[n], files[n]), markAccepted, markRejected)
+		// Shen reports an absent helper as a type error in the enclosing definition.
+		// Re-read only a failed negative example, and inspect the reader's expanded
+		// forms for unresolved function references before crediting that error.
+		// The self-applied walker keeps checker helpers out of the program namespace.
+		// Kernel 43.4's defcc expansion calls shen.parse-failure, whose arity is
+		// not published; it is the one known zero-argument exception.
+		validate := `(let Walk (/. Self (/. X
+		  (if (cons? X)
+		    (if (or (and (= (head X) fn) (= (length X) 2))
+		            (and (= (length X) 1) (symbol? (head X)) (not (variable? (head X)))))
+		      (let F (if (= (head X) fn) (head (tail X)) (head X))
+		        (if (and (= (arity F) -1) (not (= F shen.parse-failure)))
+		          (error "undefined helper ~A" F) true))
+		      (map (/. Item (Self Self Item)) X))
+		    true))) (Walk Walk (read-file ` + q(files[n]) + `)))`
+		fmt.Fprintf(&b, `(trap-error (do %s (output "~%%%s~%%")) (/. E (do %s (output "~%%%s ~A~%%" (error-to-string E))))))`, load(blocks[n], files[n]), markAccepted, validate, markRejected)
 	} else {
 		fmt.Fprintf(&b, `%s (output "~%%%s~%%"))`, load(blocks[n], files[n]), markOK)
 	}
@@ -204,33 +239,37 @@ func judgeCheck(block shenBlock, result runResult) (bool, string) {
 	}
 	out := result.Out
 	if block.Mode == "reject" {
-		i := strings.Index(out, markRejected)
-		if i < 0 {
+		var diagnostic string
+		for _, line := range strings.Split(out, "\n") {
+			if strings.HasPrefix(line, markRejected+" ") {
+				diagnostic = strings.TrimPrefix(line, markRejected+" ")
+				break
+			}
+		}
+		if diagnostic == "" {
 			if strings.Contains(out, markAccepted) {
 				return false, "accepted, but the block expects a type error"
 			}
 			return false, "an earlier block of the file did not load"
 		}
-		why := strings.TrimSpace(firstLine(out[i+len(markRejected):]))
-		if !strings.Contains(why, "type error") {
-			return false, "failed, but not with a type error: " + why
+		why := strings.TrimSpace(diagnostic)
+		fields := strings.Fields(why)
+		if len(fields) != 7 || strings.Join(fields[:4], " ") != "type error in rule" || fields[5] != "of" {
+			return false, "failed, but not with a type error at a definition: " + why
 		}
-		if block.RejectReason != "" && !strings.Contains(why, block.RejectReason) {
-			return false, fmt.Sprintf("type error did not contain %q: %s", block.RejectReason, why)
+		rule, err := strconv.Atoi(fields[4])
+		if err != nil || rule < 1 {
+			return false, "failed, but not with a type error at a definition: " + why
+		}
+		if block.RejectReason != "" && !strings.Contains(" "+why+" ", " "+block.RejectReason+" ") {
+			return false, fmt.Sprintf("type error did not contain %q as whole tokens: %s", block.RejectReason, why)
 		}
 		return true, ""
 	}
-	if !strings.Contains(out, markOK) {
+	if !strings.Contains("\n"+strings.ReplaceAll(out, "\r\n", "\n")+"\n", "\n"+markOK+"\n") {
 		return false, "did not load under (tc +)"
 	}
 	return true, ""
-}
-
-func firstLine(s string) string {
-	if i := strings.IndexByte(s, '\n'); i >= 0 {
-		return s[:i]
-	}
-	return s
 }
 
 func cmdSkillsCheck(rest []string) int {

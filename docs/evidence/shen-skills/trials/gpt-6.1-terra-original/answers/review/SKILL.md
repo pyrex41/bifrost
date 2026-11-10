@@ -1,0 +1,5 @@
+# Review
+
+The claim is false. Smallest counterexample: push a value onto empty, then call top. The declared type says the result is nonempty, but the actual body returned empty; top may fail or produce an unrelated result. A client typechecks because the operation rules are trusted axioms, not proofs of the closure implementations. No execution result is claimed.
+
+Repair by implementing the operations over an indexed structural representation and typechecking their bodies, including a negative test that returns the old stack while claiming a successor index. Alternatively retain opaque untyped closures, but treat each declaration as an explicit trust boundary and independently verify the bodies against a representation invariant. Test top after push, prior versions after later pushes, and order across multiple pushes. Prove or otherwise justify termination and absence of mutation separately; arrow types and length indices do not establish ordering, persistence, purity, or termination. Even checked indexed bodies establish only the properties encoded by their rules, subject to checker and runtime soundness.

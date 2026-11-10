@@ -111,7 +111,8 @@ later reads even when the source file is no longer being loaded.
 
 - TBoS, online fifth edition, [10.1, Macros](https://shenlanguage.org/TBoS/121.html),
   [10.2, Changing the Order of Evaluation](https://shenlanguage.org/TBoS/124.html),
-  [10.6, The Null Package and Macros](https://shenlanguage.org/TBoS/129.html), and
-  [10.8–10.9, Macro Management / Macroexpansion and Unpackaging](https://shenlanguage.org/TBoS/133.html).
+  [10.6, The Null Package and Macros](https://shenlanguage.org/TBoS/129.html),
+  [10.8, Macro Management](https://shenlanguage.org/TBoS/132.html), and
+  [10.9, Macroexpansion and Unpackaging](https://shenlanguage.org/TBoS/133.html).
 - [ShenDoc: reader macros](https://shenlanguage.org/SD/Macros.html) and
   [packages](https://shenlanguage.org/SD/Packages.html).

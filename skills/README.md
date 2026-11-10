@@ -50,19 +50,35 @@ Typed blocks load with `(tc +)` enabled before `load`. Earlier definitions in on
 used by later definitions and proof-time side conditions in that block. Helpers needed during read-time
 macro expansion must already be loaded before reading the file; those are different phases.
 
-An HTML comment immediately before a fence changes its treatment:
+A standalone HTML comment immediately before a fence changes its treatment (blank lines are allowed).
+Standalone HTML comments outside fences are reserved for these directives: unknown, malformed, stacked,
+detached, dangling, or non-`shen`-fence directives are errors, not silently ignored options.
 
 | Annotation | Meaning |
 |---|---|
-| `<!-- reject: wrong-client -->` | Must produce a type error whose first diagnostic line contains the literal, case-sensitive text `wrong-client` |
-| `<!-- reject -->` | Must produce a type error; retained for examples without a more specific diagnostic expectation |
+| `<!-- reject: wrong-client -->` | Must produce `type error in rule N of wrong-client`; matching is literal, case-sensitive and bounded by whitespace, so `other-wrong-client` does not match |
+| `<!-- reject -->` | Must produce a definition's `type error in rule N of NAME`; retained for examples without a specific target |
 | `<!-- untyped -->` | Load deliberately under `(tc -)`; restore `(tc +)` for later blocks |
 | `<!-- skip -->` | Do not execute this fragment; explain why it is incomplete or illustrative |
 | `<!-- fresh -->` | Start a new accumulation of accepted blocks within this file |
 
-Rejected blocks are never carried into later checks. A timed-out or unsuccessfully exited port fails the
-check even if it printed a success marker. Named rejection expectations help distinguish the intended
-client's failure from an unrelated type error; keep each negative case small and pair it with a valid use.
+Rejected blocks are never carried into later checks. Setup loads are outside the rejection trap, so a
+setup error cannot satisfy an expected rejection. Each typed load re-enables `(tc +)`, including after
+untyped setup. A timed-out or unsuccessfully exited port fails the check even if it printed a success
+marker. Markers must occupy their own lines (the rejection diagnostic follows its marker on that line).
+
+Named rejection text may also be a whole-token diagnostic phrase such as `rule 2 of wrong-client`.
+Prefer the complete definition name. An undefined helper can produce the same diagnostic as an intended
+type mismatch, so after a failed negative load the checker re-reads its expanded forms and rejects
+unresolved `(fn NAME)` and zero-argument calls using the port's arity metadata. Kernel 43.4's generated
+`shen.parse-failure` call is exempt because that working internal function has no published arity.
+The additional read can expand macros again: keep negative blocks small, declarative and free of
+read-time side effects; prefer helpers in earlier accepted blocks. Same-file typed forward declarations
+remain supported. The walk is conservative: it traverses all reader-expanded forms, including forms
+following the failed definition, and is not a general quotation-aware dependency analysis. Keep unrelated
+forms out of negative blocks. Pair every claimed exclusion with a valid use.
+This is a documentation checker, not a sandbox or a proof that every declared helper is implemented;
+arity metadata and the kernel's diagnostic format are trusted.
 
 **Acceptance alone does not check a result's value.** Examples assert expected values with `if` or a
 small assertion function that raises an error on mismatch. Use such assertions for behavioral laws,
@@ -94,8 +110,8 @@ The skills use the following parts together:
 | Typed grammars and semantic functions | Chapter 22 |
 | Prolog and its implementation | Chapters 25 and 27 |
 
-Companion program filenames sometimes retain older section numbering. Follow the displayed chapter or
-section heading and the linked code together. The [Shen language reference](https://shenlanguage.org/SD/Primitives.html)
+Do not infer a prose section or edition from a numbered companion-program filename. Follow the
+displayed chapter or section heading and the linked code together. The [Shen language reference](https://shenlanguage.org/SD/Primitives.html)
 supplies details of current language operations. The closure material also draws on Doug Hoyte's
 [*Let Over Lambda*, chapter 2](https://letoverlambda.com/index.cl/guest/chap2.html), adapted to Shen's
 semantics rather than treating Common Lisp mechanisms as interchangeable.
@@ -112,4 +128,13 @@ blocks and every skipped fragment. Add named negative cases for claimed exclusio
 that matter, and check extension behavior when the program presents several views of the same facts.
 
 Preserve existing skill names and installation paths. Run the checker and the relevant Go tests after
-editing. Record the actual port/kernel and remaining assumptions when reporting a change.
+editing. Record the actual port/kernel and remaining assumptions when reporting a change. To run the
+checker's adversarial fixtures on installed ports (ordinary Go tests do not require a Shen runtime):
+
+```bash
+BIFROST_SKILLS_TEST_IMPLS=shen-jit,shen-scheme go test -run TestSkillsCheckerOnPorts -v
+```
+
+The Go suite also checks nested discovery, process failures after markers, and exact source/embedded/
+installed bytes, including reference files. See [the checker audit](../docs/shen-skills-checker-audit.md)
+for observed baseline/current results and evidence limits.
