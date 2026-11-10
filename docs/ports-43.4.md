@@ -51,6 +51,10 @@ it reached before the run was stopped.
 | shen-erl | none | `eb16e95` |
 | shen-joy | none | `9daee49` |
 
+shen-go's pin has since moved to v1.8.0 (`4b91705`). On 2026-11-09, `--heavy` with it and
+Shen/JIT gave 77 PASS and the same two known divergences, and the shake was byte-identical
+(md5 `4cff4a2a` and `d27cc480`).
+
 shen-rust, shen-swift and shen-truffle were run at their merged 43.4 commits. They cut no
 releases, and their adapters build the default branch.
 
