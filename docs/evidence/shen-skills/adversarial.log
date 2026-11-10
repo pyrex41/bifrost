@@ -1,0 +1,96 @@
+=== RUN   TestSkillsCheckerOnPorts
+=== RUN   TestSkillsCheckerOnPorts/shen-jit
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/typed_control
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/checking_enabled_before_load
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/intended_rejection
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/unexpected_acceptance
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/wrong_definition
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/substring_definition
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/undefined_helper
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/undefined_zero_arity_helper
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/same_block_forward_helper
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/same_block_accepted_setup
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/valid_helper
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/setup_type_error
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/setup_runtime_error
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/runtime_assertion_control
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/runtime_assertion_mismatch
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/runtime_error_is_not_rejection
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/typed_load_resets_tc
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/untyped_setup_restores_tc
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/accepted_context
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/rejected_context
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/rejected_definition_not_reused
+=== RUN   TestSkillsCheckerOnPorts/shen-jit/fresh_context
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/typed_control
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/checking_enabled_before_load
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/intended_rejection
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/unexpected_acceptance
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/wrong_definition
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/substring_definition
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/undefined_helper
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/undefined_zero_arity_helper
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/same_block_forward_helper
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/same_block_accepted_setup
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/valid_helper
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/setup_type_error
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/setup_runtime_error
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/runtime_assertion_control
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/runtime_assertion_mismatch
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/runtime_error_is_not_rejection
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/typed_load_resets_tc
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/untyped_setup_restores_tc
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/accepted_context
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/rejected_context
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/rejected_definition_not_reused
+=== RUN   TestSkillsCheckerOnPorts/shen-scheme/fresh_context
+--- PASS: TestSkillsCheckerOnPorts (1.53s)
+    --- PASS: TestSkillsCheckerOnPorts/shen-jit (0.23s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/typed_control (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/checking_enabled_before_load (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/intended_rejection (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/unexpected_acceptance (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/wrong_definition (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/substring_definition (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/undefined_helper (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/undefined_zero_arity_helper (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/same_block_forward_helper (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/same_block_accepted_setup (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/valid_helper (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/setup_type_error (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/setup_runtime_error (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/runtime_assertion_control (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/runtime_assertion_mismatch (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/runtime_error_is_not_rejection (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/typed_load_resets_tc (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/untyped_setup_restores_tc (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/accepted_context (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/rejected_context (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/rejected_definition_not_reused (0.01s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-jit/fresh_context (0.01s)
+    --- PASS: TestSkillsCheckerOnPorts/shen-scheme (1.29s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/typed_control (0.07s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/checking_enabled_before_load (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/intended_rejection (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/unexpected_acceptance (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/wrong_definition (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/substring_definition (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/undefined_helper (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/undefined_zero_arity_helper (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/same_block_forward_helper (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/same_block_accepted_setup (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/valid_helper (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/setup_type_error (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/setup_runtime_error (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/runtime_assertion_control (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/runtime_assertion_mismatch (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/runtime_error_is_not_rejection (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/typed_load_resets_tc (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/untyped_setup_restores_tc (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/accepted_context (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/rejected_context (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/rejected_definition_not_reused (0.06s)
+        --- PASS: TestSkillsCheckerOnPorts/shen-scheme/fresh_context (0.06s)
+PASS
+ok  	github.com/pyrex41/bifrost	1.820s

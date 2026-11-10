@@ -1,162 +1,150 @@
 ---
 name: shen-thinking
-description: How to design and write Shen programs that use the language's power (sequent-calculus types, Prolog, typed grammars, macros) instead of Lisp or ML written in Shen syntax. Use before writing or changing any Shen code (.shen files, Shen REPL work, ShenOS kernel or port code), and whenever a task gives rules, constraints or a grammar that a Shen program must follow.
+description: Design and change Shen programs using functional decomposition, closures, sequent-calculus types, Prolog, typed grammars and macros. Use before writing Shen (.shen files or REPL work), when translating rules or constraints into code, or when choosing representations, state boundaries and proof obligations.
 ---
 
 # Thinking in Shen
 
-Shen can express every pattern of the functional languages you know, so it is easy to write Lisp or ML in
-Shen syntax and stop there. Don't. What Shen has that they lack is a type system the programmer extends with
-inference rules, a Prolog that shares the type checker's engine, and typed grammars. A good Shen program
-states the problem's rules once, in one of those, and lets Shen enforce or run them.
+Start with the problem's operations, laws and changing inputs. Shen supplies ordinary pattern-directed
+functions and higher-order programming alongside extensible types, Prolog and typed grammars. Choose
+the combination that makes the specification explicit and the implementation easy to check.
 
-The failure this skill exists to prevent: asked for a program that generates strings from a ruleset, a
-model wrote a giant case statement of finished strings. It passed the test and contained no rules. The
-rules had been run once, in the model's head, and only their output was kept. Nothing could check it,
-extend it or explain it.
-
-## The one rule
-
-**Write down the rules, not what they produce.** If the output can be derived from rules, the program must
-contain the rules. A table of results is only acceptable when the table *is* the specification (a
-lookup of facts nobody derives), never when it is a cached run of rules you could have stated.
+The failure this skill guards against: a generator contains a table of finished answers but none of the
+rules that produced them. It passes examples while providing no account of correctness or extension.
+Keep the rules or source facts in the program. A derived table is useful when its derivation, refresh
+policy and consistency checks are explicit; a table can also be the specification itself.
 
 ## Workflow
 
-1. **State the rules in prose first.** List the categories (what kinds of thing exist), the rules that
-   combine them, and the facts they depend on. Write each down once. If you can't, ask before coding.
-2. **Pick the engine that already has the rules' shape.** Shen has several rule languages. Most of the
-   skill is noticing which one the problem is written in:
+For a substantial recipe, record **problem → judgment → assumptions → rules → implementation →
+evidence → limitations**. A judgment states exactly what the active rules should establish; the
+assumptions include data shape, effects, trusted declarations and runtime. Tests and typechecking
+answer different questions, and neither alone proves termination or all intended laws.
 
-   | The rules say... | Use | Skill |
+1. **State the operations and laws.** What are the inputs, outputs, legal operations and expected
+   equations? Separate output validity from completeness, uniqueness, termination and resource bounds.
+   For a stack, start with `top(push(x, s)) = x` and `pop(push(x, s)) = s`.
+2. **Separate fixed context from changing state.** What can a closure retain? What must remain an
+   explicit input and result for replay, inspection or independent callers? Decide whether each
+   preparation step happens once per factory call or on every invocation.
+3. **Choose the mechanism by the work it must do.**
+
+   | Work | Start with | Read next |
    |---|---|---|
-   | what a value *is*: well-formed, valid, allowed, agreeing | `datatype` sequent rules | `shen-types` |
-   | who is related to whom; constraints; search with backtracking | `defprolog` | `shen-logic-grammars` |
-   | which token sequences are allowed, and what they mean | typed `defcc` | `shen-logic-grammars` |
-   | how terms evaluate, rewrite or generate, with rules that change or arrive as data | a ruleset value plus a small typed interpreter | `shen-logic-grammars` |
-   | a fixed, small case analysis on a value's shape | `define` with patterns and `where` | below |
-   | repetitive *syntax* with a fixed meaning | `defmacro` | `shen-logic-grammars` |
-   | an infinite or partly consumed sequence | `freeze`/`thaw` (lazy) | |
+   | Decompose cases or transform a value | `define`, patterns, `where`, small helpers | Example below |
+   | Reuse a computation with selected arguments fixed | Partial application, `/.`, `let` | [Closures and state](references/closures-and-state.md) |
+   | Express a value invariant or an admissible operation | `datatype` sequents, checked functions | `shen-types` |
+   | Search relations or enumerate solutions | `defprolog`, explicit query modes | `shen-logic-grammars` |
+   | Recognize tokens and compute their meaning | Typed `defcc` | `shen-logic-grammars` |
+   | Execute rules supplied as values | A typed interpreter over the rule data | `shen-logic-grammars` |
+   | Change syntax, binding or evaluation structure | `defmacro` | `shen-logic-grammars` |
+   | Delay work or consume a sequence incrementally | `freeze` / `thaw`, with a demand contract | TBoS §17.4 and §24.6 |
 
-3. **Represent with structure, render at the edge.** Build lists of symbols and trees the rules can talk
-   about. Turn them into strings with one generic walk at the very end. Strings in the middle of a
-   pipeline are a sign the rules are missing.
-4. **Type it, in proportion.** Under `(tc +)`:
-   - Give every `define` a signature. It is cheap, and it documents.
-   - Describe the *shape* of data that recurs with a `datatype`: one double-line rule per shape, over the
-     lists you already have. No wrapper tags.
-   - Put an *invariant* in a type where it pays: where the rules are fixed and you want the checker to
-     prove that every function obeys them, or where data crosses a trust boundary (a file, a user,
-     another module) and many consumers would otherwise check it again. A runtime test becomes a type
-     through a `verified` rule and a `where` guard (see `shen-types`).
-   - Don't make a refinement type for every adjective, and don't freeze domain vocabulary that changes into
-     types. If the words or rules are data the program reads, keep them in data and type their shape.
-5. **Prove it.** Load the file with the checker already on (see "Checking your code": `(tc +)` inside
-   the file checks nothing). Add a negative case: a deliberately wrong use that the
-   checker must reject. If breaking a rule doesn't produce a type error, the rule isn't in the types.
-6. **End with small, predictable examples.** A few top-level expressions whose answers you can work out by
-   hand ("24 sentences", "ada may take cs220"). Under `(tc +)` each also prints its type.
-7. **Review against `shen-review`** before you call it done.
+   An explicit worklist or visited set can express a necessary search strategy. Prolog also needs an
+   operational account of cycles, goal order and termination. Dynamic predicates may suit changing
+   relations; custom rule data is appropriate when the program must inspect, store or version them.
+4. **Choose a representation that supports the required observations.** Trees, lists and symbols make
+   structure accessible; strings are appropriate for text. Tags can distinguish alternatives or carry
+   domain meaning. Closures can implement callbacks, configured operations and persistent values.
+   If values must be serialized or compared semantically, define the data representation or observation
+   operations explicitly. Generic printing or equality is not a serialization or equivalence contract.
+5. **State useful invariants and their preservation.** Give ordinary functions signatures. Use concrete
+   datatype rules to describe shapes and refinements, including internal invariants that transformations
+   must preserve. A checked input boundary is valuable, but downstream preservation can be equally
+   valuable. Keep changing vocabulary in data unless a fixed vocabulary is part of the intended type.
+6. **Identify the trusted steps.** A `verified` bridge, `declare`, or operation axiom is a claim that
+   needs justification. Client checking under those rules does not establish an untyped implementation's
+   laws. Ordinary arrow types do not establish purity, termination, effect freedom or a temporal protocol.
+7. **Check the actual claims.** Turn checking on before loading typed code. Assert predicted values and
+   laws. Isolate deliberately invalid clients and verify the intended type error. Exercise extensions,
+   empty inputs, aliasing and relevant termination limits. Review with `shen-review`.
 
-### Types or data? Resolving the tension
+## Find the common computation
 
-Two good instincts pull apart here. One says *types are specifications*: put the rules in datatypes and the
-checker proves the program obeys them. The other says *rules are data*: keep them in plain values an
-interpreter reads, and keep types to shapes and boundaries. Both are right, about different problems:
-
-- The rules are **fixed** for the program and you want a **proof** that generated or accepted values obey
-  them → datatypes. Breaking a rule becomes a type error.
-- The rules **change**, are **many**, or arrive **at run time** → a ruleset value and a small interpreter,
-  with one boundary type (`verified`) that says the ruleset was checked.
-- The rules are a **relation** or a **grammar** → Shen already ships the interpreter: `defprolog` or
-  `defcc`. Don't write your own.
-
-In every case the rules appear exactly once in the program, and the output is derived.
-
-## Worked example
-
-The task: *generate the sentences of a tiny English fragment. Determiner, noun and verb agree in number;
-"the" goes with either.*
-
-What a model typically writes (don't):
-
-<!-- skip -->
-```shen
-(define sentences
-  {--> (list string)}
-  -> ["a cat sleeps." "a dog barks." "every cat sleeps." "every dogs bark." ...])
-```
-
-It typechecks, and so does its bug: `"every dogs bark."` breaks the agreement rule. The types say "strings"
-and nothing more, because the rules were never written down.
-
-The Shen way: the lexicon is a family of types indexed by number, and agreement is one shared variable.
+Before introducing an interpreter or a new type, see whether the repeated work is already a small
+higher-order function. Here the stopping rule and step vary, while the recursive computation stays fixed:
 
 ```shen
-(datatype lexicon
-  if (element? W [a every])      ____ W : (det sg);
-  if (element? W [some all])     ____ W : (det pl);
-  if (= W the)                   ____ W : (det N);
-  if (element? W [cat dog])      ____ W : (noun sg);
-  if (element? W [cats dogs])    ____ W : (noun pl);
-  if (element? W [sleeps barks]) ____ W : (verb sg);
-  if (element? W [sleep bark])   ____ W : (verb pl);)
+(define repeat-until
+  {(A --> boolean) --> (A --> A) --> A --> A}
+  Done? _ X -> X where (Done? X)
+  Done? Step X -> (repeat-until Done? Step (Step X)))
 
-(datatype sentence
-  D : (det N); C : (noun N); V : (verb N);
-  ========================================
-  [D C V] : sentence;)
+(define reach
+  {number --> number}
+  Target -> (repeat-until (/. X (>= X Target)) (+ 3) 0))
 
-\\ The shared N in the signature is the agreement rule.
-(define clauses
-  {(list (det N)) --> (list (noun N)) --> (list (verb N)) --> (list sentence)}
-  Ds Cs Vs -> (mapcan (/. D (mapcan (/. C (map (/. V [D C V]) Vs)) Cs)) Ds))
-
-(define fragment
-  {--> (list sentence)}
-  -> (append (clauses [a every the] [cat dog] [sleeps barks])
-             (clauses [some all the] [cats dogs] [sleep bark])))
-
-(define sentence->string
-  {sentence --> string}
-  [D C V] -> (make-string "~A ~A ~A." D C V))
-
-(length (fragment))
-(sentence->string (head (fragment)))
+(if (= (reach 10) 12)
+    true
+    (simple-error "repeat-until: expected first value at or above ten"))
 ```
 
-`(length (fragment))` is 24 and the first sentence is `"a cat sleeps."`. Now ask for a sentence that
-breaks the rule. The checker refuses it before anything runs:
+`(+ 3)` is a partial application. The lambda captures `Target`. The signature connects the predicate,
+step and state types; it does not prove that an arbitrary step eventually satisfies the predicate.
+For the example, the monotonically increasing sequence starting at zero reaches a value at least ten.
 
-<!-- reject -->
+This client breaks the shared state type, so it must fail before execution:
+
+<!-- reject: wrong-repeat -->
 ```shen
-(define wrong
-  {--> (list sentence)}
-  -> (clauses [every] [dogs] [bark]))
+(define wrong-repeat
+  {--> number}
+  -> (repeat-until (/. X (> X 10)) (/. X [X]) 0))
 ```
 
-To extend the language, add a rule, not rows. (This example follows the typed grammar of English in
-The Book of Shen, 20.4, which goes further and parses sentences into typed logical formulas.)
+When adapting this pattern, say what establishes termination or supply a budget and an explicit exhausted
+result. Do not mistake a well-typed infinite computation for a total one.
+
+## From closures to logical interfaces
+
+Read [Closures and state](references/closures-and-state.md) when choosing between captured policy,
+private mutable storage and explicit transitions. It covers partial application, preparation placement,
+aliasing, replay and the limits of an ordinary function type.
+
+Read [Persistent stacks and indexed interfaces](references/indexed-stacks.md) when an abstract value can
+be implemented by a closure or when legal operations depend on a structural index. It works through
+operation laws, two representations, accepted clients, rejected empty-stack operations and the boundary
+between asserting an interface and proving its implementation.
+
+Use both levels deliberately: a closure supplies an implementation; Shen's judgments can express which
+uses are admissible. Write down the correspondence that connects the two.
+
+## Keep one authoritative specification
+
+When one concept has several executable views, identify the source and how the other views stay in sync.
+For example, a sentence generator and a type-level lexicon must not silently maintain separate word
+lists. Derive them from one source, or document and check the correspondence. Add a new word and verify
+both acceptance and enumeration.
+
+Likewise, `(list sentence)` establishes the type of each returned element under the active rules. An
+empty list has that type too. Claims such as "all sentences exactly once" need a separate enumeration
+argument and checks. A count alone can hide both a missing answer and a duplicate.
 
 ## Checking your code
 
-Typecheck a whole file portably, on any port (`bifrost` runs it on the active one):
+Typecheck a file with the checker already enabled:
 
-```
+```bash
 bifrost eval -e '(do (tc +) (load "prog.shen"))'
 ```
 
-**`(tc +)` written inside a file does not typecheck that file**, and neither does running the file as a
-script. `load` reads the setting once, when it starts, so an ill-typed program with `(tc +)` on its first
-line loads and runs as if it had been checked. (Verified on shen-jit, shen-go, shen-cl, shen-scheme and
-shen-lua.) Turn the checker on *before* loading, as above, or type `(tc +)` in the REPL and then
-`(load "prog.shen")`. A type error stops the load with `type error in rule N of F`. Never report code as
-typechecked because it ran.
+`load` takes the checking setting when it starts. Putting `(tc +)` inside the file does not retroactively
+typecheck that load. Running code as a script is also insufficient evidence of checking. For a deliberate
+untyped representation or Prolog layer, load it explicitly under `(tc -)`, then restore `(tc +)` before
+loading its typed interface and clients. Report these boundaries honestly.
+
+Run `bifrost skills check --dir skills --impl PORT` when changing these examples. The checker visits
+linked Markdown references inside each skill too. Results asserted by the examples are runtime checks;
+they are separate from the checker accepting their types.
 
 ## Reading
 
-- *The Book of Shen*, 4th edition, by Mark Tarver, and its programs, which are organised by section:
-  <https://shenlanguage.org/TBoS/index.html>. The type chapters are 19 to 28. These skills cite sections
-  rather than copying the book's code.
-- The other skills: `shen-types` (the sequent-calculus cookbook), `shen-logic-grammars` (Prolog, `defcc`,
-  interpreters and macros) and `shen-review` (the checklist).
+- Mark Tarver, [*The Book of Shen*, online fifth edition](https://shenlanguage.org/TBoS/index.html):
+  chapters 3–8 on recursion, data and higher-order programming; chapter 16 on methodology; chapters 17–22 on types, proof
+  control, abstraction and typed grammars. Check the displayed heading when following older program
+  filenames, since a filename alone is not a reliable edition/section citation.
+- Doug Hoyte, [*Let Over Lambda*, chapter 2](https://letoverlambda.com/index.cl/guest/chap2.html):
+  lexical environments and closure construction. Apply the design idea using Shen's semantics;
+  Common Lisp assignment and macro conventions require separate justification in Shen.
+- `shen-types` for inference rules and proof search; `shen-logic-grammars` for relational and grammar
+  execution; `shen-review` for the final review.
