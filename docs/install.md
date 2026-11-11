@@ -84,7 +84,7 @@ Defaults assume sibling checkouts. Override with a project `adapters.json` or
 `$BIFROST_ADAPTERS`.
 
 1. `bifrost install shen-go` — `git` + `go`; gives a Shen for step 3.
-2. `bifrost install shen-rust` (`cargo`; checks out tag `v0.1.1`), `ShenScript` (`node`/`npm`), `shen-lua` (`luajit`).
+2. `bifrost install shen-rust` (`cargo`; checks out tag `v0.1.2`), `ShenScript` (`node`/`npm`), `shen-lua` (`luajit`).
 3. shen-cl: clone, `make fetch`, `make precompile SHEN=<shen-go>`, then
    `bifrost install shen-cl` (`sbcl`).
 4. `shen-scheme` (git-build of the fork; `make` + C compiler + `curl`),

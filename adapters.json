@@ -176,11 +176,11 @@
     "install": {
       "method": "git-build",
       "git": "https://github.com/pyrex41/shen-rust",
-      "ref": "v0.1.1",
+      "ref": "v0.1.2",
       "needs": ["git", "cargo"]
     },
-    "_install_note": "git-build pins release v0.1.1 (commit a653699, ShenOSKernel 43.4). (port) and (release) report 0.1.1; *version* stays 43.4. The build is cargo build --release --bin shen-rust with default features (cedar, kernel-aot, interpreter). Use --ref master to track the default branch.",
-    "_note": "ShenOSKernel 43.4 booted through init.kl/shen.initialise; bundles extension-namespaces (the namespace-externals-expression case runs here). (port) and (release) report the crate version 0.1.1; *version* stays 43.4. 64-bit integers that overflow to doubles (exact to 2^63). Release build needs several GB of disk under target/."
+    "_install_note": "git-build pins release v0.1.2 (commit c8e3f0a, ShenOSKernel 43.4). (port) and (release) report 0.1.2; *version* stays 43.4. The build is cargo build --release --bin shen-rust with default features (cedar, kernel-aot, interpreter, sha256). Use --ref master to track the default branch.",
+    "_note": "ShenOSKernel 43.4 booted through init.kl/shen.initialise; bundles extension-namespaces (the namespace-externals-expression case runs here). (port) and (release) report the crate version 0.1.2; *version* stays 43.4. 64-bit integers that overflow to doubles (exact to 2^63). Release build needs several GB of disk under target/."
   },
 
   "shen-lua": {

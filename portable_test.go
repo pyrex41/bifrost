@@ -234,7 +234,7 @@ func TestShenRustAdapter(t *testing.T) {
 			}
 		}
 	}
-	if cfg.Install == nil || cfg.Install.Method != "git-build" || cfg.Install.Ref != "v0.1.1" ||
+	if cfg.Install == nil || cfg.Install.Method != "git-build" || cfg.Install.Ref != "v0.1.2" ||
 		cfg.Install.Git != "https://github.com/pyrex41/shen-rust" {
 		t.Fatalf("unexpected shen-rust install: %#v", cfg.Install)
 	}
