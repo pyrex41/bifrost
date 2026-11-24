@@ -12,7 +12,7 @@ would, then diffs stdout.
 The official kernel suites stay in each port. Bifrost asks a different
 question: **do the ports agree?**
 
-Most maintained adapters target ShenOSKernel 43.4; [Shen/JIT](https://github.com/tizoc/shen-jit) 0.8 targets 43.6. Exact version checks select each adapter's declared kernel. See the [43.4 qualification](docs/ports-43.4.md),
+Most maintained adapters target ShenOSKernel 43.4; [Shen/JIT](https://github.com/tizoc/shen-jit) 0.11 and 0.12 target 43.7. Exact version checks select each adapter's declared kernel. See the [43.4 qualification](docs/ports-43.4.md),
 [Shen/JIT](docs/shen-jit.md) and [matrix gaps](docs/matrix.md#known-port-gaps).
 
 ## Install
@@ -89,7 +89,7 @@ See [skills/README.md](skills/README.md).
 | Agent skills | [skills/README.md](skills/README.md) |
 
 [Yggdrasil](https://github.com/pyrex41/yggdrasil) is the companion shaker
-(`bifrost --shake` for stand-alone deploy artifacts). It shakes on kernel 43.6: every
-port is a build target, and every port but the bounded Joy target can be its stage-1 host.
+(`bifrost --shake` for stand-alone deploy artifacts). It shakes on kernel 43.7: every
+port is a build target; a stage-1 host must run kernel 43.7.
 
 License: Apache-2.0.

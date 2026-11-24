@@ -39,9 +39,12 @@ jobs:
   # a C compiler, and shen-jit is the adapter this repo's release is about.
   shen-jit:
     runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        version: ["0.11", "0.12"]
     env:
-      SHEN_JIT_VERSION: "0.8"
-      SHEN_JIT_SHA256: 77beca9458cfccf2790c9886baca67850eb380d39c262d1a5f14ba7b70982505
+      SHEN_JIT_VERSION: ${{ matrix.version }}
+      SHEN_JIT_SHA256: 08c44e320e5be3f5b008a01e90c8595869c5bcbf2cd468ff47bf9000c3b8b210
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -49,6 +52,13 @@ jobs:
           go-version: "1.23.x"
       - name: Build Shen/JIT from the pinned tarball
         run: |
+          if [ "$SHEN_JIT_VERSION" = 0.12 ]; then
+            git clone https://github.com/tizoc/shen-jit.git "$RUNNER_TEMP/shen-jit"
+            git -C "$RUNNER_TEMP/shen-jit" checkout 02c7dd31ff9402c1e00f6bd2823bca591d5ddbb5
+            make -C "$RUNNER_TEMP/shen-jit" deps
+            make -C "$RUNNER_TEMP/shen-jit"
+            exit 0
+          fi
           name="shen-jit-$SHEN_JIT_VERSION.tar.gz"
           curl -fsSL --retry 3 -o "$name" "https://github.com/tizoc/shen-jit/releases/download/v$SHEN_JIT_VERSION/$name"
           echo "$SHEN_JIT_SHA256  $name" | sha256sum -c -

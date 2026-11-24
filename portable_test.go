@@ -252,7 +252,7 @@ func TestShenJitAdapter(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Env != "BIFROST_SHEN_JIT" || cfg.Kernel != "43.6" || cfg.Status != "production" {
+	if cfg.Env != "BIFROST_SHEN_JIT" || cfg.Kernel != "43.7" || cfg.Status != "production" {
 		t.Fatalf("unexpected shen-jit adapter: %#v", cfg)
 	}
 	if len(cfg.DefaultPaths) != 1 || cfg.DefaultPaths[0] != "../shen-jit/build/shen-jit" {
@@ -269,7 +269,7 @@ func TestShenJitAdapter(t *testing.T) {
 			}
 		}
 	}
-	if cfg.Install == nil || cfg.Install.Method != "git-build" || cfg.Install.Ref != "75b57a576d0a9d8110b574bfa99de28ff2ba13fc" ||
+	if cfg.Install == nil || cfg.Install.Method != "git-build" || cfg.Install.Ref != "02c7dd31ff9402c1e00f6bd2823bca591d5ddbb5" ||
 		cfg.Install.Git != "https://github.com/tizoc/shen-jit" {
 		t.Fatalf("unexpected shen-jit install: %#v", cfg.Install)
 	}
